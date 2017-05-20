@@ -1,0 +1,28 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+             xmlns:tools="http://schemas.android.com/tools"
+             android:layout_width="match_parent"
+             android:layout_height="match_parent"
+             tools:context="kie.com.soundtube.SearchFragment">
+
+    <!-- TODO: Update blank fragment layout -->
+    <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+        <SearchView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/searchview"
+                android:layout_alignParentStart="true"
+                android:layout_alignParentEnd="true"/>
+        <ListView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:id="@+id/result_list"
+                android:layout_below="@+id/searchview" android:layout_alignParentStart="true"
+                android:dividerHeight="0px" android:divider="@null">
+
+        </ListView>
+    </RelativeLayout>
+
+</FrameLayout>
