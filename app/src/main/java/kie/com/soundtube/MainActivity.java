@@ -10,6 +10,8 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
 
+import java.util.HashMap;
+
 
 public class MainActivity extends AppCompatActivity implements SearchFragment.OnFragmentInteractionListener, VideoFragment.OnFragmentInteractionListener {
 
@@ -35,23 +37,25 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
         fragmentTransaction.add(R.id.frame, videoFragment, "video");
         fragmentTransaction.commit();
 
-        YouTubeExtractor extractor = new YouTubeExtractor("xWzlwGVQ6_Q");
-        YouTubeExtractor.YouTubeExtractorListener listener = new YouTubeExtractor.YouTubeExtractorListener() {
+        VideoRetriver videoRetriver = new VideoRetriver();
+        videoRetriver.startExtracting("https://www.youtube.com/watch?v=xWzlwGVQ6_Q", new VideoRetriver.YouTubeExtractorListener() {
             @Override
-            public void onSuccess(YouTubeExtractor.YouTubeExtractorResult result) {
+            public void onSuccess(HashMap<Integer, String> result) {
                 DataHolder dataHolder = new DataHolder();
-                dataHolder.videoUri = result.getVideoUri();
+                dataHolder.videoUri = Uri.parse(result.get(18));
                 System.out.println("video uri  " + dataHolder.videoUri);
                 videoFragment.playVideo(dataHolder);
             }
 
             @Override
             public void onFailure(Error error) {
-                System.out.println(error.getMessage());
 
             }
-        };
-        extractor.startExtracting(listener, YouTubeExtractor.YOUTUBE_VIDEO_QUALITY_HD_720);
+        });
+
+
+
+
 
     }
 
