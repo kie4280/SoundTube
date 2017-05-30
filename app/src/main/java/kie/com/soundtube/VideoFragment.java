@@ -7,6 +7,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.Looper;
 import android.support.v4.app.Fragment;
 import android.util.DisplayMetrics;
 import android.view.*;
@@ -28,6 +29,7 @@ public class VideoFragment extends Fragment {
     private SurfaceHolder surfaceHolder;
     private RelativeLayout relativeLayout;
     Handler playHandler;
+    Handler ui;
     HandlerThread thread;
     DisplayMetrics displayMetrics;
     Context context;
@@ -44,6 +46,7 @@ public class VideoFragment extends Fragment {
         thread = new HandlerThread("playerThread");
         thread.start();
         playHandler = new Handler(thread.getLooper());
+        ui = new Handler(Looper.getMainLooper());
         context = getContext();
         displayMetrics = context.getResources().getDisplayMetrics();
         mediaPlayer = new MediaPlayer();
@@ -113,11 +116,47 @@ public class VideoFragment extends Fragment {
                 if (mediaPlayer.isPlaying()) {
                     pause();
                     playbutton.setBackgroundResource(R.drawable.play);
+//                    ui.postDelayed(new Runnable() {
+//                        @Override
+//                        public void run() {
+//                            playbutton.setVisibility(View.GONE);
+//                        }
+//                    }, 3000);
+
 
                 } else {
                     play();
+//                    ui.postDelayed(new Runnable() {
+//                        @Override
+//                        public void run() {
+//                            playbutton.setVisibility(View.GONE);
+//                        }
+//                    }, 3000);
                     playbutton.setBackgroundResource(R.drawable.pause);
                 }
+            }
+        });
+
+        seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, final int progress, boolean fromUser) {
+
+                playHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        mediaPlayer.seekTo(progress);
+                    }
+                });
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+
             }
         });
 
@@ -207,6 +246,7 @@ public class VideoFragment extends Fragment {
             Videoratio = (float) mp.getVideoWidth() / (float) mp.getVideoHeight();
             progressBar.setVisibility(View.GONE);
             playbutton.setVisibility(View.VISIBLE);
+            seekBar.setMax(mediaPlayer.getDuration());
             play();
 
         }
