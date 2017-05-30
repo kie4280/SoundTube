@@ -1,6 +1,5 @@
 package kie.com.soundtube;
 
-import android.net.Uri;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
@@ -10,7 +9,6 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
 import org.liquidplayer.webkit.javascriptcore.*;
-
 import javax.net.ssl.HttpsURLConnection;
 import java.io.*;
 import java.net.MalformedURLException;
@@ -30,15 +28,16 @@ import static java.util.Arrays.asList;
  */
 public class VideoRetriver {
 
-    private static final int YOUTUBE_VIDEO_QUALITY_SMALL_240 = 36;
-    private static final int YOUTUBE_VIDEO_QUALITY_MEDIUM_360 = 18;
-    private static final int YOUTUBE_VIDEO_QUALITY_HD_720 = 22;
-    private static final int YOUTUBE_VIDEO_QUALITY_HD_1080 = 37;
+    public static final int YOUTUBE_VIDEO_QUALITY_SMALL_240 = 36;
+    public static final int YOUTUBE_VIDEO_QUALITY_MEDIUM_360 = 18;
+    public static final int YOUTUBE_VIDEO_QUALITY_HD_720 = 22;
+    public static final int YOUTUBE_VIDEO_QUALITY_HD_1080 = 37;
+    public static final int YOUTUBE_VIDEO_QUALITY_4K = 38;
+    public static final int YOUTUBE_VIDEO_QUALITY_AUTO = 0;
     HandlerThread youtubeExtractorThread;
     Handler youtubeExtractorHandler, listenerHandler;
-
-
-    private List<Integer> mPreferredVideoQualities;
+    public static List<Integer> mPreferredVideoQualities =  asList(YOUTUBE_VIDEO_QUALITY_4K, YOUTUBE_VIDEO_QUALITY_HD_1080,
+                                                                    YOUTUBE_VIDEO_QUALITY_HD_720, YOUTUBE_VIDEO_QUALITY_MEDIUM_360, YOUTUBE_VIDEO_QUALITY_SMALL_240);;
     JsonObject jsonObj = null;
 
     public static void main(String[] args) {
@@ -53,7 +52,6 @@ public class VideoRetriver {
         youtubeExtractorThread.start();
         youtubeExtractorHandler= new Handler(youtubeExtractorThread.getLooper());
         listenerHandler  = new Handler(Looper.getMainLooper());
-
     }
 
     public String downloadWeb(String url) {
@@ -98,7 +96,9 @@ public class VideoRetriver {
         String videoID = url.substring(url.indexOf("=") + 1);
         String language = "en";
         String link = String.format("https://www.youtube.com/get_video_info?video_id=%s&el=info&ps=default&eurl=&gl=US&hl=%s", videoID, language); //correct
-        String getvideoinfo = downloadWeb(link);
+
+
+
         HashMap<Integer, String> links = new HashMap<>();
         Document jsoup = Jsoup.parse(videoHTML);
         Elements q = jsoup.body().getElementsByTag("script");
@@ -126,7 +126,6 @@ public class VideoRetriver {
         String basejsurl = "https://www.youtube.com" + jsonObj.getAsJsonObject("assets")
                 .get("js").getAsString().replaceAll("\"", "");
         JsonObject videojson = jsonObj.getAsJsonObject("args");
-
 
         if (videojson.has("url_encoded_fmt_stream_map")) {
 
@@ -164,11 +163,27 @@ public class VideoRetriver {
                 }
 
                 links.put(Integer.parseInt(splitmap.get("itag")), stringBuilder.toString());
-                System.out.println(stringBuilder.toString());
             }
-
-
         }
+
+        String getvideoinfo = downloadWeb(link);
+        String[] infos = getvideoinfo.split("&");
+        HashMap<String, String> videoinfomap = new HashMap<>();
+        for(String info : infos) {
+            String[] pair = info.split("=");
+            if (pair.length == 2) {
+                String key = pair[0];
+                String value = decode(pair[1]);
+                videoinfomap.put(key, value);
+            }
+        }
+        if(videoinfomap.containsKey("url_encoded_fmt_stream_map")) {
+            String url_encoded_fmt = videoinfomap.get(("url_encoded_fmt_stream_map"));
+            String adaptive_fmt = videoinfomap.get(("adaptive_fmts"));
+            List<String> videos= new LinkedList<>(asList(url_encoded_fmt.split(",")));
+            videos.addAll(asList(adaptive_fmt.split(",")));
+        }
+
         return links;
     }
 

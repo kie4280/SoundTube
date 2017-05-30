@@ -355,7 +355,7 @@ public class SearchFragment extends Fragment {
                 extractor.startExtracting(new YouTubeExtractor.YouTubeExtractorListener() {
                     @Override
                     public void onSuccess(YouTubeExtractor.YouTubeExtractorResult result) {
-                        dataHolder.videoUri = result.getVideoUri();
+
                         mListener.onreturnVideo(dataHolder);
                         System.out.println("videouri  " + result.getVideoUri());
                     }

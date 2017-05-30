@@ -38,12 +38,11 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
         fragmentTransaction.commit();
 
         VideoRetriver videoRetriver = new VideoRetriver();
-        videoRetriver.startExtracting("https://www.youtube.com/watch?v=xWzlwGVQ6_Q", new VideoRetriver.YouTubeExtractorListener() {
+        videoRetriver.startExtracting("https://www.youtube.com/watch?v=_sQSXwdtxlY", new VideoRetriver.YouTubeExtractorListener() {
             @Override
             public void onSuccess(HashMap<Integer, String> result) {
                 DataHolder dataHolder = new DataHolder();
-                dataHolder.videoUri = Uri.parse(result.get(18));
-                System.out.println("video uri  " + dataHolder.videoUri);
+                dataHolder.videoUris = result;
                 videoFragment.playVideo(dataHolder);
             }
 
@@ -52,11 +51,6 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
 
             }
         });
-
-
-
-
-
     }
 
     @Override

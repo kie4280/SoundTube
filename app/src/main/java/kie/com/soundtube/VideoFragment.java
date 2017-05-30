@@ -10,8 +10,10 @@ import android.os.HandlerThread;
 import android.support.v4.app.Fragment;
 import android.util.DisplayMetrics;
 import android.view.*;
-import android.widget.Button;
+import android.widget.FrameLayout;
+import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
+import android.widget.SeekBar;
 
 import java.io.IOException;
 
@@ -21,15 +23,18 @@ public class VideoFragment extends Fragment {
     public float Displayratio = 16f / 9f;
     public float Videoratio = 16f / 9f;
     public View videoFragmentView;
+    public SeekBar seekBar;
+    public ProgressBar progressBar;
     MediaPlayer mediaPlayer;
     private SurfaceView surfaceView;
     private SurfaceHolder surfaceHolder;
+    private RelativeLayout relativeLayout;
     Handler playHandler;
     HandlerThread thread;
     DisplayMetrics displayMetrics;
     Context context;
-    RelativeLayout.LayoutParams portraitlayout;
-    RelativeLayout.LayoutParams landscapelayout;
+    FrameLayout.LayoutParams portraitlayout;
+    FrameLayout.LayoutParams landscapelayout;
 
     public VideoFragment() {
         // Required empty public constructor
@@ -52,13 +57,10 @@ public class VideoFragment extends Fragment {
         super.onConfigurationChanged(newConfig);
         switch (newConfig.orientation) {
             case Configuration.ORIENTATION_LANDSCAPE:
-                surfaceView.setLayoutParams(landscapelayout);
-                getActivity().getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN|View.SYSTEM_UI_FLAG_HIDE_NAVIGATION|
-                        View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+                changeToLandscape();
                 break;
             case Configuration.ORIENTATION_PORTRAIT:
-                surfaceView.setLayoutParams(portraitlayout);
-                getActivity().getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
+                changeToPortrait();
                 break;
             default:
                 break;
@@ -71,18 +73,21 @@ public class VideoFragment extends Fragment {
         // Inflate the layout for this fragment
         videoFragmentView = inflater.inflate(R.layout.fragment_video, container, false);
         surfaceView = (SurfaceView) videoFragmentView.findViewById(R.id.surfaceView);
-        landscapelayout = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT);
+        seekBar = (SeekBar) videoFragmentView.findViewById(R.id.seekBar);
+        progressBar = (ProgressBar) videoFragmentView.findViewById(R.id.progressBar1);
+        progressBar.setMax(100);
+        progressBar.setIndeterminate(false);
+        relativeLayout = (RelativeLayout) videoFragmentView.findViewById(R.id.relativeLayout);
+        landscapelayout = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT);
         if (context.getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
             int w = (int) (displayMetrics.heightPixels / Displayratio);
-            portraitlayout = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, w);
-            surfaceView.setLayoutParams(landscapelayout);
-            getActivity().getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN|View.SYSTEM_UI_FLAG_HIDE_NAVIGATION|
-                    View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+            portraitlayout = new FrameLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, w);
+            changeToLandscape();
+
         } else {
             int w = (int) (displayMetrics.widthPixels / Displayratio);
-            portraitlayout = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, w);
-            surfaceView.setLayoutParams(portraitlayout);
-            getActivity().getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
+            portraitlayout = new FrameLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, w);
+            changeToPortrait();
         }
 
         surfaceHolder = surfaceView.getHolder();
@@ -135,7 +140,7 @@ public class VideoFragment extends Fragment {
     @Override
     public void onResume() {
         if (context.getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            getActivity().getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN|View.SYSTEM_UI_FLAG_HIDE_NAVIGATION|
+            getActivity().getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
                     View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
         } else {
             getActivity().getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
@@ -166,33 +171,53 @@ public class VideoFragment extends Fragment {
     }
 
     public void playVideo(final DataHolder dataHolder) {
-        playHandler.post(new Runnable() {
-            @Override
-            public void run() {
 
-                try {
-                    if (dataHolder.videoUri != null) {
-                        mediaPlayer.setDataSource(context, dataHolder.videoUri);
-                        mediaPlayer.setVideoScalingMode(MediaPlayer.VIDEO_SCALING_MODE_SCALE_TO_FIT_WITH_CROPPING);
-                        mediaPlayer.setOnPreparedListener(onPreparedListener);
-                        mediaPlayer.prepareAsync();
+        for (int a : VideoRetriver.mPreferredVideoQualities) {
+            try {
+                if (dataHolder.videoUris.containsKey(a)) {
 
-                    }
-
-                } catch (IOException e) {
-                    e.printStackTrace();
+                    progressBar.setVisibility(View.INVISIBLE);
+                    mediaPlayer.setDataSource(dataHolder.videoUris.get(a));
+                    mediaPlayer.setVideoScalingMode(MediaPlayer.VIDEO_SCALING_MODE_SCALE_TO_FIT_WITH_CROPPING);
+                    mediaPlayer.setOnPreparedListener(onPreparedListener);
+//                    mediaPlayer.setOnBufferingUpdateListener(onBufferingUpdateListener);
+                    mediaPlayer.prepareAsync();
+                    break;
                 }
+
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-        });
+        }
     }
 
-    public MediaPlayer.OnPreparedListener onPreparedListener = new MediaPlayer.OnPreparedListener() {
+    private MediaPlayer.OnPreparedListener onPreparedListener = new MediaPlayer.OnPreparedListener() {
         @Override
         public void onPrepared(MediaPlayer mp) {
-            Videoratio = (float)mp.getVideoWidth() / (float)mp.getVideoHeight();
+            Videoratio = (float) mp.getVideoWidth() / (float) mp.getVideoHeight();
             mp.start();
         }
     };
+
+    private MediaPlayer.OnBufferingUpdateListener onBufferingUpdateListener = new MediaPlayer.OnBufferingUpdateListener() {
+        @Override
+        public void onBufferingUpdate(MediaPlayer mp, int percent) {
+            System.out.println("update");
+            progressBar.setProgress(percent);
+        }
+    };
+
+
+    public void changeToPortrait() {
+        relativeLayout.setLayoutParams(portraitlayout);
+        getActivity().getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
+    }
+
+    public void changeToLandscape() {
+        relativeLayout.setLayoutParams(landscapelayout);
+        getActivity().getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
+                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+    }
 
     public interface OnFragmentInteractionListener {
 
