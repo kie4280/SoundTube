@@ -3,6 +3,7 @@
           package="kie.com.soundtube">
 
     <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
 
     <application
             android:allowBackup="true"
@@ -18,12 +19,6 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-
-        <service android:name="MediaPlayerService">
-             <intent-filter>
-              <action android:name="android.media.browse.MediaBrowserService" />
-             </intent-filter>
-        </service>
 
     </application>
 

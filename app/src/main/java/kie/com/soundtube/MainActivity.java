@@ -19,7 +19,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     public Fragment[] fragments = new Fragment[2];
     NonSwipeViewPager viewPager;
     TabLayout tabLayout;
-    VideoFragment videoFragment;
+    VideoFragment1 videoFragment;
     SearchFragment searchFragment;
 
     @Override
@@ -28,7 +28,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
         setContentView(R.layout.activity_main);
         UiHandler = new Handler(Looper.getMainLooper());
         FragmentManager fragmentManager = getSupportFragmentManager();
-        videoFragment = new VideoFragment();
+        videoFragment = new VideoFragment1();
         searchFragment = new SearchFragment();
 
         fragments[0] = searchFragment;

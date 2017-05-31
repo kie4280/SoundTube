@@ -6,8 +6,6 @@ import android.media.MediaPlayer;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
-import android.net.wifi.WifiInfo;
-import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -19,7 +17,7 @@ import android.widget.*;
 
 import java.io.IOException;
 
-public class VideoFragment extends Fragment {
+public class VideoFragment1 extends Fragment {
 
     private OnFragmentInteractionListener mListener;
     public float Displayratio = 16f / 9f;
@@ -40,7 +38,7 @@ public class VideoFragment extends Fragment {
     FrameLayout.LayoutParams portraitlayout;
     FrameLayout.LayoutParams landscapelayout;
 
-    public VideoFragment() {
+    public VideoFragment1() {
         // Required empty public constructor
     }
 
