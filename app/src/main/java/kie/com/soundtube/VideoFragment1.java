@@ -1,6 +1,7 @@
 package kie.com.soundtube;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.res.Configuration;
 import android.media.MediaPlayer;
 import android.net.ConnectivityManager;
@@ -17,6 +18,7 @@ import android.widget.*;
 
 import java.io.IOException;
 
+
 public class VideoFragment1 extends Fragment {
 
     private OnFragmentInteractionListener mListener;
@@ -25,8 +27,8 @@ public class VideoFragment1 extends Fragment {
     public View videoFragmentView;
     public SeekBar seekBar;
     public ProgressBar progressBar;
+
     private Button playbutton;
-    MediaPlayer mediaPlayer;
     private SurfaceView surfaceView;
     private SurfaceHolder surfaceHolder;
     private RelativeLayout relativeLayout;
@@ -51,9 +53,7 @@ public class VideoFragment1 extends Fragment {
         ui = new Handler(Looper.getMainLooper());
         context = getContext();
         displayMetrics = context.getResources().getDisplayMetrics();
-        mediaPlayer = new MediaPlayer();
     }
-
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
@@ -216,38 +216,29 @@ public class VideoFragment1 extends Fragment {
 
     @Override
     public void onDestroy() {
-        if (mediaPlayer != null) {
-            mediaPlayer.stop();
-            mediaPlayer.release();
-        }
         super.onDestroy();
     }
 
-    public void playVideo(final DataHolder dataHolder) {
+    public void start(final DataHolder dataHolder, final MediaPlayerService2 mediaService) {
 
         ConnectivityManager connectmgr = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo info = connectmgr.getActiveNetworkInfo();
         if (info.isAvailable() && info.isConnected()) {
             for (int a : VideoRetriver.mPreferredVideoQualities) {
-                try {
-                    if (dataHolder.videoUris.containsKey(a)) {
-                        mediaPlayer.setDataSource(dataHolder.videoUris.get(a));
-                        mediaPlayer.setVideoScalingMode(MediaPlayer.VIDEO_SCALING_MODE_SCALE_TO_FIT_WITH_CROPPING);
-                        mediaPlayer.setOnPreparedListener(onPreparedListener);
-//                    mediaPlayer.setOnBufferingUpdateListener(onBufferingUpdateListener);
-                        mediaPlayer.prepareAsync();
-                        break;
-                    }
+                if (dataHolder.videoUris.containsKey(a)) {
+                    mediaService.setDataSource(Uri.parse(dataHolder.videoUris.get(a)));
 
-                } catch (IOException e) {
-                    e.printStackTrace();
+                    break;
                 }
+
             }
         } else {
 
         }
 
     }
+
+
 
     private MediaPlayer.OnPreparedListener onPreparedListener = new MediaPlayer.OnPreparedListener() {
         @Override
@@ -279,24 +270,6 @@ public class VideoFragment1 extends Fragment {
         relativeLayout.setLayoutParams(landscapelayout);
         getActivity().getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
                 View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
-    }
-
-    public void play() {
-        playHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                mediaPlayer.start();
-            }
-        });
-    }
-
-    public void pause() {
-        playHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                mediaPlayer.pause();
-            }
-        });
     }
 
     public interface OnFragmentInteractionListener {

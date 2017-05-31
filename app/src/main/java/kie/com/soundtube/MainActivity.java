@@ -1,14 +1,21 @@
 package kie.com.soundtube;
 
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.Intent;
+import android.content.ServiceConnection;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.IBinder;
 import android.os.Looper;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
+
+import kie.com.soundtube.MediaPlayerService2.*;
 
 import java.util.HashMap;
 
@@ -17,6 +24,9 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
 
     public static Handler UiHandler = null;
     public Fragment[] fragments = new Fragment[2];
+    public MediaPlayerService2 mediaService;
+    private boolean servicebound = false;
+    private Intent playIntent;
     NonSwipeViewPager viewPager;
     TabLayout tabLayout;
     VideoFragment1 videoFragment;
@@ -43,7 +53,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
             public void onSuccess(HashMap<Integer, String> result) {
                 DataHolder dataHolder = new DataHolder();
                 dataHolder.videoUris = result;
-                videoFragment.playVideo(dataHolder);
+                videoFragment.start(dataHolder, mediaService);
             }
 
             @Override
@@ -51,6 +61,33 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
 
             }
         });
+    }
+
+    private ServiceConnection serviceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            MusicBinder musicBinder = (MediaPlayerService2.MusicBinder)service;
+            mediaService = musicBinder.getService();
+            servicebound = true;
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            servicebound = false;
+            mediaService.stopSelf();
+
+        }
+    };
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        if (playIntent == null) {
+            playIntent = new Intent(this, MediaPlayerService2.class);
+            bindService(playIntent, serviceConnection, Context.BIND_AUTO_CREATE);
+            startService(playIntent);
+
+        }
     }
 
     @Override
