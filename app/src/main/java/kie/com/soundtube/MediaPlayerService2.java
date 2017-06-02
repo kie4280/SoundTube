@@ -1,13 +1,12 @@
 package kie.com.soundtube;
 
-import android.app.Notification;
-import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.*;
+import android.os.Process;
 import android.view.SurfaceHolder;
 
 import java.io.IOException;
@@ -19,13 +18,28 @@ public class MediaPlayerService2 extends Service {
     Handler playHandler;
     HandlerThread thread;
     boolean prepared = false;
+    boolean connected = false;
+    Runnable task;
+    DataHolder currentData;
+    VideoFragment1 videoFragment;
+
     MediaPlayer.OnPreparedListener preparedListener = new MediaPlayer.OnPreparedListener() {
         @Override
         public void onPrepared(final MediaPlayer mp) {
+
             playHandler.post(new Runnable() {
                 @Override
                 public void run() {
-                    mp.start();
+                    mp.setVideoScalingMode(MediaPlayer.VIDEO_SCALING_MODE_SCALE_TO_FIT_WITH_CROPPING);
+                    videoFragment.Videoratio = (float) mp.getVideoWidth() / (float) mp.getVideoHeight();
+                    if(task!=null) {
+                        playHandler.post(task);
+                        task = null;
+                    }
+                    prepared = true;
+                    if(connected) {
+                        videoFragment.buffering(false);
+                    }
                 }
             });
 
@@ -34,6 +48,7 @@ public class MediaPlayerService2 extends Service {
     MediaPlayer.OnCompletionListener completionListener = new MediaPlayer.OnCompletionListener() {
         @Override
         public void onCompletion(MediaPlayer mp) {
+            mp.reset();
 
         }
     };
@@ -54,6 +69,7 @@ public class MediaPlayerService2 extends Service {
     public boolean onUnbind(Intent intent) {
         mediaPlayer.stop();
         mediaPlayer.release();
+        connected = false;
         return super.onUnbind(intent);
     }
 
@@ -64,13 +80,14 @@ public class MediaPlayerService2 extends Service {
         mediaPlayer.setWakeMode(this, PowerManager.PARTIAL_WAKE_LOCK);
         mediaPlayer.setScreenOnWhilePlaying(true);
         mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-        mediaPlayer.setVideoScalingMode(MediaPlayer.VIDEO_SCALING_MODE_SCALE_TO_FIT_WITH_CROPPING);
+
         mediaPlayer.setOnPreparedListener(preparedListener);
         mediaPlayer.setOnErrorListener(errorListener);
         mediaPlayer.setOnCompletionListener(completionListener);
-        thread = new HandlerThread("playerThread");
+        thread = new HandlerThread("playerhandler", Process.THREAD_PRIORITY_FOREGROUND);
         thread.start();
         playHandler = new Handler(thread.getLooper());
+
     }
 
     @Override
@@ -78,21 +95,14 @@ public class MediaPlayerService2 extends Service {
         stopForeground(true);
     }
 
-    public class MusicBinder extends Binder {
-        MediaPlayerService2 getService() {
-            return MediaPlayerService2.this;
-        }
-    }
 
     public void play() {
-        playHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                if(prepared) {
+        if (prepared) {
+            playHandler.post(new Runnable() {
+                @Override
+                public void run() {
                     mediaPlayer.start();
-                }
-
-//                Intent app = new Intent(MediaPlayerService2.this, MainActivity.class);
+                    //                Intent app = new Intent(MediaPlayerService2.this, MainActivity.class);
 //                PendingIntent pendingIntent = PendingIntent.getActivity(MediaPlayerService2.this,
 //                        0, app, PendingIntent.FLAG_UPDATE_CURRENT);
 //                Notification.Builder builder = new Notification.Builder(MediaPlayerService2.this);
@@ -104,26 +114,42 @@ public class MediaPlayerService2 extends Service {
 //                Notification not = builder.build();
 //
 //              startForeground(1, not);
-            }
-        });
+                }
+            });
+
+        } else {
+            task = new Runnable() {
+                @Override
+                public void run() {
+                    mediaPlayer.start();
+
+                }
+            };
+
+        }
     }
 
     public void pause() {
         playHandler.post(new Runnable() {
             @Override
             public void run() {
-                mediaPlayer.pause();
+                if(mediaPlayer.isPlaying()) {
+                    mediaPlayer.pause();
+                }
+
             }
         });
     }
 
-    public void prepare(final Uri uri, MediaPlayer.OnPreparedListener listener) {
+    public void prepare(final DataHolder dataHolder, final int a) {
+        currentData = dataHolder;
         playHandler.post(new Runnable() {
             @Override
             public void run() {
 
                 try {
-                    mediaPlayer.setDataSource(getApplicationContext(), uri);
+                    mediaPlayer.setDataSource(getApplicationContext(),
+                            Uri.parse(dataHolder.videoUris.get(a)));
                     mediaPlayer.prepareAsync();
 
 //                    mediaPlayer.setOnBufferingUpdateListener(onBufferingUpdateListener);
@@ -160,5 +186,16 @@ public class MediaPlayerService2 extends Service {
         return mediaPlayer.getDuration();
     }
 
+    public void connect(VideoFragment1 vid) {
+        videoFragment = vid;
+        connected = true;
+    }
+
+
+    public class MusicBinder extends Binder {
+        MediaPlayerService2 getService() {
+            return MediaPlayerService2.this;
+        }
+    }
 
 }
