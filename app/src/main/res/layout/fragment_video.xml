@@ -30,6 +30,6 @@
                 android:id="@+id/playbutton" android:alpha="0.8"
                 android:background="@drawable/pause"
                 android:layout_centerVertical="true" android:layout_centerHorizontal="true" android:visibility="gone"
-                android:backgroundTint="@android:color/background_light"/>
+        />
     </RelativeLayout>
 </FrameLayout>

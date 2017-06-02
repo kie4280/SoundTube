@@ -15,21 +15,22 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
 
-import kie.com.soundtube.MediaPlayerService2.*;
+import android.util.Log;
+import kie.com.soundtube.MediaPlayerService3.*;
 
 import java.util.HashMap;
 
 
-public class MainActivity extends AppCompatActivity implements SearchFragment.OnFragmentInteractionListener, VideoFragment.OnFragmentInteractionListener {
+public class MainActivity extends AppCompatActivity implements SearchFragment.OnFragmentInteractionListener, VideoFragment2.OnFragmentInteractionListener {
 
     public static Handler UiHandler = null;
     public Fragment[] fragments = new Fragment[2];
-    public MediaPlayerService2 mediaService;
+    public MediaPlayerService3 mediaService;
     private boolean servicebound = false;
     private Intent playIntent;
     NonSwipeViewPager viewPager;
     TabLayout tabLayout;
-    VideoFragment1 videoFragment;
+    VideoFragment2 videoFragment;
     SearchFragment searchFragment;
 
     @Override
@@ -38,7 +39,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
         setContentView(R.layout.activity_main);
         UiHandler = new Handler(Looper.getMainLooper());
         FragmentManager fragmentManager = getSupportFragmentManager();
-        videoFragment = new VideoFragment1();
+        videoFragment = new VideoFragment2();
         searchFragment = new SearchFragment();
 
         fragments[0] = searchFragment;
@@ -47,34 +48,35 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
         fragmentTransaction.add(R.id.frame, videoFragment, "video");
         fragmentTransaction.commit();
 
-        VideoRetriver videoRetriver = new VideoRetriver();
-        videoRetriver.startExtracting("https://www.youtube.com/watch?v=_sQSXwdtxlY", new VideoRetriver.YouTubeExtractorListener() {
-            @Override
-            public void onSuccess(HashMap<Integer, String> result) {
-                DataHolder dataHolder = new DataHolder();
-                dataHolder.videoUris = result;
-                videoFragment.start(dataHolder, mediaService);
-            }
 
-            @Override
-            public void onFailure(Error error) {
-
-            }
-        });
     }
 
     private ServiceConnection serviceConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
-            MusicBinder musicBinder = (MediaPlayerService2.MusicBinder)service;
+            MusicBinder musicBinder = (MediaPlayerService3.MusicBinder)service;
             mediaService = musicBinder.getService();
             servicebound = true;
+
+            VideoRetriver videoRetriver = new VideoRetriver();
+            videoRetriver.startExtracting("https://www.youtube.com/watch?v=_sQSXwdtxlY", new VideoRetriver.YouTubeExtractorListener() {
+                @Override
+                public void onSuccess(HashMap<Integer, String> result) {
+                    DataHolder dataHolder = new DataHolder();
+                    dataHolder.videoUris = result;
+                    videoFragment.start(dataHolder, mediaService);
+                }
+
+                @Override
+                public void onFailure(Error error) {
+
+                }
+            });
         }
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
             servicebound = false;
-            mediaService.stopSelf();
 
         }
     };
@@ -83,7 +85,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     protected void onStart() {
         super.onStart();
         if (playIntent == null) {
-            playIntent = new Intent(this, MediaPlayerService2.class);
+            playIntent = new Intent(this, MediaPlayerService3.class);
             bindService(playIntent, serviceConnection, Context.BIND_AUTO_CREATE);
             startService(playIntent);
 
@@ -93,17 +95,20 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     @Override
     protected void onResume() {
         super.onResume();
+        Log.e("activity", "onResume");
 
     }
 
     @Override
     protected void onPause() {
         super.onPause();
+        Log.e("activity", "onPause");
     }
 
     @Override
     protected void onDestroy() {
-        System.out.println("activity destroy");
+        Log.e("activity", "onDestroy");
+        stopService(playIntent);
         super.onDestroy();
     }
 
@@ -112,10 +117,12 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
 
     }
 
+
+
     @Override
     public void onreturnVideo(DataHolder dataHolder) {
         viewPager.setCurrentItem(1, true);
-        videoFragment.playVideo(dataHolder);
+        videoFragment.start(dataHolder, mediaService);
     }
 
     @Override

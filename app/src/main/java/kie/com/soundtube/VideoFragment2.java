@@ -1,7 +1,6 @@
 package kie.com.soundtube;
 
 import android.content.Context;
-import android.content.Intent;
 import android.content.res.Configuration;
 import android.media.MediaPlayer;
 import android.net.ConnectivityManager;
@@ -9,17 +8,14 @@ import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.HandlerThread;
 import android.os.Looper;
 import android.support.v4.app.Fragment;
 import android.util.DisplayMetrics;
 import android.view.*;
 import android.widget.*;
 
-import java.io.IOException;
 
-
-public class VideoFragment1 extends Fragment {
+public class VideoFragment2 extends Fragment {
 
     private OnFragmentInteractionListener mListener;
     public float Displayratio = 16f / 9f;
@@ -28,6 +24,7 @@ public class VideoFragment1 extends Fragment {
     public SeekBar seekBar;
     public ProgressBar progressBar;
     public MediaPlayer mediaPlayer;
+    public boolean prepared = false;
 
     private Button playbutton;
     private SurfaceView surfaceView;
@@ -38,9 +35,9 @@ public class VideoFragment1 extends Fragment {
     Context context;
     FrameLayout.LayoutParams portraitlayout;
     FrameLayout.LayoutParams landscapelayout;
-    MediaPlayerService2 mediaService;
+    MediaPlayerService3 mediaService;
 
-    public VideoFragment1() {
+    public VideoFragment2() {
         // Required empty public constructor
     }
 
@@ -94,23 +91,23 @@ public class VideoFragment1 extends Fragment {
         }
 
         surfaceHolder = surfaceView.getHolder();
-//        surfaceHolder.addCallback(new SurfaceHolder.Callback() {
-//            @Override
-//            public void surfaceCreated(SurfaceHolder holder) {
-//                mediaPlayer.setDisplay(surfaceHolder);
-//                System.out.println("surfacecreated");
-//            }
-//
-//            @Override
-//            public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-//                System.out.println("width " + width + " height " + height);
-//            }
-//
-//            @Override
-//            public void surfaceDestroyed(SurfaceHolder holder) {
-//
-//            }
-//        });
+        surfaceHolder.addCallback(new SurfaceHolder.Callback() {
+            @Override
+            public void surfaceCreated(SurfaceHolder holder) {
+               prepared = true;
+            }
+
+            @Override
+            public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+                System.out.println("width " + width + " height " + height);
+            }
+
+            @Override
+            public void surfaceDestroyed(SurfaceHolder holder) {
+                prepared = false;
+
+            }
+        });
 //        playbutton.setOnClickListener(new View.OnClickListener() {
 //            @Override
 //            public void onClick(View v) {
@@ -141,7 +138,9 @@ public class VideoFragment1 extends Fragment {
         seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, final int progress, boolean fromUser) {
-               mediaService.seekTo(progress);
+                if(mediaService.prepared) {
+                    mediaService.seekTo(progress);
+                }
 
             }
 
@@ -213,18 +212,20 @@ public class VideoFragment1 extends Fragment {
         super.onDestroy();
     }
 
-    public void start(final DataHolder dataHolder, final MediaPlayerService2 mediaService2) {
+    public void start(final DataHolder dataHolder, final MediaPlayerService3 mediaService3) {
 
-        mediaService = mediaService2;
-        mediaPlayer = mediaService2.mediaPlayer;
+        mediaService = mediaService3;
+        mediaPlayer = mediaService3.mediaPlayer;
+        connect();
+
         ConnectivityManager connectmgr = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo info = connectmgr.getActiveNetworkInfo();
         if (info.isAvailable() && info.isConnected()) {
             for (int a : VideoRetriver.mPreferredVideoQualities) {
                 if (dataHolder.videoUris.containsKey(a)) {
-                    mediaService2.prepare(Uri.parse(dataHolder.videoUris.get(a)), onPreparedListener);
-                    mediaService2.setDisplay(surfaceHolder);
-                    seekBar.setMax(mediaService2.getDuration());
+                    mediaService3.prepare(dataHolder, a);
+                    mediaService3.setDisplay(surfaceHolder);
+                    mediaService3.play();
 
                     break;
                 }
@@ -236,17 +237,30 @@ public class VideoFragment1 extends Fragment {
 
     }
 
+    public void connect() {
+        mediaService.connect(this);
+    }
+
 
 
     private MediaPlayer.OnPreparedListener onPreparedListener = new MediaPlayer.OnPreparedListener() {
         @Override
         public void onPrepared(MediaPlayer mp) {
-            Videoratio = (float) mp.getVideoWidth() / (float) mp.getVideoHeight();
-            progressBar.setVisibility(View.GONE);
-            playbutton.setVisibility(View.VISIBLE);
-            seekBar.setMax(mediaPlayer.getDuration());
+
         }
     };
+
+    public void buffering(boolean buff) {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                progressBar.setVisibility(View.GONE);
+                playbutton.setVisibility(View.VISIBLE);
+                seekBar.setMax(mediaPlayer.getDuration());
+            }
+        });
+
+    }
 
     private MediaPlayer.OnBufferingUpdateListener onBufferingUpdateListener = new MediaPlayer.OnBufferingUpdateListener() {
         @Override
