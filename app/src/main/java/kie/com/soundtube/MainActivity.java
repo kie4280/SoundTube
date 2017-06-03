@@ -33,6 +33,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     VideoFragment2 videoFragment;
     SearchFragment searchFragment;
 
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -49,6 +50,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
         fragmentTransaction.commit();
 
 
+
     }
 
     private ServiceConnection serviceConnection = new ServiceConnection() {
@@ -57,21 +59,27 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
             MusicBinder musicBinder = (MediaPlayerService3.MusicBinder)service;
             mediaService = musicBinder.getService();
             servicebound = true;
+            connect();
+            if(mediaService.currentData != null) {
+                videoFragment.resume();
+            } else {
+                VideoRetriver videoRetriver = new VideoRetriver();
+                videoRetriver.startExtracting("https://www.youtube.com/watch?v=_sQSXwdtxlY", new VideoRetriver.YouTubeExtractorListener() {
+                    @Override
+                    public void onSuccess(HashMap<Integer, String> result) {
+                        DataHolder dataHolder = new DataHolder();
+                        dataHolder.videoUris = result;
+                        videoFragment.start(dataHolder);
+                    }
 
-            VideoRetriver videoRetriver = new VideoRetriver();
-            videoRetriver.startExtracting("https://www.youtube.com/watch?v=_sQSXwdtxlY", new VideoRetriver.YouTubeExtractorListener() {
-                @Override
-                public void onSuccess(HashMap<Integer, String> result) {
-                    DataHolder dataHolder = new DataHolder();
-                    dataHolder.videoUris = result;
-                    videoFragment.start(dataHolder, mediaService);
-                }
+                    @Override
+                    public void onFailure(Error error) {
 
-                @Override
-                public void onFailure(Error error) {
+                    }
+                });
 
-                }
-            });
+            }
+
         }
 
         @Override
@@ -81,6 +89,14 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
         }
     };
 
+    public void connect() {
+        mediaService.videoFragment = videoFragment;
+        mediaService.connected = true;
+        videoFragment.mediaService = mediaService;
+        videoFragment.mediaPlayer = mediaService.mediaPlayer;
+        videoFragment.connected = true;
+    }
+
     @Override
     protected void onStart() {
         super.onStart();
@@ -88,26 +104,37 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
             playIntent = new Intent(this, MediaPlayerService3.class);
             bindService(playIntent, serviceConnection, Context.BIND_AUTO_CREATE);
             startService(playIntent);
-
+            servicebound = true;
+        } else if (!servicebound){
+            bindService(playIntent, serviceConnection, Context.BIND_AUTO_CREATE);
         }
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        Log.e("activity", "onResume");
 
+        Log.d("activity", "onResume");
+
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        unbindService(serviceConnection);
+        servicebound = false;
+        Log.d("activity", "onStop");
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        Log.e("activity", "onPause");
+        Log.d("activity", "onPause");
     }
 
     @Override
     protected void onDestroy() {
-        Log.e("activity", "onDestroy");
+        Log.d("activity", "onDestroy");
         stopService(playIntent);
         super.onDestroy();
     }
@@ -118,11 +145,9 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     }
 
 
-
     @Override
     public void onreturnVideo(DataHolder dataHolder) {
-        viewPager.setCurrentItem(1, true);
-        videoFragment.start(dataHolder, mediaService);
+        //viewPager.setCurrentItem(1, true);
     }
 
     @Override

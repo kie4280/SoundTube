@@ -20,7 +20,7 @@ public class MediaPlayerService3 extends Service {
     boolean prepared = false;
     boolean connected = false;
     Runnable task;
-    DataHolder currentData;
+    DataHolder currentData = null;
     VideoFragment2 videoFragment;
 
     MediaPlayer.OnPreparedListener preparedListener = new MediaPlayer.OnPreparedListener() {
@@ -67,8 +67,6 @@ public class MediaPlayerService3 extends Service {
 
     @Override
     public boolean onUnbind(Intent intent) {
-        mediaPlayer.stop();
-        mediaPlayer.release();
         connected = false;
         return super.onUnbind(intent);
     }
@@ -93,6 +91,8 @@ public class MediaPlayerService3 extends Service {
     @Override
     public void onDestroy() {
         stopForeground(true);
+        mediaPlayer.stop();
+        mediaPlayer.release();
     }
 
 
@@ -125,7 +125,6 @@ public class MediaPlayerService3 extends Service {
 
                 }
             };
-
         }
     }
 
@@ -184,11 +183,6 @@ public class MediaPlayerService3 extends Service {
 
     public int getDuration() {
         return mediaPlayer.getDuration();
-    }
-
-    public void connect(VideoFragment2 vid) {
-        videoFragment = vid;
-        connected = true;
     }
 
 

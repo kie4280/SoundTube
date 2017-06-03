@@ -11,6 +11,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.support.v4.app.Fragment;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.*;
 import android.widget.*;
 
@@ -25,6 +26,8 @@ public class VideoFragment2 extends Fragment {
     public ProgressBar progressBar;
     public MediaPlayer mediaPlayer;
     public boolean prepared = false;
+    boolean connected = false;
+    boolean controlshow = true;
 
     private Button playbutton;
     private SurfaceView surfaceView;
@@ -95,6 +98,11 @@ public class VideoFragment2 extends Fragment {
             @Override
             public void surfaceCreated(SurfaceHolder holder) {
                prepared = true;
+               if(mediaService!=null) {
+                   mediaService.setDisplay(holder);
+               }
+
+               Log.d("video", "surfaceCreated");
             }
 
             @Override
@@ -105,35 +113,37 @@ public class VideoFragment2 extends Fragment {
             @Override
             public void surfaceDestroyed(SurfaceHolder holder) {
                 prepared = false;
+                Log.d("video", "surfaceDestroyed");
 
             }
         });
-//        playbutton.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                if (mediaPlayer.isPlaying()) {
-//                    pause();
-//                    playbutton.setBackgroundResource(R.drawable.play);
-////                    ui.postDelayed(new Runnable() {
-////                        @Override
-////                        public void run() {
-////                            playbutton.setVisibility(View.GONE);
-////                        }
-////                    }, 3000);
-//
-//
-//                } else {
-//                    play();
-////                    ui.postDelayed(new Runnable() {
-////                        @Override
-////                        public void run() {
-////                            playbutton.setVisibility(View.GONE);
-////                        }
-////                    }, 3000);
-//                    playbutton.setBackgroundResource(R.drawable.pause);
-//                }
-//            }
-//        });
+        playbutton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (mediaPlayer.isPlaying()) {
+                    mediaService.pause();
+                    playbutton.setBackgroundResource(R.drawable.play);
+//                    ui.postDelayed(new Runnable() {
+//                        @Override
+//                        public void run() {
+//                            showcontrols(false);
+//                        }
+//                    }, 3000);
+
+
+                } else {
+                    mediaService.play();
+                    playbutton.setBackgroundResource(R.drawable.pause);
+//                    ui.postDelayed(new Runnable() {
+//                        @Override
+//                        public void run() {
+//                            showcontrols(false);
+//                        }
+//                    }, 3000);
+
+                }
+            }
+        });
 
         seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
@@ -152,6 +162,21 @@ public class VideoFragment2 extends Fragment {
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
 
+            }
+        });
+        surfaceView.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if(event.getAction() == MotionEvent.ACTION_DOWN) {
+                    if(controlshow) {
+                        showcontrols(false);
+                    } else {
+                        showcontrols(true);
+                    }
+
+                }
+                Log.d("surface", "touch");
+                return false;
             }
         });
 
@@ -196,15 +221,13 @@ public class VideoFragment2 extends Fragment {
 
     @Override
     public void onPause() {
-        //mediaPlayer.pause();
-        System.out.println("pause");
         super.onPause();
     }
 
     @Override
     public void onStop() {
-        System.out.println("stop");
         super.onStop();
+        connected = false;
     }
 
     @Override
@@ -212,36 +235,32 @@ public class VideoFragment2 extends Fragment {
         super.onDestroy();
     }
 
-    public void start(final DataHolder dataHolder, final MediaPlayerService3 mediaService3) {
-
-        mediaService = mediaService3;
-        mediaPlayer = mediaService3.mediaPlayer;
-        connect();
+    public void start(final DataHolder dataHolder) {
 
         ConnectivityManager connectmgr = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo info = connectmgr.getActiveNetworkInfo();
         if (info.isAvailable() && info.isConnected()) {
             for (int a : VideoRetriver.mPreferredVideoQualities) {
                 if (dataHolder.videoUris.containsKey(a)) {
-                    mediaService3.prepare(dataHolder, a);
-                    mediaService3.setDisplay(surfaceHolder);
-                    mediaService3.play();
-
+                    mediaService.prepare(dataHolder, a);
+                    mediaService.setDisplay(surfaceHolder);
+                    mediaService.play();
                     break;
                 }
 
             }
         } else {
+            Toast toast = Toast.makeText(context, getString(R.string.needNetwork), Toast.LENGTH_SHORT);
+            toast.show();
+
 
         }
 
     }
 
-    public void connect() {
-        mediaService.connect(this);
+    public void resume() {
+
     }
-
-
 
     private MediaPlayer.OnPreparedListener onPreparedListener = new MediaPlayer.OnPreparedListener() {
         @Override
@@ -255,7 +274,7 @@ public class VideoFragment2 extends Fragment {
             @Override
             public void run() {
                 progressBar.setVisibility(View.GONE);
-                playbutton.setVisibility(View.VISIBLE);
+                playbutton.setVisibility(View.GONE);
                 seekBar.setMax(mediaPlayer.getDuration());
             }
         });
@@ -265,7 +284,7 @@ public class VideoFragment2 extends Fragment {
     private MediaPlayer.OnBufferingUpdateListener onBufferingUpdateListener = new MediaPlayer.OnBufferingUpdateListener() {
         @Override
         public void onBufferingUpdate(MediaPlayer mp, int percent) {
-            System.out.println("update");
+
             progressBar.setProgress(percent);
         }
     };
@@ -280,6 +299,18 @@ public class VideoFragment2 extends Fragment {
         relativeLayout.setLayoutParams(landscapelayout);
         getActivity().getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
                 View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+    }
+
+    public void showcontrols(boolean show) {
+        if(show) {
+            seekBar.setVisibility(View.VISIBLE);
+            playbutton.setVisibility(View.VISIBLE);
+            controlshow = true;
+        } else {
+            seekBar.setVisibility(View.GONE);
+            playbutton.setVisibility(View.GONE);
+            controlshow = false;
+        }
     }
 
     public interface OnFragmentInteractionListener {
