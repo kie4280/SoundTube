@@ -39,6 +39,7 @@ public class MediaPlayerService3 extends Service {
                     prepared = true;
                     if(connected) {
                         videoFragment.buffering(false);
+                        videoFragment.setSeekBarMax(mediaPlayer.getDuration());
                     }
                 }
             });
@@ -56,6 +57,17 @@ public class MediaPlayerService3 extends Service {
         @Override
         public boolean onError(MediaPlayer mp, int what, int extra) {
             return false;
+        }
+    };
+    MediaPlayer.OnInfoListener infoListener = new MediaPlayer.OnInfoListener() {
+        @Override
+        public boolean onInfo(MediaPlayer mp, int what, int extra) {
+            if(what == MediaPlayer.MEDIA_INFO_BUFFERING_START) {
+                videoFragment.buffering(true);
+            } else if(what == MediaPlayer.MEDIA_INFO_BUFFERING_END) {
+                videoFragment.buffering(false);
+            }
+            return true;
         }
     };
 
@@ -78,10 +90,10 @@ public class MediaPlayerService3 extends Service {
         mediaPlayer.setWakeMode(this, PowerManager.PARTIAL_WAKE_LOCK);
         mediaPlayer.setScreenOnWhilePlaying(true);
         mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-
         mediaPlayer.setOnPreparedListener(preparedListener);
         mediaPlayer.setOnErrorListener(errorListener);
         mediaPlayer.setOnCompletionListener(completionListener);
+        mediaPlayer.setOnInfoListener(infoListener);
         thread = new HandlerThread("playerhandler", Process.THREAD_PRIORITY_FOREGROUND);
         thread.start();
         playHandler = new Handler(thread.getLooper());
@@ -90,7 +102,7 @@ public class MediaPlayerService3 extends Service {
 
     @Override
     public void onDestroy() {
-        stopForeground(true);
+//        stopForeground(true);
         mediaPlayer.stop();
         mediaPlayer.release();
     }
@@ -180,11 +192,6 @@ public class MediaPlayerService3 extends Service {
             }
         });
     }
-
-    public int getDuration() {
-        return mediaPlayer.getDuration();
-    }
-
 
     public class MusicBinder extends Binder {
         MediaPlayerService3 getService() {

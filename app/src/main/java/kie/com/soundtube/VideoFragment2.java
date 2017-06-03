@@ -262,33 +262,29 @@ public class VideoFragment2 extends Fragment {
 
     }
 
-    private MediaPlayer.OnPreparedListener onPreparedListener = new MediaPlayer.OnPreparedListener() {
-        @Override
-        public void onPrepared(MediaPlayer mp) {
-
-        }
-    };
-
-    public void buffering(boolean buff) {
+    public void buffering(final boolean buff) {
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                progressBar.setVisibility(View.GONE);
-                playbutton.setVisibility(View.GONE);
-                seekBar.setMax(mediaPlayer.getDuration());
+                if(buff) {
+                    progressBar.setVisibility(View.VISIBLE);
+                } else {
+                    progressBar.setVisibility(View.GONE);
+                }
+
             }
         });
 
     }
 
-    private MediaPlayer.OnBufferingUpdateListener onBufferingUpdateListener = new MediaPlayer.OnBufferingUpdateListener() {
-        @Override
-        public void onBufferingUpdate(MediaPlayer mp, int percent) {
-
-            progressBar.setProgress(percent);
-        }
-    };
-
+    public void setSeekBarMax(final int max) {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                seekBar.setMax(max);
+            }
+        });
+    }
 
     public void changeToPortrait() {
         relativeLayout.setLayoutParams(portraitlayout);
