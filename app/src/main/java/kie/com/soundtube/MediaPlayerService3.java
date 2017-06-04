@@ -1,12 +1,16 @@
 package kie.com.soundtube;
 
+import android.app.Notification;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
+import android.net.wifi.WifiManager;
 import android.os.*;
 import android.os.Process;
+import android.util.Log;
 import android.view.SurfaceHolder;
 
 import java.io.IOException;
@@ -19,9 +23,13 @@ public class MediaPlayerService3 extends Service {
     HandlerThread thread;
     boolean prepared = false;
     boolean connected = false;
+    boolean updateSeekBar = true;
     Runnable task;
     DataHolder currentData = null;
     VideoFragment2 videoFragment;
+    PowerManager.WakeLock wakeLock;
+    WifiManager.WifiLock wifiLock;
+    WifiManager wifiManager;
 
     MediaPlayer.OnPreparedListener preparedListener = new MediaPlayer.OnPreparedListener() {
         @Override
@@ -39,7 +47,9 @@ public class MediaPlayerService3 extends Service {
                     prepared = true;
                     if(connected) {
                         videoFragment.buffering(false);
+                        videoFragment.showcontrols(false);
                         videoFragment.setSeekBarMax(mediaPlayer.getDuration());
+                        videoFragment.updateSeekBar();
                     }
                 }
             });
@@ -49,8 +59,7 @@ public class MediaPlayerService3 extends Service {
     MediaPlayer.OnCompletionListener completionListener = new MediaPlayer.OnCompletionListener() {
         @Override
         public void onCompletion(MediaPlayer mp) {
-            mp.reset();
-
+            mp.seekTo(0);
         }
     };
     MediaPlayer.OnErrorListener errorListener = new MediaPlayer.OnErrorListener() {
@@ -87,7 +96,6 @@ public class MediaPlayerService3 extends Service {
     public void onCreate() {
         super.onCreate();
         mediaPlayer = new MediaPlayer();
-        mediaPlayer.setWakeMode(this, PowerManager.PARTIAL_WAKE_LOCK);
         mediaPlayer.setScreenOnWhilePlaying(true);
         mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
         mediaPlayer.setOnPreparedListener(preparedListener);
@@ -97,14 +105,35 @@ public class MediaPlayerService3 extends Service {
         thread = new HandlerThread("playerhandler", Process.THREAD_PRIORITY_FOREGROUND);
         thread.start();
         playHandler = new Handler(thread.getLooper());
+        PowerManager powerManager = (PowerManager)getSystemService(Service.POWER_SERVICE);
+        wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "serviceWakeLock");
+        wakeLock.acquire();
+        wifiManager = (WifiManager)getSystemService(Service.WIFI_SERVICE);
+        wifiLock = wifiManager.createWifiLock(WifiManager.WIFI_MODE_FULL, "ServiceWifilock");
+        wifiLock.acquire();
+
+        Intent app = new Intent(MediaPlayerService3.this, MainActivity.class);
+        PendingIntent pendingIntent = PendingIntent.getActivity(MediaPlayerService3.this,
+                0, app, PendingIntent.FLAG_NO_CREATE);
+        Notification.Builder builder = new Notification.Builder(MediaPlayerService3.this);
+        builder.setContentIntent(pendingIntent)
+                .setSmallIcon(R.drawable.play)
+                .setOngoing(true);
+
+        Notification not = builder.build();
+        startForeground(1, not);
 
     }
 
     @Override
     public void onDestroy() {
-//        stopForeground(true);
+        stopForeground(true);
         mediaPlayer.stop();
         mediaPlayer.release();
+        wakeLock.release();
+        wifiLock.release();
+        Log.d("service", "onDestroy");
+        super.onDestroy();
     }
 
 
@@ -114,18 +143,9 @@ public class MediaPlayerService3 extends Service {
                 @Override
                 public void run() {
                     mediaPlayer.start();
-                    //                Intent app = new Intent(MediaPlayerService2.this, MainActivity.class);
-//                PendingIntent pendingIntent = PendingIntent.getActivity(MediaPlayerService2.this,
-//                        0, app, PendingIntent.FLAG_UPDATE_CURRENT);
-//                Notification.Builder builder = new Notification.Builder(MediaPlayerService2.this);
-//                builder.setContentIntent(pendingIntent)
-//                        .setSmallIcon(R.drawable.play)
-//                        .setOngoing(true);
-//
-//
-//                Notification not = builder.build();
-//
-//              startForeground(1, not);
+                    updateSeekBar = true;
+                    videoFragment.updateSeekBar();
+
                 }
             });
 
@@ -146,6 +166,7 @@ public class MediaPlayerService3 extends Service {
             public void run() {
                 if(mediaPlayer.isPlaying()) {
                     mediaPlayer.pause();
+                    updateSeekBar = false;
                 }
 
             }

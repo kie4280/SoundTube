@@ -1,5 +1,6 @@
 package kie.com.soundtube;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.media.MediaPlayer;
@@ -8,6 +9,7 @@ import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.Looper;
 import android.support.v4.app.Fragment;
 import android.util.DisplayMetrics;
@@ -39,6 +41,9 @@ public class VideoFragment2 extends Fragment {
     FrameLayout.LayoutParams portraitlayout;
     FrameLayout.LayoutParams landscapelayout;
     MediaPlayerService3 mediaService;
+    Activity activity;
+    Handler seekHandler;
+    HandlerThread thread;
 
     public VideoFragment2() {
         // Required empty public constructor
@@ -50,8 +55,11 @@ public class VideoFragment2 extends Fragment {
 
         ui = new Handler(Looper.getMainLooper());
         context = getContext();
+        activity = getActivity();
         displayMetrics = context.getResources().getDisplayMetrics();
-
+        thread = new HandlerThread("seek");
+        thread.start();
+        seekHandler = new Handler(thread.getLooper());
     }
 
     @Override
@@ -97,12 +105,12 @@ public class VideoFragment2 extends Fragment {
         surfaceHolder.addCallback(new SurfaceHolder.Callback() {
             @Override
             public void surfaceCreated(SurfaceHolder holder) {
-               prepared = true;
-               if(mediaService!=null) {
-                   mediaService.setDisplay(holder);
-               }
+                prepared = true;
+                if (mediaService != null) {
+                    mediaService.setDisplay(holder);
+                }
 
-               Log.d("video", "surfaceCreated");
+                Log.d("video", "surfaceCreated");
             }
 
             @Override
@@ -148,7 +156,7 @@ public class VideoFragment2 extends Fragment {
         seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, final int progress, boolean fromUser) {
-                if(mediaService.prepared) {
+                if (mediaService.prepared && fromUser) {
                     mediaService.seekTo(progress);
                 }
 
@@ -167,8 +175,8 @@ public class VideoFragment2 extends Fragment {
         surfaceView.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
-                if(event.getAction() == MotionEvent.ACTION_DOWN) {
-                    if(controlshow) {
+                if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                    if (controlshow) {
                         showcontrols(false);
                     } else {
                         showcontrols(true);
@@ -211,10 +219,10 @@ public class VideoFragment2 extends Fragment {
     @Override
     public void onResume() {
         if (context.getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            getActivity().getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
+            activity.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
                     View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
         } else {
-            getActivity().getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
+            activity.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
         }
         super.onResume();
     }
@@ -263,10 +271,10 @@ public class VideoFragment2 extends Fragment {
     }
 
     public void buffering(final boolean buff) {
-        getActivity().runOnUiThread(new Runnable() {
+        activity.runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                if(buff) {
+                if (buff) {
                     progressBar.setVisibility(View.VISIBLE);
                 } else {
                     progressBar.setVisibility(View.GONE);
@@ -278,7 +286,7 @@ public class VideoFragment2 extends Fragment {
     }
 
     public void setSeekBarMax(final int max) {
-        getActivity().runOnUiThread(new Runnable() {
+        activity.runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 seekBar.setMax(max);
@@ -286,32 +294,52 @@ public class VideoFragment2 extends Fragment {
         });
     }
 
+    public void updateSeekBar() {
+        if (connected) {
+            activity.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    seekBar.setProgress(mediaPlayer.getCurrentPosition());
+                    if(mediaService.updateSeekBar) {
+                        seekHandler.postDelayed(this, 1000);
+                    }
+
+                }
+            });
+        }
+    }
+
     public void changeToPortrait() {
         relativeLayout.setLayoutParams(portraitlayout);
-        getActivity().getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
+        activity.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
     }
 
     public void changeToLandscape() {
         relativeLayout.setLayoutParams(landscapelayout);
-        getActivity().getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
+        activity.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
                 View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
     }
 
-    public void showcontrols(boolean show) {
-        if(show) {
-            seekBar.setVisibility(View.VISIBLE);
-            playbutton.setVisibility(View.VISIBLE);
-            controlshow = true;
-        } else {
-            seekBar.setVisibility(View.GONE);
-            playbutton.setVisibility(View.GONE);
-            controlshow = false;
-        }
+    public void showcontrols(final boolean show) {
+        activity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (show) {
+                    seekBar.setVisibility(View.VISIBLE);
+                    playbutton.setVisibility(View.VISIBLE);
+                    controlshow = true;
+                } else {
+                    seekBar.setVisibility(View.GONE);
+                    playbutton.setVisibility(View.GONE);
+                    controlshow = false;
+                }
+            }
+        });
     }
 
-    public interface OnFragmentInteractionListener {
+public interface OnFragmentInteractionListener {
 
-        void onFragmentInteraction(Uri uri);
-    }
+    void onFragmentInteraction(Uri uri);
+}
 
 }

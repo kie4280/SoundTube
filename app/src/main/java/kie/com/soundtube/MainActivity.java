@@ -104,16 +104,16 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
             playIntent = new Intent(this, MediaPlayerService3.class);
             bindService(playIntent, serviceConnection, Context.BIND_AUTO_CREATE);
             startService(playIntent);
-            servicebound = true;
         } else if (!servicebound){
             bindService(playIntent, serviceConnection, Context.BIND_AUTO_CREATE);
+
         }
+        Log.d("activity", "onStart");
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-
         Log.d("activity", "onResume");
 
     }
@@ -122,7 +122,6 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     protected void onStop() {
         super.onStop();
         unbindService(serviceConnection);
-        servicebound = false;
         Log.d("activity", "onStop");
     }
 
@@ -136,6 +135,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     protected void onDestroy() {
         Log.d("activity", "onDestroy");
         stopService(playIntent);
+        mediaService = null;
         super.onDestroy();
     }
 
@@ -153,6 +153,6 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     @Override
     public void onBackPressed() {
         System.out.println("activity back");
-        super.onBackPressed();
+        moveTaskToBack(true);
     }
 }
