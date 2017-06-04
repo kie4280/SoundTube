@@ -1,23 +1,22 @@
 package kie.com.soundtube;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.media.MediaPlayer;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
-import android.net.wifi.WifiInfo;
-import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
 import android.support.v4.app.Fragment;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.*;
 import android.widget.*;
 
-import java.io.IOException;
 
 public class VideoFragment extends Fragment {
 
@@ -27,18 +26,24 @@ public class VideoFragment extends Fragment {
     public View videoFragmentView;
     public SeekBar seekBar;
     public ProgressBar progressBar;
+    public MediaPlayer mediaPlayer;
+    public boolean prepared = false;
+    boolean connected = false;
+    boolean controlshow = true;
+
     private Button playbutton;
-    MediaPlayer mediaPlayer;
     private SurfaceView surfaceView;
     private SurfaceHolder surfaceHolder;
     private RelativeLayout relativeLayout;
-    Handler playHandler;
     Handler ui;
-    HandlerThread thread;
     DisplayMetrics displayMetrics;
     Context context;
     FrameLayout.LayoutParams portraitlayout;
     FrameLayout.LayoutParams landscapelayout;
+    MediaPlayerService mediaService;
+    Activity activity;
+    Handler seekHandler;
+    HandlerThread thread;
 
     public VideoFragment() {
         // Required empty public constructor
@@ -47,15 +52,15 @@ public class VideoFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        thread = new HandlerThread("playerThread");
-        thread.start();
-        playHandler = new Handler(thread.getLooper());
+
         ui = new Handler(Looper.getMainLooper());
         context = getContext();
+        activity = getActivity();
         displayMetrics = context.getResources().getDisplayMetrics();
-        mediaPlayer = new MediaPlayer();
+        thread = new HandlerThread("seek");
+        thread.start();
+        seekHandler = new Handler(thread.getLooper());
     }
-
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
@@ -100,8 +105,12 @@ public class VideoFragment extends Fragment {
         surfaceHolder.addCallback(new SurfaceHolder.Callback() {
             @Override
             public void surfaceCreated(SurfaceHolder holder) {
-                mediaPlayer.setDisplay(surfaceHolder);
-                System.out.println("surfacecreated");
+                prepared = true;
+                if (mediaService != null) {
+                    mediaService.setDisplay(holder);
+                }
+
+                Log.d("video", "surfaceCreated");
             }
 
             @Override
@@ -111,6 +120,8 @@ public class VideoFragment extends Fragment {
 
             @Override
             public void surfaceDestroyed(SurfaceHolder holder) {
+                prepared = false;
+                Log.d("video", "surfaceDestroyed");
 
             }
         });
@@ -118,25 +129,26 @@ public class VideoFragment extends Fragment {
             @Override
             public void onClick(View v) {
                 if (mediaPlayer.isPlaying()) {
-                    pause();
+                    mediaService.pause();
                     playbutton.setBackgroundResource(R.drawable.play);
 //                    ui.postDelayed(new Runnable() {
 //                        @Override
 //                        public void run() {
-//                            playbutton.setVisibility(View.GONE);
+//                            showcontrols(false);
 //                        }
 //                    }, 3000);
 
 
                 } else {
-                    play();
+                    mediaService.play();
+                    playbutton.setBackgroundResource(R.drawable.pause);
 //                    ui.postDelayed(new Runnable() {
 //                        @Override
 //                        public void run() {
-//                            playbutton.setVisibility(View.GONE);
+//                            showcontrols(false);
 //                        }
 //                    }, 3000);
-                    playbutton.setBackgroundResource(R.drawable.pause);
+
                 }
             }
         });
@@ -144,13 +156,10 @@ public class VideoFragment extends Fragment {
         seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, final int progress, boolean fromUser) {
+                if (mediaService.prepared && fromUser) {
+                    mediaService.seekTo(progress);
+                }
 
-                playHandler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        mediaPlayer.seekTo(progress);
-                    }
-                });
             }
 
             @Override
@@ -161,6 +170,21 @@ public class VideoFragment extends Fragment {
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
 
+            }
+        });
+        surfaceView.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                    if (controlshow) {
+                        showcontrols(false);
+                    } else {
+                        showcontrols(true);
+                    }
+
+                }
+                Log.d("surface", "touch");
+                return false;
             }
         });
 
@@ -195,115 +219,127 @@ public class VideoFragment extends Fragment {
     @Override
     public void onResume() {
         if (context.getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            getActivity().getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
+            activity.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
                     View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
         } else {
-            getActivity().getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
+            activity.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
         }
         super.onResume();
     }
 
     @Override
     public void onPause() {
-        //mediaPlayer.pause();
-        System.out.println("pause");
         super.onPause();
     }
 
     @Override
     public void onStop() {
-        System.out.println("stop");
         super.onStop();
+        connected = false;
     }
 
     @Override
     public void onDestroy() {
-        if (mediaPlayer != null) {
-            mediaPlayer.stop();
-            mediaPlayer.release();
-        }
         super.onDestroy();
     }
 
-    public void playVideo(final DataHolder dataHolder) {
+    public void start(final DataHolder dataHolder) {
 
         ConnectivityManager connectmgr = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo info = connectmgr.getActiveNetworkInfo();
         if (info.isAvailable() && info.isConnected()) {
             for (int a : VideoRetriver.mPreferredVideoQualities) {
-                try {
-                    if (dataHolder.videoUris.containsKey(a)) {
-                        mediaPlayer.setDataSource(dataHolder.videoUris.get(a));
-                        mediaPlayer.setVideoScalingMode(MediaPlayer.VIDEO_SCALING_MODE_SCALE_TO_FIT_WITH_CROPPING);
-                        mediaPlayer.setOnPreparedListener(onPreparedListener);
-//                    mediaPlayer.setOnBufferingUpdateListener(onBufferingUpdateListener);
-                        mediaPlayer.prepareAsync();
-                        break;
-                    }
-
-                } catch (IOException e) {
-                    e.printStackTrace();
+                if (dataHolder.videoUris.containsKey(a)) {
+                    mediaService.prepare(dataHolder, a);
+                    mediaService.setDisplay(surfaceHolder);
+                    mediaService.play();
+                    break;
                 }
+
             }
         } else {
+            Toast toast = Toast.makeText(context, getString(R.string.needNetwork), Toast.LENGTH_SHORT);
+            toast.show();
+
 
         }
 
     }
 
-    private MediaPlayer.OnPreparedListener onPreparedListener = new MediaPlayer.OnPreparedListener() {
-        @Override
-        public void onPrepared(MediaPlayer mp) {
-            Videoratio = (float) mp.getVideoWidth() / (float) mp.getVideoHeight();
-            progressBar.setVisibility(View.GONE);
-            playbutton.setVisibility(View.VISIBLE);
-            seekBar.setMax(mediaPlayer.getDuration());
-            play();
+    public void resume() {
 
+    }
+
+    public void buffering(final boolean buff) {
+        activity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (buff) {
+                    progressBar.setVisibility(View.VISIBLE);
+                } else {
+                    progressBar.setVisibility(View.GONE);
+                }
+
+            }
+        });
+
+    }
+
+    public void setSeekBarMax(final int max) {
+        activity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                seekBar.setMax(max);
+            }
+        });
+    }
+
+    public void updateSeekBar() {
+        if (connected) {
+            activity.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    seekBar.setProgress(mediaPlayer.getCurrentPosition());
+                    if(mediaService.updateSeekBar) {
+                        seekHandler.postDelayed(this, 1000);
+                    }
+
+                }
+            });
         }
-    };
-
-    private MediaPlayer.OnBufferingUpdateListener onBufferingUpdateListener = new MediaPlayer.OnBufferingUpdateListener() {
-        @Override
-        public void onBufferingUpdate(MediaPlayer mp, int percent) {
-            System.out.println("update");
-            progressBar.setProgress(percent);
-        }
-    };
-
+    }
 
     public void changeToPortrait() {
         relativeLayout.setLayoutParams(portraitlayout);
-        getActivity().getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
+        activity.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
     }
 
     public void changeToLandscape() {
         relativeLayout.setLayoutParams(landscapelayout);
-        getActivity().getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
+        activity.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
                 View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
     }
 
-    public void play() {
-        playHandler.post(new Runnable() {
+    public void showcontrols(final boolean show) {
+        activity.runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                mediaPlayer.start();
+                if (show) {
+                    seekBar.setVisibility(View.VISIBLE);
+                    playbutton.setVisibility(View.VISIBLE);
+                    controlshow = true;
+                } else {
+                    seekBar.setVisibility(View.GONE);
+                    playbutton.setVisibility(View.GONE);
+                    controlshow = false;
+                }
             }
         });
     }
 
-    public void pause() {
-        playHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                mediaPlayer.pause();
-            }
-        });
-    }
+public interface OnFragmentInteractionListener {
 
-    public interface OnFragmentInteractionListener {
-
-        void onFragmentInteraction(Uri uri);
-    }
+    void onFragmentInteraction(Uri uri);
+}
 
 }

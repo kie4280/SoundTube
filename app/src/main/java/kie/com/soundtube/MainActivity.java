@@ -16,7 +16,7 @@ import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
 
 import android.util.Log;
-import kie.com.soundtube.MediaPlayerService3.*;
+import kie.com.soundtube.MediaPlayerService.*;
 
 import java.util.HashMap;
 
@@ -25,12 +25,12 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
 
     public static Handler UiHandler = null;
     public Fragment[] fragments = new Fragment[2];
-    public MediaPlayerService3 mediaService;
+    public MediaPlayerService mediaService;
     private boolean servicebound = false;
     private Intent playIntent;
     NonSwipeViewPager viewPager;
     TabLayout tabLayout;
-    VideoFragment2 videoFragment;
+    VideoFragment videoFragment;
     SearchFragment searchFragment;
 
 
@@ -40,7 +40,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
         setContentView(R.layout.activity_main);
         UiHandler = new Handler(Looper.getMainLooper());
         FragmentManager fragmentManager = getSupportFragmentManager();
-        videoFragment = new VideoFragment2();
+        videoFragment = new VideoFragment();
         searchFragment = new SearchFragment();
 
         fragments[0] = searchFragment;
@@ -56,7 +56,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     private ServiceConnection serviceConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
-            MusicBinder musicBinder = (MediaPlayerService3.MusicBinder)service;
+            MusicBinder musicBinder = (MediaPlayerService.MusicBinder)service;
             mediaService = musicBinder.getService();
             servicebound = true;
             connect();
@@ -85,6 +85,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
         @Override
         public void onServiceDisconnected(ComponentName name) {
             servicebound = false;
+            mediaService.updateSeekBar = false;
 
         }
     };
@@ -102,12 +103,9 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
         super.onStart();
         if (playIntent == null) {
             playIntent = new Intent(this, MediaPlayerService3.class);
-            bindService(playIntent, serviceConnection, Context.BIND_AUTO_CREATE);
             startService(playIntent);
-        } else if (!servicebound){
-            bindService(playIntent, serviceConnection, Context.BIND_AUTO_CREATE);
-
         }
+        bindService(playIntent, serviceConnection, Context.BIND_AUTO_CREATE);
         Log.d("activity", "onStart");
     }
 
@@ -121,7 +119,10 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     @Override
     protected void onStop() {
         super.onStop();
-        unbindService(serviceConnection);
+        if(servicebound) {
+            unbindService(serviceConnection);
+        }
+
         Log.d("activity", "onStop");
     }
 

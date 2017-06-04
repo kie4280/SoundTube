@@ -102,7 +102,7 @@ public class MediaPlayerService3 extends Service {
         mediaPlayer.setOnErrorListener(errorListener);
         mediaPlayer.setOnCompletionListener(completionListener);
         mediaPlayer.setOnInfoListener(infoListener);
-        thread = new HandlerThread("playerhandler", Process.THREAD_PRIORITY_FOREGROUND);
+        thread = new HandlerThread("playerhandler");
         thread.start();
         playHandler = new Handler(thread.getLooper());
         PowerManager powerManager = (PowerManager)getSystemService(Service.POWER_SERVICE);

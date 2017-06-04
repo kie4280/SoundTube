@@ -1,58 +1,222 @@
 package kie.com.soundtube;
 
-import android.media.session.MediaSession;
-import android.os.Bundle;
-import android.os.ResultReceiver;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.v4.media.MediaBrowserCompat;
-import android.support.v4.media.MediaBrowserServiceCompat;
-import android.support.v4.media.session.MediaSessionCompat;
-import android.support.v4.media.session.PlaybackStateCompat;
+import android.app.Notification;
+import android.app.PendingIntent;
+import android.app.Service;
+import android.content.Intent;
+import android.media.AudioManager;
+import android.media.MediaPlayer;
+import android.net.Uri;
+import android.net.wifi.WifiManager;
+import android.os.*;
+import android.util.Log;
+import android.view.SurfaceHolder;
 
-import java.util.List;
+import java.io.IOException;
 
-/**
- * Created by kieChang on 2017/5/30.
- */
-public class MediaPlayerService extends MediaBrowserServiceCompat{
-    private MediaSessionCompat mediaSession;
-    private PlaybackStateCompat.Builder stateBuilder;
+public class MediaPlayerService extends Service {
+    public int mposition = 0;
+    public MediaPlayer mediaPlayer;
+    private MusicBinder musicBinder;
+    Handler playHandler;
+    HandlerThread thread;
+    boolean prepared = false;
+    boolean connected = false;
+    boolean updateSeekBar = true;
+    Runnable task;
+    DataHolder currentData = null;
+    VideoFragment videoFragment;
+    PowerManager.WakeLock wakeLock;
+    WifiManager.WifiLock wifiLock;
+    WifiManager wifiManager;
+
+    MediaPlayer.OnPreparedListener preparedListener = new MediaPlayer.OnPreparedListener() {
+        @Override
+        public void onPrepared(final MediaPlayer mp) {
+
+            playHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    mp.setVideoScalingMode(MediaPlayer.VIDEO_SCALING_MODE_SCALE_TO_FIT_WITH_CROPPING);
+                    videoFragment.Videoratio = (float) mp.getVideoWidth() / (float) mp.getVideoHeight();
+                    if(task!=null) {
+                        playHandler.post(task);
+                        task = null;
+                    }
+                    prepared = true;
+                    if(connected) {
+                        videoFragment.buffering(false);
+                        videoFragment.showcontrols(false);
+                        videoFragment.setSeekBarMax(mediaPlayer.getDuration());
+                        videoFragment.updateSeekBar();
+                    }
+                }
+            });
+
+        }
+    };
+    MediaPlayer.OnCompletionListener completionListener = new MediaPlayer.OnCompletionListener() {
+        @Override
+        public void onCompletion(MediaPlayer mp) {
+            mp.seekTo(0);
+        }
+    };
+    MediaPlayer.OnErrorListener errorListener = new MediaPlayer.OnErrorListener() {
+        @Override
+        public boolean onError(MediaPlayer mp, int what, int extra) {
+            return false;
+        }
+    };
+    MediaPlayer.OnInfoListener infoListener = new MediaPlayer.OnInfoListener() {
+        @Override
+        public boolean onInfo(MediaPlayer mp, int what, int extra) {
+            if(what == MediaPlayer.MEDIA_INFO_BUFFERING_START) {
+                videoFragment.buffering(true);
+            } else if(what == MediaPlayer.MEDIA_INFO_BUFFERING_END) {
+                videoFragment.buffering(false);
+            }
+            return true;
+        }
+    };
+
+    @Override
+    public IBinder onBind(Intent intent) {
+        musicBinder = new MusicBinder();
+        return musicBinder;
+    }
+
+    @Override
+    public boolean onUnbind(Intent intent) {
+        connected = false;
+        return super.onUnbind(intent);
+    }
 
     @Override
     public void onCreate() {
         super.onCreate();
-        mediaSession = new MediaSessionCompat(getApplicationContext(), "mediaservice");
-        mediaSession.setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS |
-                MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS);
-        stateBuilder = new PlaybackStateCompat.Builder()
-                .setActions(PlaybackStateCompat.ACTION_PLAY
-                        | PlaybackStateCompat.ACTION_PLAY_PAUSE);
-        mediaSession.setPlaybackState(stateBuilder.build());
+        mediaPlayer = new MediaPlayer();
+        mediaPlayer.setScreenOnWhilePlaying(true);
+        mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+        mediaPlayer.setOnPreparedListener(preparedListener);
+        mediaPlayer.setOnErrorListener(errorListener);
+        mediaPlayer.setOnCompletionListener(completionListener);
+        mediaPlayer.setOnInfoListener(infoListener);
+        thread = new HandlerThread("playerhandler");
+        thread.start();
+        playHandler = new Handler(thread.getLooper());
+        PowerManager powerManager = (PowerManager)getSystemService(Service.POWER_SERVICE);
+        wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "serviceWakeLock");
+        wakeLock.acquire();
+        wifiManager = (WifiManager)getSystemService(Service.WIFI_SERVICE);
+        wifiLock = wifiManager.createWifiLock(WifiManager.WIFI_MODE_FULL, "ServiceWifilock");
+        wifiLock.acquire();
 
-        mediaSession.setCallback(new MediaSessionCompat.Callback() {
+        Intent app = new Intent(MediaPlayerService.this, MainActivity.class);
+        PendingIntent pendingIntent = PendingIntent.getActivity(MediaPlayerService.this,
+                0, app, PendingIntent.FLAG_NO_CREATE);
+        Notification.Builder builder = new Notification.Builder(MediaPlayerService.this);
+        builder.setContentIntent(pendingIntent)
+                .setSmallIcon(R.drawable.play)
+                .setOngoing(true);
+
+        Notification not = builder.build();
+        startForeground(1, not);
+
+    }
+
+    @Override
+    public void onDestroy() {
+        stopForeground(true);
+        mediaPlayer.stop();
+        mediaPlayer.release();
+        wakeLock.release();
+        wifiLock.release();
+        Log.d("service", "onDestroy");
+        super.onDestroy();
+    }
+
+
+    public void play() {
+        if (prepared) {
+            playHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    mediaPlayer.start();
+                    updateSeekBar = true;
+                    videoFragment.updateSeekBar();
+
+                }
+            });
+
+        } else {
+            task = new Runnable() {
+                @Override
+                public void run() {
+                    mediaPlayer.start();
+
+                }
+            };
+        }
+    }
+
+    public void pause() {
+        playHandler.post(new Runnable() {
             @Override
-            public void onCommand(String command, Bundle extras, ResultReceiver cb) {
-                super.onCommand(command, extras, cb);
+            public void run() {
+                if(mediaPlayer.isPlaying()) {
+                    mediaPlayer.pause();
+                    updateSeekBar = false;
+                }
+
             }
         });
-
-        // Set the session's token so that client activities can communicate with it.
-        setSessionToken(mediaSession.getSessionToken());
-
-
     }
 
-    @Nullable
-    @Override
-    public BrowserRoot onGetRoot(@NonNull String clientPackageName, int clientUid, @Nullable Bundle rootHints) {
-        return null;
+    public void prepare(final DataHolder dataHolder, final int a) {
+        currentData = dataHolder;
+        playHandler.post(new Runnable() {
+            @Override
+            public void run() {
+
+                try {
+                    mediaPlayer.setDataSource(getApplicationContext(),
+                            Uri.parse(dataHolder.videoUris.get(a)));
+                    mediaPlayer.prepareAsync();
+
+//                    mediaPlayer.setOnBufferingUpdateListener(onBufferingUpdateListener);
+
+
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+
+            }
+        });
     }
 
-    @Override
-    public void onLoadChildren(@NonNull String parentId, @NonNull Result<List<MediaBrowserCompat.MediaItem>> result) {
-
+    public void setDisplay(final SurfaceHolder surfaceHolder) {
+        playHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                mediaPlayer.setDisplay(surfaceHolder);
+            }
+        });
     }
 
+    public void seekTo(final int millis) {
+        playHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                mediaPlayer.seekTo(millis);
+            }
+        });
+    }
+
+    public class MusicBinder extends Binder {
+        MediaPlayerService getService() {
+            return MediaPlayerService.this;
+        }
+    }
 
 }
