@@ -21,7 +21,7 @@ import kie.com.soundtube.MediaPlayerService.*;
 import java.util.HashMap;
 
 
-public class MainActivity extends AppCompatActivity implements SearchFragment.OnFragmentInteractionListener, VideoFragment2.OnFragmentInteractionListener {
+public class MainActivity extends AppCompatActivity implements SearchFragment.OnFragmentInteractionListener, VideoFragment.OnFragmentInteractionListener {
 
     public static Handler UiHandler = null;
     public Fragment[] fragments = new Fragment[2];
@@ -63,6 +63,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
             if(mediaService.currentData != null) {
                 videoFragment.resume();
             } else {
+                Log.d("activity", "videoRetrive");
                 VideoRetriver videoRetriver = new VideoRetriver();
                 videoRetriver.startExtracting("https://www.youtube.com/watch?v=_sQSXwdtxlY", new VideoRetriver.YouTubeExtractorListener() {
                     @Override
@@ -102,7 +103,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     protected void onStart() {
         super.onStart();
         if (playIntent == null) {
-            playIntent = new Intent(this, MediaPlayerService3.class);
+            playIntent = new Intent(this, MediaPlayerService.class);
             startService(playIntent);
         }
         bindService(playIntent, serviceConnection, Context.BIND_AUTO_CREATE);

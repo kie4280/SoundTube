@@ -122,6 +122,7 @@ public class VideoFragment extends Fragment {
             public void surfaceDestroyed(SurfaceHolder holder) {
                 prepared = false;
                 Log.d("video", "surfaceDestroyed");
+                mediaService.setDisplay(null);
 
             }
         });
@@ -241,6 +242,7 @@ public class VideoFragment extends Fragment {
     @Override
     public void onDestroy() {
         super.onDestroy();
+        thread.quit();
     }
 
     public void start(final DataHolder dataHolder) {
@@ -260,8 +262,6 @@ public class VideoFragment extends Fragment {
         } else {
             Toast toast = Toast.makeText(context, getString(R.string.needNetwork), Toast.LENGTH_SHORT);
             toast.show();
-
-
         }
 
     }

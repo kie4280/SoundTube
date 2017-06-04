@@ -121,7 +121,7 @@ public class MediaPlayerService extends Service {
 
         Notification not = builder.build();
         startForeground(1, not);
-
+        Log.d("service", "created");
     }
 
     @Override
@@ -131,6 +131,8 @@ public class MediaPlayerService extends Service {
         mediaPlayer.release();
         wakeLock.release();
         wifiLock.release();
+        thread.quit();
+        updateSeekBar = false;
         Log.d("service", "onDestroy");
         super.onDestroy();
     }
@@ -205,12 +207,12 @@ public class MediaPlayerService extends Service {
     }
 
     public void seekTo(final int millis) {
-        playHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                mediaPlayer.seekTo(millis);
-            }
-        });
+//        playHandler.post(new Runnable() {
+//            @Override
+//            public void run() {
+//                mediaPlayer.seekTo(millis);
+//            }
+//        });
     }
 
     public class MusicBinder extends Binder {
