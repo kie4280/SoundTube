@@ -39,12 +39,12 @@ public class MediaPlayerService extends Service {
                 public void run() {
                     mp.setVideoScalingMode(MediaPlayer.VIDEO_SCALING_MODE_SCALE_TO_FIT_WITH_CROPPING);
                     videoFragment.Videoratio = (float) mp.getVideoWidth() / (float) mp.getVideoHeight();
-                    if(task!=null) {
+                    if (task != null) {
                         playHandler.post(task);
                         task = null;
                     }
                     prepared = true;
-                    if(connected) {
+                    if (connected) {
                         videoFragment.buffering(false);
                         videoFragment.showcontrols(false);
                         videoFragment.setSeekBarMax(mediaPlayer.getDuration());
@@ -72,9 +72,9 @@ public class MediaPlayerService extends Service {
     MediaPlayer.OnInfoListener infoListener = new MediaPlayer.OnInfoListener() {
         @Override
         public boolean onInfo(MediaPlayer mp, int what, int extra) {
-            if(what == MediaPlayer.MEDIA_INFO_BUFFERING_START) {
+            if (what == MediaPlayer.MEDIA_INFO_BUFFERING_START) {
                 videoFragment.buffering(true);
-            } else if(what == MediaPlayer.MEDIA_INFO_BUFFERING_END) {
+            } else if (what == MediaPlayer.MEDIA_INFO_BUFFERING_END) {
                 videoFragment.buffering(false);
             }
             return true;
@@ -115,10 +115,10 @@ public class MediaPlayerService extends Service {
         thread = new HandlerThread("playerhandler");
         thread.start();
         playHandler = new Handler(thread.getLooper());
-        PowerManager powerManager = (PowerManager)getSystemService(Service.POWER_SERVICE);
+        PowerManager powerManager = (PowerManager) getSystemService(Service.POWER_SERVICE);
         wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "serviceWakeLock");
         wakeLock.acquire();
-        wifiManager = (WifiManager)getSystemService(Service.WIFI_SERVICE);
+        wifiManager = (WifiManager) getSystemService(Service.WIFI_SERVICE);
         wifiLock = wifiManager.createWifiLock(WifiManager.WIFI_MODE_FULL, "ServiceWifilock");
         wifiLock.acquire();
 
@@ -176,10 +176,36 @@ public class MediaPlayerService extends Service {
         playHandler.post(new Runnable() {
             @Override
             public void run() {
-                if(mediaPlayer.isPlaying()) {
+                if (mediaPlayer.isPlaying()) {
                     mediaPlayer.pause();
                     updateSeekBar = false;
                 }
+
+            }
+        });
+    }
+
+    public void stop() {
+        playHandler.post(new Runnable() {
+            @Override
+            public void run() {
+
+                mediaPlayer.stop();
+                updateSeekBar = false;
+
+
+            }
+        });
+    }
+
+    public void reset() {
+        playHandler.post(new Runnable() {
+            @Override
+            public void run() {
+
+                    mediaPlayer.reset();
+                    updateSeekBar = false;
+
 
             }
         });
@@ -218,7 +244,7 @@ public class MediaPlayerService extends Service {
         playHandler.post(new Runnable() {
             @Override
             public void run() {
-                if(mediaPlayer.isPlaying()) {
+                if (mediaPlayer.isPlaying()) {
                     mediaPlayer.seekTo(millis);
                     videoFragment.buffering(true);
                 }

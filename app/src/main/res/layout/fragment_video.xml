@@ -6,19 +6,30 @@
 
     <!-- TODO: Update blank fragment layout -->
 
-    <ListView
+    <RelativeLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_below="@+id/seekBar" android:layout_toEndOf="@+id/seekBar"
-            android:layout_marginTop="424dp" android:layout_alignParentStart="true"
-            android:layout_alignBottom="@+id/textView"/>
+            android:layout_height="match_parent" android:visibility="gone">
+
+        <TextView
+                android:text="TextView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:id="@+id/textView"
+                android:layout_alignParentBottom="true"
+                android:layout_alignParentEnd="true" android:layout_toEndOf="@+id/seekBar"/>
+        <ListView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_below="@+id/seekBar" android:layout_toEndOf="@+id/seekBar"
+                android:layout_marginTop="424dp" android:layout_alignParentStart="true"
+                android:layout_alignBottom="@+id/textView"/>
+    </RelativeLayout>
     <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent" android:id="@+id/relativeLayout">
 
         <SurfaceView
                 android:layout_width="match_parent"
-                android:id="@+id/surfaceView" android:layout_height="match_parent" android:layout_below="@+id/seekBar"
+                android:id="@+id/surfaceView" android:layout_height="match_parent"
                 android:layout_alignParentStart="true"/>
         <SeekBar
                 android:layout_width="match_parent"
@@ -38,11 +49,5 @@
                 android:id="@+id/playbutton" android:alpha="0.8"
                 android:background="@drawable/pause"
                 android:layout_centerVertical="true" android:layout_centerHorizontal="true" android:visibility="gone"/>
-        <TextView
-                android:text="TextView"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content" android:id="@+id/textView"
-                android:layout_alignParentBottom="true"
-                android:layout_alignParentEnd="true" android:layout_toEndOf="@+id/seekBar"/>
     </RelativeLayout>
 </FrameLayout>

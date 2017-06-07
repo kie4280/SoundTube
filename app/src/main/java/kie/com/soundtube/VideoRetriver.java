@@ -8,9 +8,14 @@ import com.google.gson.JsonParser;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
-import org.liquidplayer.webkit.javascriptcore.*;
+import org.liquidplayer.webkit.javascriptcore.JSContext;
+import org.liquidplayer.webkit.javascriptcore.JSException;
+
 import javax.net.ssl.HttpsURLConnection;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLDecoder;
@@ -36,7 +41,8 @@ public class VideoRetriver {
     public static final int YOUTUBE_VIDEO_QUALITY_AUTO = 0;
     HandlerThread youtubeExtractorThread;
     Handler youtubeExtractorHandler, listenerHandler;
-    public static List<Integer> mPreferredVideoQualities =  asList(YOUTUBE_VIDEO_QUALITY_4K, YOUTUBE_VIDEO_QUALITY_HD_1080, YOUTUBE_VIDEO_QUALITY_HD_720, YOUTUBE_VIDEO_QUALITY_MEDIUM_360, YOUTUBE_VIDEO_QUALITY_SMALL_240);;
+    public static List<Integer> mPreferredVideoQualities = asList(YOUTUBE_VIDEO_QUALITY_4K, YOUTUBE_VIDEO_QUALITY_HD_1080, YOUTUBE_VIDEO_QUALITY_HD_720, YOUTUBE_VIDEO_QUALITY_MEDIUM_360, YOUTUBE_VIDEO_QUALITY_SMALL_240);
+    ;
     JsonObject jsonObj = null;
     String decipherfunc = null;
     String basejsurl = null;
@@ -51,8 +57,8 @@ public class VideoRetriver {
         youtubeExtractorThread = new HandlerThread("YouTubeExtractorThread",
                 THREAD_PRIORITY_BACKGROUND);
         youtubeExtractorThread.start();
-        youtubeExtractorHandler= new Handler(youtubeExtractorThread.getLooper());
-        listenerHandler  = new Handler(Looper.getMainLooper());
+        youtubeExtractorHandler = new Handler(youtubeExtractorThread.getLooper());
+        listenerHandler = new Handler(Looper.getMainLooper());
     }
 
     public String downloadWeb(String url) {
@@ -70,7 +76,7 @@ public class VideoRetriver {
         try {
             HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
-            connection.setRequestProperty( "User-agent", "Mozilla/5.0 (Windows NT 6.1; WOW64");
+            connection.setRequestProperty("User-agent", "Mozilla/5.0 (Windows NT 6.1; WOW64");
             int responseCode = connection.getResponseCode();
             System.out.println("\nSending 'GET' request to URL : " + url);
             System.out.println("Response Code : " + responseCode);
@@ -97,7 +103,6 @@ public class VideoRetriver {
         String videoID = url.substring(url.indexOf("=") + 1);
         String language = "en";
         String link = String.format("https://www.youtube.com/get_video_info?video_id=%s&el=info&ps=default&eurl=&gl=US&hl=%s", videoID, language); //correct
-
 
 
         HashMap<Integer, String> links = new HashMap<>();
@@ -136,7 +141,6 @@ public class VideoRetriver {
             videos.addAll(asList(adaptiveurl.split(",")));
 
 
-
             for (String e : videos) {
                 e = decode(e);
                 String[] fields = e.split("[&\\?;]");
@@ -171,7 +175,7 @@ public class VideoRetriver {
         String getvideoinfo = downloadWeb(link);
         String[] infos = getvideoinfo.split("&");
         HashMap<String, String> videoinfomap = new HashMap<>();
-        for(String info : infos) {
+        for (String info : infos) {
             String[] pair = info.split("=");
             if (pair.length == 2) {
                 String key = pair[0];
@@ -179,10 +183,10 @@ public class VideoRetriver {
                 videoinfomap.put(key, value);
             }
         }
-        if(videoinfomap.containsKey("url_encoded_fmt_stream_map")) {
+        if (videoinfomap.containsKey("url_encoded_fmt_stream_map")) {
             String url_encoded_fmt = videoinfomap.get(("url_encoded_fmt_stream_map"));
             String adaptive_fmt = videoinfomap.get(("adaptive_fmts"));
-            List<String> videos= new LinkedList<>(asList(url_encoded_fmt.split(",")));
+            List<String> videos = new LinkedList<>(asList(url_encoded_fmt.split(",")));
             videos.addAll(asList(adaptive_fmt.split(",")));
         }
 
@@ -207,7 +211,7 @@ public class VideoRetriver {
         String out = null;
         String funcname = null;
 
-        if(decipherfunc == null) {
+        if (decipherfunc == null) {
             String basejs = downloadWeb(basejsurl);
             StringBuilder dumby = new StringBuilder();
             for (int a = 0; a < in.indexOf("."); a++) {
@@ -264,24 +268,9 @@ public class VideoRetriver {
 
                 }
 
-                decipherfunc = stringBuilder.toString() + res;
+                decipherfunc = stringBuilder.toString() + res + String.format("var output = %s", funcname);
 
-                String input = decipherfunc +  String.format("var output = %s(\"%s\");", funcname, in);
-
-                JSContext context = new JSContext();
-
-                context.setExceptionHandler(new JSContext.IJSExceptionHandler() {
-                    @Override
-                    public void handle(JSException exception) {
-                        exception.printStackTrace();
-                        System.out.println("error");
-                    }
-                });
-                context.evaluateScript(input);
-                out = context.property("output").toString();
-            } else {
-                String input = decipherfunc +
-                        String.format("var output = %s(\"%s\");", funcname, in);
+                String input = decipherfunc + String.format("(\"%s\");", in);
 
                 JSContext context = new JSContext();
 
@@ -295,6 +284,21 @@ public class VideoRetriver {
                 context.evaluateScript(input);
                 out = context.property("output").toString();
             }
+        } else {
+
+            String input = decipherfunc + String.format("(\"%s\");", in);
+
+            JSContext context = new JSContext();
+
+            context.setExceptionHandler(new JSContext.IJSExceptionHandler() {
+                @Override
+                public void handle(JSException exception) {
+                    exception.printStackTrace();
+                    System.out.println("error");
+                }
+            });
+            context.evaluateScript(input);
+            out = context.property("output").toString();
         }
 
         return out;

@@ -250,9 +250,13 @@ public class VideoFragment extends Fragment {
         if (info.isAvailable() && info.isConnected()) {
             for (int a : VideoRetriver.mPreferredVideoQualities) {
                 if (dataHolder.videoUris.containsKey(a)) {
-                    mediaService.prepare(dataHolder, a);
-                    mediaService.setDisplay(surfaceHolder);
-                    mediaService.play();
+                    if(connected) {
+                        mediaService.reset();
+                        mediaService.prepare(dataHolder, a);
+                        mediaService.setDisplay(surfaceHolder);
+                        mediaService.play();
+                    }
+
                     break;
                 }
 
