@@ -189,6 +189,8 @@ public class VideoFragment extends Fragment {
             }
         });
 
+        Log.d("video", "createView");
+
         return videoFragmentView;
     }
 
@@ -229,11 +231,6 @@ public class VideoFragment extends Fragment {
     }
 
     @Override
-    public void onPause() {
-        super.onPause();
-    }
-
-    @Override
     public void onStop() {
         super.onStop();
         connected = false;
@@ -268,6 +265,7 @@ public class VideoFragment extends Fragment {
 
     public void resume() {
 
+
     }
 
     public void buffering(final boolean buff) {
@@ -299,14 +297,31 @@ public class VideoFragment extends Fragment {
             activity.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    seekBar.setProgress(mediaPlayer.getCurrentPosition());
                     if(mediaService.updateSeekBar) {
-                        seekHandler.postDelayed(this, 1000);
+                        seekBar.setProgress(mediaPlayer.getCurrentPosition());
+                        seekHandler.postDelayed(this, 100);
                     }
-
                 }
             });
         }
+    }
+
+    public void onComplete() {
+        seekHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                activity.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        playbutton.setBackgroundResource(R.drawable.play);
+                        showcontrols(true);
+                        seekBar.setProgress(0);
+
+                    }
+                });
+            }
+        }, 200);
+
     }
 
     public void changeToPortrait() {

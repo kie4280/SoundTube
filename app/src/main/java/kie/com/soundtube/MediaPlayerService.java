@@ -58,7 +58,9 @@ public class MediaPlayerService extends Service {
     MediaPlayer.OnCompletionListener completionListener = new MediaPlayer.OnCompletionListener() {
         @Override
         public void onCompletion(MediaPlayer mp) {
-            mp.seekTo(0);
+            updateSeekBar = false;
+            Log.d("service", "complete");
+            videoFragment.onComplete();
         }
     };
     MediaPlayer.OnErrorListener errorListener = new MediaPlayer.OnErrorListener() {
@@ -82,13 +84,22 @@ public class MediaPlayerService extends Service {
     @Override
     public IBinder onBind(Intent intent) {
         musicBinder = new MusicBinder();
+        Log.d("service", "onBind");
         return musicBinder;
+    }
+
+    @Override
+    public void onRebind(Intent intent) {
+        super.onRebind(intent);
+        Log.d("service", "onRebind");
+        connected = true;
     }
 
     @Override
     public boolean onUnbind(Intent intent) {
         connected = false;
-        return super.onUnbind(intent);
+        Log.d("service", "onUnbind");
+        return true;
     }
 
     @Override
@@ -116,7 +127,7 @@ public class MediaPlayerService extends Service {
                 0, app, PendingIntent.FLAG_NO_CREATE);
         Notification.Builder builder = new Notification.Builder(MediaPlayerService.this);
         builder.setContentIntent(pendingIntent)
-                .setSmallIcon(R.drawable.play)
+                .setSmallIcon(R.drawable.icon)
                 .setOngoing(true);
 
         Notification not = builder.build();
@@ -179,14 +190,11 @@ public class MediaPlayerService extends Service {
         playHandler.post(new Runnable() {
             @Override
             public void run() {
-
                 try {
                     mediaPlayer.setDataSource(getApplicationContext(),
                             Uri.parse(dataHolder.videoUris.get(a)));
                     mediaPlayer.prepareAsync();
-
 //                    mediaPlayer.setOnBufferingUpdateListener(onBufferingUpdateListener);
-
 
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -207,12 +215,15 @@ public class MediaPlayerService extends Service {
     }
 
     public void seekTo(final int millis) {
-//        playHandler.post(new Runnable() {
-//            @Override
-//            public void run() {
-//                mediaPlayer.seekTo(millis);
-//            }
-//        });
+        playHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                if(mediaPlayer.isPlaying()) {
+                    mediaPlayer.seekTo(millis);
+                    videoFragment.buffering(true);
+                }
+            }
+        });
     }
 
     public class MusicBinder extends Binder {

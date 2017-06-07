@@ -9,20 +9,17 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
-import android.support.design.widget.TabLayout;
-import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
-
 import android.util.Log;
 import com.sothree.slidinguppanel.SlidingUpPanelLayout;
-import kie.com.soundtube.MediaPlayerService2.*;
+import kie.com.soundtube.MediaPlayerService2.MusicBinder;
 
 import java.util.HashMap;
 
 
-public class MainActivity extends AppCompatActivity implements SearchFragment.OnFragmentInteractionListener, VideoFragment1.OnFragmentInteractionListener {
+public class MainActivity1 extends AppCompatActivity implements SearchFragment.OnFragmentInteractionListener, VideoFragment1.OnFragmentInteractionListener {
 
     public static Handler UiHandler = null;
     public MediaPlayerService2 mediaService;
@@ -59,7 +56,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     private ServiceConnection serviceConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
-            MusicBinder musicBinder = (MediaPlayerService2.MusicBinder)service;
+            MusicBinder musicBinder = (MusicBinder)service;
             mediaService = musicBinder.getService();
             servicebound = true;
             connect();
