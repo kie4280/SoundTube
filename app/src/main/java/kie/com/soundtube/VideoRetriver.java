@@ -36,9 +36,10 @@ public class VideoRetriver {
     public static final int YOUTUBE_VIDEO_QUALITY_AUTO = 0;
     HandlerThread youtubeExtractorThread;
     Handler youtubeExtractorHandler, listenerHandler;
-    public static List<Integer> mPreferredVideoQualities =  asList(YOUTUBE_VIDEO_QUALITY_4K, YOUTUBE_VIDEO_QUALITY_HD_1080,
-                                                                    YOUTUBE_VIDEO_QUALITY_HD_720, YOUTUBE_VIDEO_QUALITY_MEDIUM_360, YOUTUBE_VIDEO_QUALITY_SMALL_240);;
+    public static List<Integer> mPreferredVideoQualities =  asList(YOUTUBE_VIDEO_QUALITY_4K, YOUTUBE_VIDEO_QUALITY_HD_1080, YOUTUBE_VIDEO_QUALITY_HD_720, YOUTUBE_VIDEO_QUALITY_MEDIUM_360, YOUTUBE_VIDEO_QUALITY_SMALL_240);;
     JsonObject jsonObj = null;
+    String decipherfunc = null;
+    String basejsurl = null;
 
     public static void main(String[] args) {
         VideoRetriver test = new VideoRetriver();
@@ -123,7 +124,7 @@ public class VideoRetriver {
         }
 
         jsonObj = new JsonParser().parse(ytplayer).getAsJsonObject();
-        String basejsurl = "https://www.youtube.com" + jsonObj.getAsJsonObject("assets")
+        basejsurl = "https://www.youtube.com" + jsonObj.getAsJsonObject("assets")
                 .get("js").getAsString().replaceAll("\"", "");
         JsonObject videojson = jsonObj.getAsJsonObject("args");
 
@@ -133,7 +134,8 @@ public class VideoRetriver {
             String adaptiveurl = videojson.get("adaptive_fmts").getAsString();
             List<String> videos = new LinkedList<>(asList(encoded_s.split(",")));
             videos.addAll(asList(adaptiveurl.split(",")));
-            String basejs = downloadWeb(basejsurl);
+
+
 
             for (String e : videos) {
                 e = decode(e);
@@ -152,7 +154,7 @@ public class VideoRetriver {
                         ("sparams") + "&key=" + splitmap.get("key"));
                 if (splitmap.containsKey("s")) {
                     String fake = splitmap.get("s");
-                    stringBuilder.append("&signature=" + decipher(basejs, fake));
+                    stringBuilder.append("&signature=" + decipher(fake));
 
                 } else {
                     stringBuilder.append("&signature=" + splitmap.get("signature"));
@@ -201,78 +203,100 @@ public class VideoRetriver {
         return decode;
     }
 
-    private String decipher(String basejs, String in) {
+    private String decipher(String in) {
         String out = null;
-        StringBuilder dumby = new StringBuilder();
-        for (int a = 0; a < in.indexOf("."); a++) {
-            dumby.append(in.charAt(a));
-
-        }
-        dumby.append(".");
-        for (int a = in.indexOf(".") + 1; a < in.length(); a++) {
-            dumby.append(in.codePointAt(a));
-        }
-
-        String[] regexes = {"([\"\'])signature\\1\\s*,\\s*([a-zA-Z0-9$]+)\\("};
         String funcname = null;
-        for (int a = 0; a < regexes.length; a++) {
-            Matcher matcher = Pattern.compile(regexes[a]).matcher(basejs);
-            if (matcher.find()) {
-                funcname = matcher.group();
-                funcname = funcname.substring(funcname.indexOf(",") + 1, funcname.indexOf("("));
+
+        if(decipherfunc == null) {
+            String basejs = downloadWeb(basejsurl);
+            StringBuilder dumby = new StringBuilder();
+            for (int a = 0; a < in.indexOf("."); a++) {
+                dumby.append(in.charAt(a));
+
+            }
+            dumby.append(".");
+            for (int a = in.indexOf(".") + 1; a < in.length(); a++) {
+                dumby.append(in.codePointAt(a));
+            }
+
+            String[] regexes = {"([\"\'])signature\\1\\s*,\\s*([a-zA-Z0-9$]+)\\("};
+
+            for (int a = 0; a < regexes.length; a++) {
+                Matcher matcher = Pattern.compile(regexes[a]).matcher(basejs);
+                if (matcher.find()) {
+                    funcname = matcher.group();
+                    funcname = funcname.substring(funcname.indexOf(",") + 1, funcname.indexOf("("));
+                }
+            }
+            String search1 = String.format("(?x)(?:function\\s+%s|[{;,]\\s*%s\\s*=\\s*function|var" +
+                    "\\s+%s\\s*=\\s*function)\\s*\\(([^)]*)\\)\\s*" +
+                    "\\{([^}]+)\\}", funcname, funcname, funcname);
+            Matcher matcher1 = Pattern.compile(search1).matcher(basejs);
+
+            if (matcher1.find()) {
+                String res = matcher1.group();
+                res = res + ";";
+                res = res.replaceFirst(";", "");
+                String temp = res.substring(res.indexOf("{") + 1, res.indexOf("}"));
+                List<String> stmts = asList(temp.split(";"));
+                String varfunc = null;
+                for (String stmt : stmts) {
+                    if (!stmt.contains("=")) {
+                        String mems[] = stmt.split("\\.");
+                        varfunc = mems[0];
+                        break;
+                    }
+                }
+                StringBuilder stringBuilder = new StringBuilder();
+                int l = 0;
+                int r = 0;
+                for (int p = basejs.indexOf("var " + varfunc + "="); p < basejs.length(); p++) {
+                    char a = (char) basejs.codePointAt(p);
+                    stringBuilder.append(a);
+                    if (a == '{') {
+                        l++;
+                    } else if (a == '}') {
+                        r++;
+                    }
+                    if (r == l && r != 0 && a == ';') {
+                        break;
+                    }
+
+                }
+
+                decipherfunc = stringBuilder.toString() + res;
+
+                String input = decipherfunc +  String.format("var output = %s(\"%s\");", funcname, in);
+
+                JSContext context = new JSContext();
+
+                context.setExceptionHandler(new JSContext.IJSExceptionHandler() {
+                    @Override
+                    public void handle(JSException exception) {
+                        exception.printStackTrace();
+                        System.out.println("error");
+                    }
+                });
+                context.evaluateScript(input);
+                out = context.property("output").toString();
+            } else {
+                String input = decipherfunc +
+                        String.format("var output = %s(\"%s\");", funcname, in);
+
+                JSContext context = new JSContext();
+
+                context.setExceptionHandler(new JSContext.IJSExceptionHandler() {
+                    @Override
+                    public void handle(JSException exception) {
+                        exception.printStackTrace();
+                        System.out.println("error");
+                    }
+                });
+                context.evaluateScript(input);
+                out = context.property("output").toString();
             }
         }
-        String search1 = String.format("(?x)(?:function\\s+%s|[{;,]\\s*%s\\s*=\\s*function|var" +
-                "\\s+%s\\s*=\\s*function)\\s*\\(([^)]*)\\)\\s*" +
-                "\\{([^}]+)\\}", funcname, funcname, funcname);
-        Matcher matcher1 = Pattern.compile(search1).matcher(basejs);
 
-        if (matcher1.find()) {
-            String res = matcher1.group();
-            res = res + ";";
-            res = res.replaceFirst(";", "");
-            String temp = res.substring(res.indexOf("{") + 1, res.indexOf("}"));
-            List<String> stmts = asList(temp.split(";"));
-            String varfunc = null;
-            for (String stmt : stmts) {
-                if (!stmt.contains("=")) {
-                    String mems[] = stmt.split("\\.");
-                    varfunc = mems[0];
-                    break;
-                }
-            }
-            StringBuilder stringBuilder = new StringBuilder();
-            int l = 0;
-            int r = 0;
-            for (int p = basejs.indexOf("var " + varfunc + "="); p < basejs.length(); p++) {
-                char a = (char) basejs.codePointAt(p);
-                stringBuilder.append(a);
-                if (a == '{') {
-                    l++;
-                } else if (a == '}') {
-                    r++;
-                }
-                if (r == l && r != 0 && a == ';') {
-                    break;
-                }
-
-            }
-
-            String input = stringBuilder.toString() + res +
-                    String.format("var output = %s(\"%s\");", funcname, in);
-
-            JSContext context = new JSContext();
-
-            context.setExceptionHandler(new JSContext.IJSExceptionHandler() {
-                @Override
-                public void handle(JSException exception) {
-                    exception.printStackTrace();
-                    System.out.println("error");
-                }
-            });
-            context.evaluateScript(input);
-            out = context.property("output").toString();
-        }
         return out;
     }
 

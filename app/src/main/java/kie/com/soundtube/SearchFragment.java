@@ -9,6 +9,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.support.v4.app.Fragment;
+import android.util.Log;
 import android.view.*;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.*;
@@ -29,10 +30,7 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.ListIterator;
+import java.util.*;
 
 public class SearchFragment extends Fragment {
 
@@ -54,6 +52,8 @@ public class SearchFragment extends Fragment {
 
     private SearchView searchView;
 
+    public VideoRetriver videoRetriver;
+
     public SearchFragment() {
         // Required empty public constructor
     }
@@ -62,6 +62,7 @@ public class SearchFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         context = getContext();
+        videoRetriver = new VideoRetriver();
 
     }
 
@@ -350,22 +351,23 @@ public class SearchFragment extends Fragment {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 System.out.println("clicked"+position);
-                final DataHolder dataHolder = data.get(position);
-                YouTubeExtractor extractor = new YouTubeExtractor(dataHolder.videoID);
-                extractor.startExtracting(new YouTubeExtractor.YouTubeExtractorListener() {
-                    @Override
-                    public void onSuccess(YouTubeExtractor.YouTubeExtractorResult result) {
 
+                final DataHolder dataHolder = data.get(position);
+                videoRetriver.startExtracting("https://www.youtube" +
+                        ".com/watch?v=" + dataHolder.videoID, new VideoRetriver.YouTubeExtractorListener() {
+                    @Override
+                    public void onSuccess(HashMap<Integer, String> result) {
+                        dataHolder.videoUris = result;
                         mListener.onreturnVideo(dataHolder);
-                        System.out.println("videouri  " + result.getVideoUri());
+                        //Log.d("search", ))
                     }
 
                     @Override
                     public void onFailure(Error error) {
-                        System.out.println(error.getMessage());
+                        Log.d("search", "errorextracting");
 
                     }
-                },YouTubeExtractor.YOUTUBE_VIDEO_QUALITY_HD_720);
+                });
 
             }
         });

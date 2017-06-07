@@ -42,11 +42,11 @@ public class MainActivity1 extends AppCompatActivity implements SearchFragment.O
 //        slidingUpPanelLayout = (SlidingUpPanelLayout)findViewById(R.id.sliding_layout);
 //        slidingUpPanelLayout.setPanelState(SlidingUpPanelLayout.PanelState.HIDDEN);
 
-        FragmentManager fragmentManager = getSupportFragmentManager();
-        FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-        fragmentTransaction.add(R.id.frame, videoFragment, "video");
+//        FragmentManager fragmentManager = getSupportFragmentManager();
+//        FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+//        fragmentTransaction.add(R.id.frame, videoFragment, "video");
 //        fragmentTransaction.add(searchFragment, "search");
-        fragmentTransaction.commitNow();
+//        fragmentTransaction.commitNow();
 
 //        slidingUpPanelLayout.setDragView(videoFragment.getView());
 //        slidingUpPanelLayout.addView(searchFragment.getView());

@@ -189,6 +189,7 @@ public class VideoFragment extends Fragment {
             }
         });
 
+
         Log.d("video", "createView");
 
         return videoFragmentView;
@@ -299,7 +300,7 @@ public class VideoFragment extends Fragment {
                 public void run() {
                     if(mediaService.updateSeekBar) {
                         seekBar.setProgress(mediaPlayer.getCurrentPosition());
-                        seekHandler.postDelayed(this, 100);
+                        seekHandler.postDelayed(this, 1000);
                     }
                 }
             });
