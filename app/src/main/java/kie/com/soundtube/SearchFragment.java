@@ -72,7 +72,7 @@ public class SearchFragment extends Fragment {
         // Inflate the layout for this fragment
         fragmentView = inflater.inflate(R.layout.fragment_search, container, false);
         searchView = (SearchView) fragmentView.findViewById(R.id.searchview);
-        searchView.setIconifiedByDefault(false);
+        searchView.setIconifiedByDefault(true);
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
 
             @Override
@@ -80,9 +80,14 @@ public class SearchFragment extends Fragment {
 
                 System.out.println("submit");
                 if(query != null) {
-                    search(query);
-                    InputMethodManager imm = (InputMethodManager)context.getSystemService(Context.INPUT_METHOD_SERVICE);
-                    imm.hideSoftInputFromWindow(getView().getWindowToken(), InputMethodManager.RESULT_UNCHANGED_SHOWN);
+                    if(MainActivity.netConncted) {
+                        search(query);
+                    } else {
+                        Toast toast = Toast.makeText(context, getString(R.string.needNetwork), Toast.LENGTH_SHORT);
+                        toast.show();
+                    }
+
+
                     searchView.clearFocus();
                 }
 
@@ -92,6 +97,13 @@ public class SearchFragment extends Fragment {
             @Override
             public boolean onQueryTextChange(String newText) {
                 return true;
+            }
+        });
+        searchView.setOnQueryTextFocusChangeListener(new View.OnFocusChangeListener() {
+            @Override
+            public void onFocusChange(View v, boolean hasFocus) {
+                InputMethodManager imm = (InputMethodManager)context.getSystemService(Context.INPUT_METHOD_SERVICE);
+                imm.hideSoftInputFromWindow(getView().getWindowToken(), InputMethodManager.RESULT_UNCHANGED_SHOWN);
             }
         });
         return fragmentView;
@@ -183,7 +195,9 @@ public class SearchFragment extends Fragment {
                         String videoID = joiner.join(videoList);
                         YouTube.Videos.List videoRequest = youtube.videos().list("snippet,contentDetails,id").setId(videoID);
                         videoRequest.setKey(APIKey);
-                        videoRequest.setFields("items(id,snippet/publishedAt,snippet/title,snippet/thumbnails/default/url,contentDetails/duration)");
+                        videoRequest.setFields("items(id,snippet/publishedAt,snippet/title," +
+                                "snippet/thumbnails/default/url,contentDetails/duration)," +
+                                "nextPageToken,prevPageToken,pageInfo/totalResults");
                         VideoListResponse listResponse = videoRequest.execute();
                         onFound(toClass(listResponse.getItems()));
                     }

@@ -1,4 +1,4 @@
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
              xmlns:tools="http://schemas.android.com/tools"
              android:layout_width="match_parent"
              android:layout_height="match_parent"
@@ -8,24 +8,24 @@
 
     <RelativeLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent" android:visibility="gone">
+            android:layout_height="match_parent" android:visibility="gone" android:id="@+id/descriptionRelativeLayout"
+            android:layout_alignBottom="@+id/videoRelativeLayout">
 
         <TextView
                 android:text="TextView"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content" android:id="@+id/textView"
                 android:layout_alignParentBottom="true"
-                android:layout_alignParentEnd="true" android:layout_toEndOf="@+id/seekBar"/>
+                android:layout_alignParentEnd="true"/>
         <ListView
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:layout_below="@+id/seekBar" android:layout_toEndOf="@+id/seekBar"
                 android:layout_marginTop="424dp" android:layout_alignParentStart="true"
                 android:layout_alignBottom="@+id/textView"/>
     </RelativeLayout>
     <RelativeLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent" android:id="@+id/relativeLayout">
+            android:layout_height="match_parent" android:id="@+id/videoRelativeLayout">
 
         <SurfaceView
                 android:layout_width="match_parent"
@@ -50,4 +50,4 @@
                 android:background="@drawable/pause"
                 android:layout_centerVertical="true" android:layout_centerHorizontal="true" android:visibility="gone"/>
     </RelativeLayout>
-</FrameLayout>
+</RelativeLayout>

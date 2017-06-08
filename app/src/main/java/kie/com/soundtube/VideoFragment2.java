@@ -88,7 +88,7 @@ public class VideoFragment2 extends Fragment {
         progressBar = (ProgressBar) videoFragmentView.findViewById(R.id.progressBar1);
         progressBar.setMax(100);
         progressBar.setIndeterminate(false);
-        relativeLayout = (RelativeLayout) videoFragmentView.findViewById(R.id.relativeLayout);
+        relativeLayout = (RelativeLayout) videoFragmentView.findViewById(R.id.videoRelativeLayout);
         landscapelayout = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT);
         if (context.getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
             int w = (int) (displayMetrics.heightPixels / Displayratio);

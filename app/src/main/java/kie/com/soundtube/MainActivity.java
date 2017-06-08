@@ -4,6 +4,9 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.pm.ActivityInfo;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -19,6 +22,7 @@ import android.support.v7.app.AppCompatActivity;
 
 import android.util.Log;
 import android.view.View;
+import android.widget.Toast;
 import com.sothree.slidinguppanel.SlidingUpPanelLayout;
 import kie.com.soundtube.MediaPlayerService.*;
 
@@ -31,10 +35,12 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     public MediaPlayerService mediaService;
     private boolean servicebound = false;
     private Intent playIntent;
+    public static boolean netConncted = false;
 
     VideoFragment videoFragment;
     SearchFragment searchFragment;
     ViewPager viewPager;
+    ConnectivityManager connectmgr;
 
     SlidingUpPanelLayout slidingUpPanelLayout;
     Fragment[] fragments = new Fragment[2];
@@ -45,6 +51,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         UiHandler = new Handler(Looper.getMainLooper());
+
 
         videoFragment = new VideoFragment();
         searchFragment = new SearchFragment();
@@ -62,6 +69,11 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
 
             @Override
             public void onPageSelected(int position) {
+                if(position == 0) {
+                    setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+                } else if(position == 1) {
+                    setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR);
+                }
 
 
             }
@@ -124,17 +136,28 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     protected void onStart() {
 
         super.onStart();
+        connectmgr = (ConnectivityManager) getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
         if (playIntent == null) {
             playIntent = new Intent(this, MediaPlayerService.class);
             startService(playIntent);
         }
+
         bindService(playIntent, serviceConnection, Context.BIND_AUTO_CREATE);
         Log.d("activity", "onStart");
     }
 
     @Override
     protected void onResume() {
+
         super.onResume();
+        NetworkInfo info = connectmgr.getActiveNetworkInfo();
+        if (info != null && info.isAvailable() && info.isConnected()) {
+            netConncted = true;
+        } else {
+            Toast toast = Toast.makeText(getApplicationContext(), getString(R.string.needNetwork), Toast.LENGTH_SHORT);
+            toast.show();
+            netConncted = false;
+        }
         Log.d("activity", "onResume");
 
     }

@@ -1,6 +1,7 @@
 package kie.com.soundtube;
 
 import android.app.Activity;
+import android.support.v4.app.FragmentActivity;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.media.MediaPlayer;
@@ -23,10 +24,10 @@ public class VideoFragment extends Fragment {
     private OnFragmentInteractionListener mListener;
     public float Displayratio = 16f / 9f;
     public float Videoratio = 16f / 9f;
-    public View videoFragmentView;
-    public SeekBar seekBar;
-    public ProgressBar progressBar;
-    public MediaPlayer mediaPlayer;
+
+
+
+
     public boolean prepared = false;
     boolean connected = false;
     boolean controlshow = true;
@@ -34,16 +35,22 @@ public class VideoFragment extends Fragment {
     private Button playbutton;
     private SurfaceView surfaceView;
     private SurfaceHolder surfaceHolder;
-    private RelativeLayout relativeLayout;
-    Handler ui;
-    DisplayMetrics displayMetrics;
-    Context context;
-    FrameLayout.LayoutParams portraitlayout;
-    FrameLayout.LayoutParams landscapelayout;
+    private RelativeLayout vrelativeLayout;
+    private RelativeLayout drelativeLayout;
+    private View videoFragmentView;
+    private SeekBar seekBar;
+    private Handler ui;
+    private ProgressBar progressBar;
+    private DisplayMetrics displayMetrics;
+    private Context context;
+    private RelativeLayout.LayoutParams portraitlayout;
+    private RelativeLayout.LayoutParams landscapelayout;
+    private Activity activity;
+    private Handler seekHandler;
+    private HandlerThread thread;
+
     MediaPlayerService mediaService;
-    Activity activity;
-    Handler seekHandler;
-    HandlerThread thread;
+    MediaPlayer mediaPlayer;
 
     public VideoFragment() {
         // Required empty public constructor
@@ -88,16 +95,17 @@ public class VideoFragment extends Fragment {
         progressBar = (ProgressBar) videoFragmentView.findViewById(R.id.progressBar1);
         progressBar.setMax(100);
         progressBar.setIndeterminate(false);
-        relativeLayout = (RelativeLayout) videoFragmentView.findViewById(R.id.relativeLayout);
-        landscapelayout = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT);
+        vrelativeLayout = (RelativeLayout) videoFragmentView.findViewById(R.id.videoRelativeLayout);
+        drelativeLayout = (RelativeLayout) videoFragmentView.findViewById(R.id.descriptionRelativeLayout);
+        landscapelayout = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT);
         if (context.getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
             int w = (int) (displayMetrics.heightPixels / Displayratio);
-            portraitlayout = new FrameLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, w);
+            portraitlayout = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, w);
             changeToLandscape();
 
         } else {
             int w = (int) (displayMetrics.widthPixels / Displayratio);
-            portraitlayout = new FrameLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, w);
+            portraitlayout = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, w);
             changeToPortrait();
         }
 
@@ -330,14 +338,16 @@ public class VideoFragment extends Fragment {
     }
 
     public void changeToPortrait() {
-        relativeLayout.setLayoutParams(portraitlayout);
+        vrelativeLayout.setLayoutParams(portraitlayout);
+        drelativeLayout.setVisibility(View.VISIBLE);
         activity.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
     }
 
     public void changeToLandscape() {
-        relativeLayout.setLayoutParams(landscapelayout);
+        vrelativeLayout.setLayoutParams(landscapelayout);
         activity.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
                 View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+        drelativeLayout.setVisibility(View.GONE);
     }
 
     public void showcontrols(final boolean show) {

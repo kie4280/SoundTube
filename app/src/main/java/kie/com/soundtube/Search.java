@@ -123,7 +123,7 @@ public class Search {
      */
     private static String getInputQuery() throws IOException {
 
-        String inputQuery = "";
+        String inputQuery;
 
         System.out.print("Please enter a search term: ");
         BufferedReader bReader = new BufferedReader(new InputStreamReader(System.in));
