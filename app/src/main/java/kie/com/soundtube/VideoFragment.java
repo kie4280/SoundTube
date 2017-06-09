@@ -13,6 +13,7 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
 import android.support.v4.app.Fragment;
+import android.support.v4.view.MotionEventCompat;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.*;
@@ -51,6 +52,7 @@ public class VideoFragment extends Fragment {
 
     MediaPlayerService mediaService;
     MediaPlayer mediaPlayer;
+    MainActivity mainActivity;
 
     public VideoFragment() {
         // Required empty public constructor
@@ -140,24 +142,10 @@ public class VideoFragment extends Fragment {
                 if (mediaPlayer.isPlaying()) {
                     mediaService.pause();
                     playbutton.setBackgroundResource(R.drawable.play);
-//                    ui.postDelayed(new Runnable() {
-//                        @Override
-//                        public void run() {
-//                            showcontrols(false);
-//                        }
-//                    }, 3000);
-
 
                 } else {
                     mediaService.play();
                     playbutton.setBackgroundResource(R.drawable.pause);
-//                    ui.postDelayed(new Runnable() {
-//                        @Override
-//                        public void run() {
-//                            showcontrols(false);
-//                        }
-//                    }, 3000);
-
                 }
             }
         });
@@ -182,18 +170,33 @@ public class VideoFragment extends Fragment {
             }
         });
         surfaceView.setOnTouchListener(new View.OnTouchListener() {
+            float prevX = 0;
+            float prevY = 0;
+            float threshold = 15f;
             @Override
             public boolean onTouch(View v, MotionEvent event) {
-                if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                    if (controlshow) {
-                        showcontrols(false);
-                    } else {
-                        showcontrols(true);
+                int action = event.getAction();
+                if (action == MotionEvent.ACTION_DOWN) {
+                    mainActivity.viewPager.setSwipingEnabled(false);
+                    prevX = event.getX();
+                    prevY = event.getY();
+
+                    Log.d("surface", "touchdown");
+
+                } else if(action == MotionEvent.ACTION_UP) {
+                    mainActivity.viewPager.setSwipingEnabled(true);
+                    if(Math.abs(event.getX() - prevX) <= threshold && Math.abs(event.getY() - prevY) <=threshold)  {
+                        if (controlshow) {
+                            showcontrols(false);
+                        } else {
+                            showcontrols(true);
+                        }
                     }
 
+                    Log.d("surface", "touchup");
                 }
-                Log.d("surface", "touch");
-                return false;
+
+                return true;
             }
         });
 
@@ -249,6 +252,10 @@ public class VideoFragment extends Fragment {
     public void onDestroy() {
         super.onDestroy();
         thread.quit();
+    }
+
+    public void setActivity(MainActivity activity) {
+        this.mainActivity = activity;
     }
 
     public void start(final DataHolder dataHolder) {
@@ -341,6 +348,7 @@ public class VideoFragment extends Fragment {
         vrelativeLayout.setLayoutParams(portraitlayout);
         drelativeLayout.setVisibility(View.VISIBLE);
         activity.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
+        drelativeLayout.setVisibility(View.VISIBLE);
     }
 
     public void changeToLandscape() {

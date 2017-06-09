@@ -39,16 +39,17 @@ public class MediaPlayerService extends Service {
                 public void run() {
                     mp.setVideoScalingMode(MediaPlayer.VIDEO_SCALING_MODE_SCALE_TO_FIT_WITH_CROPPING);
                     videoFragment.Videoratio = (float) mp.getVideoWidth() / (float) mp.getVideoHeight();
+                    prepared = true;
                     if (task != null) {
                         playHandler.post(task);
                         task = null;
                     }
-                    prepared = true;
+
                     if (connected) {
                         videoFragment.buffering(false);
                         videoFragment.showcontrols(false);
                         videoFragment.setSeekBarMax(mediaPlayer.getDuration());
-                        videoFragment.updateSeekBar();
+
                     }
                 }
             });
@@ -93,11 +94,16 @@ public class MediaPlayerService extends Service {
         super.onRebind(intent);
         Log.d("service", "onRebind");
         connected = true;
+        if(mediaPlayer.isPlaying()) {
+            updateSeekBar = true;
+            videoFragment.updateSeekBar();
+        }
     }
 
     @Override
     public boolean onUnbind(Intent intent) {
         connected = false;
+        updateSeekBar = false;
         Log.d("service", "onUnbind");
         return true;
     }
@@ -140,14 +146,12 @@ public class MediaPlayerService extends Service {
         stopForeground(true);
         mediaPlayer.stop();
         mediaPlayer.release();
-        wakeLock.release();
-        wifiLock.release();
+
         thread.quit();
         updateSeekBar = false;
         Log.d("service", "onDestroy");
         super.onDestroy();
     }
-
 
     public void play() {
         if (prepared) {
@@ -157,6 +161,8 @@ public class MediaPlayerService extends Service {
                     mediaPlayer.start();
                     updateSeekBar = true;
                     videoFragment.updateSeekBar();
+                    wifiLock.acquire();
+                    wakeLock.acquire();
 
                 }
             });
@@ -166,6 +172,10 @@ public class MediaPlayerService extends Service {
                 @Override
                 public void run() {
                     mediaPlayer.start();
+                    updateSeekBar = true;
+                    videoFragment.updateSeekBar();
+                    wifiLock.acquire();
+                    wakeLock.acquire();
 
                 }
             };
@@ -178,6 +188,8 @@ public class MediaPlayerService extends Service {
             public void run() {
                 if (mediaPlayer.isPlaying()) {
                     mediaPlayer.pause();
+                    wifiLock.release();
+                    wakeLock.release();
                     updateSeekBar = false;
                 }
 
@@ -189,24 +201,20 @@ public class MediaPlayerService extends Service {
         playHandler.post(new Runnable() {
             @Override
             public void run() {
-
                 mediaPlayer.stop();
                 updateSeekBar = false;
-
-
             }
         });
     }
 
     public void reset() {
+        prepared = false;
         playHandler.post(new Runnable() {
             @Override
             public void run() {
 
-                    mediaPlayer.reset();
-                    updateSeekBar = false;
-
-
+                mediaPlayer.reset();
+                updateSeekBar = false;
             }
         });
     }
@@ -225,8 +233,6 @@ public class MediaPlayerService extends Service {
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-
-
             }
         });
     }

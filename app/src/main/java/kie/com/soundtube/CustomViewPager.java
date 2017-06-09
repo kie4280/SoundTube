@@ -8,22 +8,29 @@ import android.view.MotionEvent;
 /**
  * Created by kieChang on 2017/5/18.
  */
-public class NonSwipeViewPager extends ViewPager {
+public class CustomViewPager extends ViewPager {
 
+    private boolean swipable = true;
 
-    public NonSwipeViewPager(Context context, AttributeSet attrs) {
+    public CustomViewPager(Context context, AttributeSet attrs) {
         super(context, attrs);
+
     }
 
     @Override
     public boolean onInterceptTouchEvent(MotionEvent ev) {
-        //return super.onInterceptTouchEvent(ev);
-        return false;
+
+        return swipable && super.onInterceptTouchEvent(ev);
+
     }
 
     @Override
     public boolean onTouchEvent(MotionEvent ev) {
-        //return super.onTouchEvent(ev);
-        return false;
+
+        return swipable && super.onTouchEvent(ev);
+    }
+
+    public void setSwipingEnabled(boolean swipingEnabled) {
+        this.swipable = swipingEnabled;
     }
 }

@@ -12,22 +12,15 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
-import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
-import android.support.v4.app.FragmentTransaction;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 
 import android.util.Log;
-import android.view.View;
 import android.widget.Toast;
-import com.sothree.slidinguppanel.SlidingUpPanelLayout;
+
 import kie.com.soundtube.MediaPlayerService.*;
-
-import java.util.HashMap;
-
 
 public class MainActivity extends AppCompatActivity implements SearchFragment.OnFragmentInteractionListener, VideoFragment.OnFragmentInteractionListener {
 
@@ -36,13 +29,12 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     private boolean servicebound = false;
     private Intent playIntent;
     public static boolean netConncted = false;
+    public CustomViewPager viewPager;
 
     VideoFragment videoFragment;
     SearchFragment searchFragment;
-    ViewPager viewPager;
-    ConnectivityManager connectmgr;
 
-    SlidingUpPanelLayout slidingUpPanelLayout;
+    ConnectivityManager connectmgr;
     Fragment[] fragments = new Fragment[2];
 
 
@@ -54,8 +46,9 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
 
 
         videoFragment = new VideoFragment();
+        videoFragment.setActivity(this);
         searchFragment = new SearchFragment();
-        viewPager = (ViewPager)findViewById(R.id.viewpager);
+        viewPager = (CustomViewPager) findViewById(R.id.viewpager);
 
         viewPager.setAdapter(fragmentPagerAdapter);
         fragments[0] = searchFragment;
@@ -119,7 +112,8 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
         @Override
         public void onServiceDisconnected(ComponentName name) {
             servicebound = false;
-            mediaService.updateSeekBar = false;
+
+            Log.d("activity", "service unbind");
 
         }
     };

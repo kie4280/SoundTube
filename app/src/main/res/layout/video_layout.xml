@@ -26,5 +26,6 @@
             android:layout_height="wrap_content"
             android:id="@+id/durationview"
             android:layout_alignBottom="@+id/imageView" android:layout_toStartOf="@+id/titleview"
-            android:background="@android:color/background_light" android:textSize="12sp"/>
+            android:background="@android:color/black" android:textSize="12sp"
+            android:textColor="@android:color/background_light"/>
 </RelativeLayout>
