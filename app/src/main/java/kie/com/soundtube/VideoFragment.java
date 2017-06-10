@@ -19,6 +19,8 @@ import android.util.Log;
 import android.view.*;
 import android.widget.*;
 
+import java.util.List;
+
 
 public class VideoFragment extends Fragment {
 
@@ -42,6 +44,8 @@ public class VideoFragment extends Fragment {
     private SeekBar seekBar;
     private Handler ui;
     private ProgressBar progressBar;
+    private TextView textView;
+    private ListView listView;
     private DisplayMetrics displayMetrics;
     private Context context;
     private RelativeLayout.LayoutParams portraitlayout;
@@ -93,6 +97,8 @@ public class VideoFragment extends Fragment {
         videoFragmentView = inflater.inflate(R.layout.fragment_video, container, false);
         surfaceView = (SurfaceView) videoFragmentView.findViewById(R.id.surfaceView);
         seekBar = (SeekBar) videoFragmentView.findViewById(R.id.seekBar);
+        textView = (TextView) videoFragmentView.findViewById(R.id.textView);
+        listView = (ListView) videoFragmentView.findViewById(R.id.recoList);
         playbutton = (Button) videoFragmentView.findViewById(R.id.playbutton);
         progressBar = (ProgressBar) videoFragmentView.findViewById(R.id.progressBar1);
         progressBar.setMax(100);
@@ -270,6 +276,8 @@ public class VideoFragment extends Fragment {
                         mediaService.prepare(dataHolder, a);
                         mediaService.setDisplay(surfaceHolder);
                         mediaService.play();
+                        textView.setText(dataHolder.title);
+
                     }
 
                     break;

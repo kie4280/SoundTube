@@ -10,7 +10,9 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.support.v4.app.Fragment;
 import android.util.Log;
-import android.view.*;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.*;
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
@@ -54,6 +56,8 @@ public class SearchFragment extends Fragment {
 
     public VideoRetriver videoRetriver;
 
+    private List<String> pageTokens;
+
     public SearchFragment() {
         // Required empty public constructor
     }
@@ -79,8 +83,8 @@ public class SearchFragment extends Fragment {
             public boolean onQueryTextSubmit(String query) {
 
                 System.out.println("submit");
-                if(query != null) {
-                    if(MainActivity.netConncted) {
+                if (query != null) {
+                    if (MainActivity.netConncted) {
                         search(query);
                     } else {
                         Toast toast = Toast.makeText(context, getString(R.string.needNetwork), Toast.LENGTH_SHORT);
@@ -102,7 +106,7 @@ public class SearchFragment extends Fragment {
         searchView.setOnQueryTextFocusChangeListener(new View.OnFocusChangeListener() {
             @Override
             public void onFocusChange(View v, boolean hasFocus) {
-                InputMethodManager imm = (InputMethodManager)context.getSystemService(Context.INPUT_METHOD_SERVICE);
+                InputMethodManager imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
                 imm.hideSoftInputFromWindow(getView().getWindowToken(), InputMethodManager.RESULT_UNCHANGED_SHOWN);
             }
         });
@@ -138,6 +142,7 @@ public class SearchFragment extends Fragment {
     public interface OnFragmentInteractionListener {
 
         void onFragmentInteraction(Uri uri);
+
         void onreturnVideo(DataHolder dataHolder);
     }
 
@@ -180,14 +185,14 @@ public class SearchFragment extends Fragment {
 
                     // To increase efficiency, only retrieve the fields that the
                     // application uses.
-                    search.setFields("items(id/kind,id/videoId)");
+                    search.setFields("items(id/kind,id/videoId),nextPageToken,prevPageToken,pageInfo/totalResults");
                     search.setMaxResults(NUMBER_OF_VIDEOS_RETURNED);
 
                     // Call the API and print results.
                     SearchListResponse searchResponse = search.execute();
                     List<SearchResult> searchResultList = searchResponse.getItems();
                     List<String> videoList = new ArrayList<>();
-                    if(searchResultList != null) {
+                    if (searchResultList != null) {
                         for (SearchResult searchResult : searchResultList) {
                             videoList.add(searchResult.getId().getVideoId());
                         }
@@ -196,8 +201,7 @@ public class SearchFragment extends Fragment {
                         YouTube.Videos.List videoRequest = youtube.videos().list("snippet,contentDetails,id").setId(videoID);
                         videoRequest.setKey(APIKey);
                         videoRequest.setFields("items(id,snippet/publishedAt,snippet/title," +
-                                "snippet/thumbnails/default/url,contentDetails/duration)," +
-                                "nextPageToken,prevPageToken,pageInfo/totalResults");
+                                "snippet/thumbnails/default/url,contentDetails/duration)");
                         VideoListResponse listResponse = videoRequest.execute();
                         onFound(toClass(listResponse.getItems()));
                     }
@@ -239,7 +243,7 @@ public class SearchFragment extends Fragment {
             Bitmap bitmap = null;
 
             try {
-                InputStream in = new URL(URI.create( s.getSnippet().getThumbnails().getDefault().getUrl())
+                InputStream in = new URL(URI.create(s.getSnippet().getThumbnails().getDefault().getUrl())
                         .toURL().toString()).openStream();
                 bitmap = BitmapFactory.decodeStream(in);
                 in.close();
@@ -254,8 +258,8 @@ public class SearchFragment extends Fragment {
             holder.publishdate = s.getSnippet().getPublishedAt().toString();
             String d = s.getContentDetails().getDuration().replace('H', ':');
             d = d.replace('M', ':');
-            d = d.replace("S","");
-            d = d.replace("PT","");
+            d = d.replace("S", "");
+            d = d.replace("PT", "");
             holder.videolength = d;
             holder.videoID = s.getId();
             classes.add(holder);
@@ -318,23 +322,24 @@ public class SearchFragment extends Fragment {
             @Override
             public View getView(int position, View convertView, ViewGroup parent) {
                 View view;
-                if(convertView == null) {
+                if (convertView == null) {
                     LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
                     view = inflater.inflate(R.layout.video_layout, parent, false);
                     DataHolder dataHolder = data.get(position);
                     ViewHolder viewHolder = new ViewHolder();
-                    viewHolder.imageView = (ImageView)view.findViewById(R.id.imageView);
-                    viewHolder.titleview = (TextView)view.findViewById(R.id.titleview);
-                    viewHolder.durationview = (TextView)view.findViewById(R.id.durationview);
+                    viewHolder.imageView = (ImageView) view.findViewById(R.id.imageView);
+                    viewHolder.titleview = (TextView) view.findViewById(R.id.titleview);
+                    viewHolder.durationview = (TextView) view.findViewById(R.id.durationview);
                     viewHolder.imageView.setImageBitmap(dataHolder.thumbnail);
                     viewHolder.titleview.setText(dataHolder.title);
                     viewHolder.durationview.setText(dataHolder.videolength);
                     view.setTag(viewHolder);
 
+
                 } else {
                     view = convertView;
                     DataHolder dataHolder = data.get(position);
-                    ViewHolder viewHolder = (ViewHolder)view.getTag();
+                    ViewHolder viewHolder = (ViewHolder) view.getTag();
                     viewHolder.imageView.setImageBitmap(dataHolder.thumbnail);
                     viewHolder.titleview.setText(dataHolder.title);
                     viewHolder.durationview.setText(dataHolder.videolength);
@@ -364,7 +369,7 @@ public class SearchFragment extends Fragment {
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                System.out.println("clicked"+position);
+                System.out.println("clicked" + position);
 
                 final DataHolder dataHolder = data.get(position);
                 videoRetriver.startExtracting("https://www.youtube" +
