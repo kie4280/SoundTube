@@ -75,41 +75,7 @@ public class SearchFragment extends Fragment {
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         fragmentView = inflater.inflate(R.layout.fragment_search, container, false);
-        searchView = (SearchView) fragmentView.findViewById(R.id.searchview);
-        searchView.setIconifiedByDefault(true);
-        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
 
-            @Override
-            public boolean onQueryTextSubmit(String query) {
-
-                System.out.println("submit");
-                if (query != null) {
-                    if (MainActivity.netConncted) {
-                        search(query);
-                    } else {
-                        Toast toast = Toast.makeText(context, getString(R.string.needNetwork), Toast.LENGTH_SHORT);
-                        toast.show();
-                    }
-
-
-                    searchView.clearFocus();
-                }
-
-                return true;
-            }
-
-            @Override
-            public boolean onQueryTextChange(String newText) {
-                return true;
-            }
-        });
-        searchView.setOnQueryTextFocusChangeListener(new View.OnFocusChangeListener() {
-            @Override
-            public void onFocusChange(View v, boolean hasFocus) {
-                InputMethodManager imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
-                imm.hideSoftInputFromWindow(getView().getWindowToken(), InputMethodManager.RESULT_UNCHANGED_SHOWN);
-            }
-        });
         return fragmentView;
 
     }

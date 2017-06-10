@@ -15,9 +15,15 @@ import android.os.Looper;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.View;
+import android.view.WindowManager;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.SearchView;
 import android.widget.Toast;
 
 import kie.com.soundtube.MediaPlayerService.*;
@@ -28,11 +34,14 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     public MediaPlayerService mediaService;
     private boolean servicebound = false;
     private Intent playIntent;
+    private SearchView searchView;
+    public Toolbar toolbar;
     public static boolean netConncted = false;
     public CustomViewPager viewPager;
 
     VideoFragment videoFragment;
     SearchFragment searchFragment;
+    Context context;
 
     ConnectivityManager connectmgr;
     Fragment[] fragments = new Fragment[2];
@@ -42,14 +51,15 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        context = getApplicationContext();
         UiHandler = new Handler(Looper.getMainLooper());
-
-
         videoFragment = new VideoFragment();
         videoFragment.setActivity(this);
         searchFragment = new SearchFragment();
         viewPager = (CustomViewPager) findViewById(R.id.viewpager);
-
+        toolbar = (Toolbar)findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+        getSupportActionBar().setTitle("");
         viewPager.setAdapter(fragmentPagerAdapter);
         fragments[0] = searchFragment;
         fragments[1] = videoFragment;
@@ -62,18 +72,61 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
 
             @Override
             public void onPageSelected(int position) {
+                ActionBar actionBar = getSupportActionBar();
                 if(position == 0) {
                     setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+                    if(actionBar != null) {
+                        getSupportActionBar().show();
+                    }
+
                 } else if(position == 1) {
                     setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR);
+                    if(actionBar != null) {
+                        getSupportActionBar().hide();
+                    }
                 }
-
-
             }
 
             @Override
             public void onPageScrollStateChanged(int state) {
 
+            }
+        });
+
+        searchView = (SearchView) findViewById(R.id.searchView);
+        searchView.setIconifiedByDefault(true);
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+
+                System.out.println("submit");
+                if (query != null) {
+                    if (MainActivity.netConncted) {
+                        searchFragment.search(query);
+                    } else {
+                        Toast toast = Toast.makeText(context, getString(R.string.needNetwork), Toast.LENGTH_SHORT);
+                        toast.show();
+                    }
+                    searchView.clearFocus();
+                }
+
+                return true;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                return true;
+            }
+        });
+        searchView.setOnQueryTextFocusChangeListener(new View.OnFocusChangeListener() {
+            @Override
+            public void onFocusChange(View v, boolean hasFocus) {
+//                InputMethodManager imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
+//                imm.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), InputMethodManager.RESULT_UNCHANGED_SHOWN);
+                if(!hasFocus) {
+                    getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
+                }
             }
         });
 

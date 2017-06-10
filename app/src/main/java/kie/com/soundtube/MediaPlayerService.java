@@ -123,10 +123,11 @@ public class MediaPlayerService extends Service {
         playHandler = new Handler(thread.getLooper());
         PowerManager powerManager = (PowerManager) getSystemService(Service.POWER_SERVICE);
         wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "serviceWakeLock");
-        wakeLock.acquire();
+        wifiLock.setReferenceCounted(false);
         wifiManager = (WifiManager) getSystemService(Service.WIFI_SERVICE);
         wifiLock = wifiManager.createWifiLock(WifiManager.WIFI_MODE_FULL, "ServiceWifilock");
-        wifiLock.acquire();
+        wifiLock.setReferenceCounted(false);
+
 
         Intent app = new Intent(MediaPlayerService.this, MainActivity.class);
         PendingIntent pendingIntent = PendingIntent.getActivity(MediaPlayerService.this,
@@ -146,7 +147,8 @@ public class MediaPlayerService extends Service {
         stopForeground(true);
         mediaPlayer.stop();
         mediaPlayer.release();
-
+        wifiLock.release();
+        wakeLock.release();
         thread.quit();
         updateSeekBar = false;
         Log.d("service", "onDestroy");
