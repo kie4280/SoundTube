@@ -20,9 +20,12 @@ import android.support.v7.app.AppCompatActivity;
 
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.Button;
 import android.widget.SearchView;
 import android.widget.Toast;
 
@@ -36,6 +39,8 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     private Intent playIntent;
     private SearchView searchView;
     public Toolbar toolbar;
+    private Button prevButton;
+    private Button nextButton;
     public static boolean netConncted = false;
     public CustomViewPager viewPager;
 
@@ -56,8 +61,11 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
         videoFragment = new VideoFragment();
         videoFragment.setActivity(this);
         searchFragment = new SearchFragment();
+        searchFragment.setActivity(this);
         viewPager = (CustomViewPager) findViewById(R.id.viewpager);
         toolbar = (Toolbar)findViewById(R.id.toolbar);
+        nextButton = (Button) findViewById(R.id.nextButton);
+        prevButton = (Button) findViewById(R.id.prevButton);
         setSupportActionBar(toolbar);
         getSupportActionBar().setTitle("");
         viewPager.setAdapter(fragmentPagerAdapter);
@@ -103,7 +111,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
                 System.out.println("submit");
                 if (query != null) {
                     if (MainActivity.netConncted) {
-                        searchFragment.search(query);
+                        searchFragment.search(query, 0);
                     } else {
                         Toast toast = Toast.makeText(context, getString(R.string.needNetwork), Toast.LENGTH_SHORT);
                         toast.show();

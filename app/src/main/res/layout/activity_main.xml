@@ -13,13 +13,24 @@
             android:theme="?attr/actionBarTheme"
             android:minHeight="?attr/actionBarSize" android:layout_alignParentTop="true"
             android:id="@+id/toolbar" android:layout_alignParentStart="true">
-        <SearchView
-                android:id="@+id/searchView"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:iconifiedByDefault="false"
-                android:queryHint="Search"
-        />
+        <RelativeLayout android:layout_width="wrap_content" android:layout_height="wrap_content">
+            <Button
+                    android:text="Next"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" android:id="@+id/nextButton"
+                    android:textAllCaps="false"
+                    android:layout_alignParentTop="true" android:layout_alignParentEnd="true"/>
+            <SearchView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" android:id="@+id/searchView">
+            </SearchView>
+            <Button
+                    android:text="Prev"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" android:id="@+id/prevButton"
+                    android:textAllCaps="false"
+                    android:layout_alignParentTop="true" android:layout_toStartOf="@+id/nextButton"/>
+        </RelativeLayout>
     </android.support.v7.widget.Toolbar>
 
 </RelativeLayout>

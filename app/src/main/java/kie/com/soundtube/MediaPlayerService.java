@@ -112,7 +112,6 @@ public class MediaPlayerService extends Service {
     public void onCreate() {
         super.onCreate();
         mediaPlayer = new MediaPlayer();
-        mediaPlayer.setScreenOnWhilePlaying(true);
         mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
         mediaPlayer.setOnPreparedListener(preparedListener);
         mediaPlayer.setOnErrorListener(errorListener);
@@ -123,7 +122,7 @@ public class MediaPlayerService extends Service {
         playHandler = new Handler(thread.getLooper());
         PowerManager powerManager = (PowerManager) getSystemService(Service.POWER_SERVICE);
         wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "serviceWakeLock");
-        wifiLock.setReferenceCounted(false);
+        wakeLock.setReferenceCounted(false);
         wifiManager = (WifiManager) getSystemService(Service.WIFI_SERVICE);
         wifiLock = wifiManager.createWifiLock(WifiManager.WIFI_MODE_FULL, "ServiceWifilock");
         wifiLock.setReferenceCounted(false);
@@ -144,8 +143,7 @@ public class MediaPlayerService extends Service {
 
     @Override
     public void onDestroy() {
-        stopForeground(true);
-        mediaPlayer.stop();
+
         mediaPlayer.release();
         wifiLock.release();
         wakeLock.release();
@@ -153,6 +151,7 @@ public class MediaPlayerService extends Service {
         updateSeekBar = false;
         Log.d("service", "onDestroy");
         super.onDestroy();
+        stopForeground(true);
     }
 
     public void play() {
@@ -244,6 +243,7 @@ public class MediaPlayerService extends Service {
             @Override
             public void run() {
                 mediaPlayer.setDisplay(surfaceHolder);
+                mediaPlayer.setScreenOnWhilePlaying(true);
             }
         });
     }

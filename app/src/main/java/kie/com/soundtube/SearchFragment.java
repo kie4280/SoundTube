@@ -22,10 +22,7 @@ import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.client.util.Joiner;
 import com.google.api.services.youtube.YouTube;
-import com.google.api.services.youtube.model.SearchListResponse;
-import com.google.api.services.youtube.model.SearchResult;
-import com.google.api.services.youtube.model.Video;
-import com.google.api.services.youtube.model.VideoListResponse;
+import com.google.api.services.youtube.model.*;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -37,26 +34,18 @@ import java.util.*;
 public class SearchFragment extends Fragment {
 
     private OnFragmentInteractionListener mListener;
-
     private static final long NUMBER_OF_VIDEOS_RETURNED = 25;
-
     private static final String APIKey = "AIzaSyANfhXgNlxpmkWKl7JNWdyRQZx4uS2vYuo";
-
     private static YouTube youtube;
-
     private View fragmentView = null;
-
     private HandlerThread WorkerThread = null;
-
     private static Handler WorkHandler = null;
-
     private Context context;
-
     private SearchView searchView;
-
     public VideoRetriver videoRetriver;
-
     private List<String> pageTokens;
+    MainActivity mainActivity;
+    private int tokenIndex = 0;
 
     public SearchFragment() {
         // Required empty public constructor
@@ -67,6 +56,10 @@ public class SearchFragment extends Fragment {
         super.onCreate(savedInstanceState);
         context = getContext();
         videoRetriver = new VideoRetriver();
+        pageTokens = new ArrayList<>(10);
+        WorkerThread = new HandlerThread("WorkThread");
+        WorkerThread.start();
+        WorkHandler = new Handler(WorkerThread.getLooper());
 
     }
 
@@ -104,6 +97,11 @@ public class SearchFragment extends Fragment {
         mListener = null;
     }
 
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        WorkerThread.quit();
+    }
 
     public interface OnFragmentInteractionListener {
 
@@ -125,7 +123,16 @@ public class SearchFragment extends Fragment {
         }).setApplicationName("power saver").build();
     }
 
-    public void search(String queryterm) {
+    public void nextPage(String term) {
+        search(term, tokenIndex + 1);
+    }
+
+    public void prevPage(String term) {
+        search(term, tokenIndex - 1);
+
+    }
+
+    public void search(String queryterm, final int page) {
 
         if (youtube == null) {
             initYoutube();
@@ -153,9 +160,19 @@ public class SearchFragment extends Fragment {
                     // application uses.
                     search.setFields("items(id/kind,id/videoId),nextPageToken,prevPageToken,pageInfo/totalResults");
                     search.setMaxResults(NUMBER_OF_VIDEOS_RETURNED);
+                    if(page != 0 && pageTokens.get(page) != null) {
+                        search.setPageToken(pageTokens.get(page));
+                        tokenIndex = page;
+                    }
 
                     // Call the API and print results.
                     SearchListResponse searchResponse = search.execute();
+                    if(tokenIndex == 0) {
+                        pageTokens.set(1, searchResponse.getNextPageToken());
+                    } else {
+                        pageTokens.set(tokenIndex - 1, searchResponse.getPrevPageToken());
+                        pageTokens.set(tokenIndex + 1, searchResponse.getNextPageToken());
+                    }
                     List<SearchResult> searchResultList = searchResponse.getItems();
                     List<String> videoList = new ArrayList<>();
                     if (searchResultList != null) {
@@ -183,16 +200,14 @@ public class SearchFragment extends Fragment {
                 }
             }
         };
-        WorkerThread = new HandlerThread("WorkThread");
-        WorkerThread.start();
-        WorkHandler = new Handler(WorkerThread.getLooper());
+
         WorkHandler.post(run1);
 
     }
 
     private void onFound(final List<DataHolder> data) {
 
-        MainActivity.UiHandler.post(new Runnable() {
+        mainActivity.runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 createListView(data);
@@ -357,6 +372,10 @@ public class SearchFragment extends Fragment {
             }
         });
 
+    }
+
+    public void setActivity(MainActivity activity) {
+        this.mainActivity = activity;
     }
 
 }
