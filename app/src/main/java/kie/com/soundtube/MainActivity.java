@@ -111,7 +111,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
                 System.out.println("submit");
                 if (query != null) {
                     if (MainActivity.netConncted) {
-                        searchFragment.search(query, 0);
+                        searchFragment.searcher.newSearch(query);
                     } else {
                         Toast toast = Toast.makeText(context, getString(R.string.needNetwork), Toast.LENGTH_SHORT);
                         toast.show();
@@ -135,6 +135,20 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
                 if(!hasFocus) {
                     getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
                 }
+            }
+        });
+
+        nextButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                searchFragment.searcher.nextPage();
+            }
+        });
+
+        prevButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                searchFragment.searcher.prevPage();
             }
         });
 

@@ -13,7 +13,6 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.*;
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.api.client.http.HttpRequest;
@@ -22,11 +21,13 @@ import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.client.util.Joiner;
 import com.google.api.services.youtube.YouTube;
-import com.google.api.services.youtube.model.*;
+import com.google.api.services.youtube.model.SearchListResponse;
+import com.google.api.services.youtube.model.SearchResult;
+import com.google.api.services.youtube.model.Video;
+import com.google.api.services.youtube.model.VideoListResponse;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.util.*;
@@ -41,11 +42,11 @@ public class SearchFragment extends Fragment {
     private HandlerThread WorkerThread = null;
     private static Handler WorkHandler = null;
     private Context context;
-    private SearchView searchView;
     public VideoRetriver videoRetriver;
-    private List<String> pageTokens;
+
     MainActivity mainActivity;
-    private int tokenIndex = 0;
+    Search searcher;
+
 
     public SearchFragment() {
         // Required empty public constructor
@@ -56,11 +57,10 @@ public class SearchFragment extends Fragment {
         super.onCreate(savedInstanceState);
         context = getContext();
         videoRetriver = new VideoRetriver();
-        pageTokens = new ArrayList<>(10);
         WorkerThread = new HandlerThread("WorkThread");
         WorkerThread.start();
         WorkHandler = new Handler(WorkerThread.getLooper());
-
+        searcher = new Search();
     }
 
     @Override
@@ -68,7 +68,6 @@ public class SearchFragment extends Fragment {
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         fragmentView = inflater.inflate(R.layout.fragment_search, container, false);
-
         return fragmentView;
 
     }
@@ -108,144 +107,6 @@ public class SearchFragment extends Fragment {
         void onFragmentInteraction(Uri uri);
 
         void onreturnVideo(DataHolder dataHolder);
-    }
-
-    public void initYoutube() {
-
-        // This object is used to make YouTube Data API requests. The last
-        // argument is required, but since we don't need anything
-        // initialized when the HttpRequest is initialized, we override
-        // the interface and provide a no-op function.
-
-        youtube = new YouTube.Builder(new NetHttpTransport(), new JacksonFactory(), new HttpRequestInitializer() {
-            public void initialize(HttpRequest request) throws IOException {
-            }
-        }).setApplicationName("power saver").build();
-    }
-
-    public void nextPage(String term) {
-        search(term, tokenIndex + 1);
-    }
-
-    public void prevPage(String term) {
-        search(term, tokenIndex - 1);
-
-    }
-
-    public void search(String queryterm, final int page) {
-
-        if (youtube == null) {
-            initYoutube();
-        }
-        final String queryTerm = queryterm;
-        Runnable run1 = new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    // Define the API request for retrieving search results.
-                    YouTube.Search.List search = youtube.search().list("id,snippet");
-
-                    // Set your developer key from the {{ Google Cloud Console }} for
-                    // non-authenticated requests. See:
-                    // {{ https://cloud.google.com/console }}
-
-                    search.setKey(APIKey);
-                    search.setQ(queryTerm);
-
-                    // Restrict the search results to only include videos. See:
-                    // https://developers.google.com/youtube/v3/docs/search/list#type
-                    search.setType("video");
-
-                    // To increase efficiency, only retrieve the fields that the
-                    // application uses.
-                    search.setFields("items(id/kind,id/videoId),nextPageToken,prevPageToken,pageInfo/totalResults");
-                    search.setMaxResults(NUMBER_OF_VIDEOS_RETURNED);
-                    if(page != 0 && pageTokens.get(page) != null) {
-                        search.setPageToken(pageTokens.get(page));
-                        tokenIndex = page;
-                    }
-
-                    // Call the API and print results.
-                    SearchListResponse searchResponse = search.execute();
-                    if(tokenIndex == 0) {
-                        pageTokens.set(1, searchResponse.getNextPageToken());
-                    } else {
-                        pageTokens.set(tokenIndex - 1, searchResponse.getPrevPageToken());
-                        pageTokens.set(tokenIndex + 1, searchResponse.getNextPageToken());
-                    }
-                    List<SearchResult> searchResultList = searchResponse.getItems();
-                    List<String> videoList = new ArrayList<>();
-                    if (searchResultList != null) {
-                        for (SearchResult searchResult : searchResultList) {
-                            videoList.add(searchResult.getId().getVideoId());
-                        }
-                        Joiner joiner = Joiner.on(',');
-                        String videoID = joiner.join(videoList);
-                        YouTube.Videos.List videoRequest = youtube.videos().list("snippet,contentDetails,id").setId(videoID);
-                        videoRequest.setKey(APIKey);
-                        videoRequest.setFields("items(id,snippet/publishedAt,snippet/title," +
-                                "snippet/thumbnails/default/url,contentDetails/duration)");
-                        VideoListResponse listResponse = videoRequest.execute();
-                        onFound(toClass(listResponse.getItems()));
-                    }
-
-
-                } catch (GoogleJsonResponseException e) {
-                    System.err.println("There was a service error: " + e.getDetails().getCode() + " : "
-                            + e.getDetails().getMessage());
-                } catch (IOException e) {
-                    System.err.println("There was an IO error: " + e.getCause() + " : " + e.getMessage());
-                } catch (Throwable t) {
-                    t.printStackTrace();
-                }
-            }
-        };
-
-        WorkHandler.post(run1);
-
-    }
-
-    private void onFound(final List<DataHolder> data) {
-
-        mainActivity.runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                createListView(data);
-            }
-        });
-
-    }
-
-    private List<DataHolder> toClass(List<Video> searchResultList) {
-        ListIterator<Video> iterator = searchResultList.listIterator();
-        List<DataHolder> classes = new LinkedList<>();
-        while (iterator.hasNext()) {
-            Video s = iterator.next();
-            Bitmap bitmap = null;
-
-            try {
-                InputStream in = new URL(URI.create(s.getSnippet().getThumbnails().getDefault().getUrl())
-                        .toURL().toString()).openStream();
-                bitmap = BitmapFactory.decodeStream(in);
-                in.close();
-            } catch (MalformedURLException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            DataHolder holder = new DataHolder();
-            holder.thumbnail = bitmap;
-            holder.title = s.getSnippet().getTitle();
-            holder.publishdate = s.getSnippet().getPublishedAt().toString();
-            String d = s.getContentDetails().getDuration().replace('H', ':');
-            d = d.replace('M', ':');
-            d = d.replace("S", "");
-            d = d.replace("PT", "");
-            holder.videolength = d;
-            holder.videoID = s.getId();
-            classes.add(holder);
-        }
-        return classes;
     }
 
     private class ViewHolder {
@@ -378,4 +239,164 @@ public class SearchFragment extends Fragment {
         this.mainActivity = activity;
     }
 
+    public class Search {
+
+        //private int tokenIndex = 0;
+        YouTube.Search.List search;
+        String nextPageToken = null;
+        String prevPageToken = null;
+
+        public void newSearch(final String queryTerm) {
+
+            Runnable run1 = new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        // This object is used to make YouTube Data API requests. The last
+                        // argument is required, but since we don't need anything
+                        // initialized when the HttpRequest is initialized, we override
+                        // the interface and provide a no-op function.
+
+                        youtube = new YouTube.Builder(new NetHttpTransport(), new JacksonFactory(), new HttpRequestInitializer() {
+                            public void initialize(HttpRequest request) throws IOException {
+                            }
+                        }).setApplicationName("power saver").build();
+                        search = youtube.search().list("id,snippet");
+                        // Define the API request for retrieving search results.
+                        search.setKey(APIKey);
+                        // Set your developer key from the {{ Google Cloud Console }} for
+                        // non-authenticated requests. See:
+                        // {{ https://cloud.google.com/console }}
+                        search.setType("video");
+                        // To increase efficiency, only retrieve the fields that the
+                        // application uses.
+                        search.setFields("items(id/kind,id/videoId),nextPageToken,prevPageToken,pageInfo/totalResults");
+                        search.setMaxResults(NUMBER_OF_VIDEOS_RETURNED);
+                        search.setQ(queryTerm);
+                        // Call the API and print results.
+                        SearchListResponse searchResponse = search.execute();
+                        nextPageToken = searchResponse.getNextPageToken();
+                        prevPageToken = searchResponse.getPrevPageToken();
+                        List<SearchResult> searchResultList = searchResponse.getItems();
+                        onFound(toClass(searchResultList));
+                    } catch (GoogleJsonResponseException e) {
+                        System.err.println("There was a service error: " + e.getDetails().getCode() + " : "
+                                + e.getDetails().getMessage());
+                    } catch (IOException e) {
+                        System.err.println("There was an IO error: " + e.getCause() + " : " + e.getMessage());
+                    } catch (Throwable t) {
+                        t.printStackTrace();
+                    }
+                }
+            };
+
+            WorkHandler.post(run1);
+        }
+
+        public void nextPage() {
+            WorkHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    if (nextPageToken != null) {
+                        search.setPageToken(nextPageToken);
+                        try {
+                            SearchListResponse searchResponse = search.execute();
+                            nextPageToken = searchResponse.getNextPageToken();
+                            prevPageToken = searchResponse.getPrevPageToken();
+                            List<SearchResult> searchResultList = searchResponse.getItems();
+                            onFound(toClass(searchResultList));
+
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+
+                }
+            });
+
+        }
+
+        public void prevPage() {
+            WorkHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    if (prevPageToken != null) {
+                        search.setPageToken(prevPageToken);
+                        try {
+                            SearchListResponse searchResponse = search.execute();
+                            nextPageToken = searchResponse.getNextPageToken();
+                            prevPageToken = searchResponse.getPrevPageToken();
+                            List<SearchResult> searchResultList = searchResponse.getItems();
+                            onFound(toClass(searchResultList));
+
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            });
+
+        }
+
+        public List<DataHolder> toClass(List<SearchResult> searchResultList) {
+
+            List<String> videoList = new ArrayList<>((int) NUMBER_OF_VIDEOS_RETURNED);
+            List<DataHolder> classes = new LinkedList<>();
+
+            if (searchResultList != null) {
+                for (SearchResult searchResult : searchResultList) {
+                    videoList.add(searchResult.getId().getVideoId());
+                }
+                Joiner joiner = Joiner.on(',');
+                String videoID = joiner.join(videoList);
+                try {
+                    YouTube.Videos.List videoRequest = youtube.videos().list("snippet,contentDetails,id").setId(videoID);
+                    videoRequest.setKey(APIKey);
+                    videoRequest.setFields("items(id,snippet/publishedAt,snippet/title," +
+                            "snippet/thumbnails/default/url,contentDetails/duration)");
+
+                    VideoListResponse videoResponse = videoRequest.execute();
+                    List<Video> listResponse = videoResponse.getItems();
+                    ListIterator<Video> iterator = listResponse.listIterator();
+
+                    while (iterator.hasNext()) {
+                        Video s = iterator.next();
+
+                        InputStream in = new URL(URI.create(s.getSnippet().getThumbnails().getDefault().getUrl())
+                                .toURL().toString()).openStream();
+                        Bitmap bitmap = BitmapFactory.decodeStream(in);
+                        in.close();
+
+                        DataHolder holder = new DataHolder();
+                        holder.thumbnail = bitmap;
+                        holder.title = s.getSnippet().getTitle();
+                        holder.publishdate = s.getSnippet().getPublishedAt().toString();
+                        String d = s.getContentDetails().getDuration().replace('H', ':');
+                        d = d.replace('M', ':');
+                        d = d.replace("S", "");
+                        d = d.replace("PT", "");
+                        holder.videolength = d;
+                        holder.videoID = s.getId();
+                        classes.add(holder);
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+            }
+
+            return classes;
+        }
+
+        private void onFound(final List<DataHolder> data) {
+
+            mainActivity.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    createListView(data);
+                }
+            });
+
+        }
+    }
 }

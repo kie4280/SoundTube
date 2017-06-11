@@ -254,7 +254,6 @@ public class MediaPlayerService extends Service {
             public void run() {
                 if (mediaPlayer.isPlaying()) {
                     mediaPlayer.seekTo(millis);
-                    videoFragment.buffering(true);
                 }
             }
         });
