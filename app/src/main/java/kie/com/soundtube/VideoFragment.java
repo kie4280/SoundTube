@@ -27,14 +27,9 @@ public class VideoFragment extends Fragment {
     private OnFragmentInteractionListener mListener;
     public float Displayratio = 16f / 9f;
     public float Videoratio = 16f / 9f;
-
-
-
-
     public boolean prepared = false;
     boolean connected = false;
     boolean controlshow = true;
-
     private Button playbutton;
     private SurfaceView surfaceView;
     private SurfaceHolder surfaceHolder;
@@ -276,6 +271,7 @@ public class VideoFragment extends Fragment {
                         mediaService.prepare(dataHolder, a);
                         mediaService.setDisplay(surfaceHolder);
                         mediaService.play();
+                        playbutton.setBackgroundResource(R.drawable.pause);
                         textView.setText(dataHolder.title);
 
                     }
