@@ -56,6 +56,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        connectmgr = (ConnectivityManager) getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
         context = getApplicationContext();
         UiHandler = new Handler(Looper.getMainLooper());
         videoFragment = new VideoFragment();
@@ -175,6 +176,9 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
             mediaService = musicBinder.getService();
             servicebound = true;
             connect();
+            if(mediaService.mediaPlayer.isPlaying()) {
+                viewPager.setCurrentItem(1, true);
+            }
             if(mediaService.currentData != null) {
                 videoFragment.resume();
             } else {
@@ -195,17 +199,15 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
 
     public void connect() {
         mediaService.videoFragment = videoFragment;
-        mediaService.connected = true;
         videoFragment.mediaService = mediaService;
         videoFragment.mediaPlayer = mediaService.mediaPlayer;
-        videoFragment.connected = true;
     }
 
     @Override
     protected void onStart() {
 
         super.onStart();
-        connectmgr = (ConnectivityManager) getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
+
         if (playIntent == null) {
             playIntent = new Intent(this, MediaPlayerService.class);
             startService(playIntent);

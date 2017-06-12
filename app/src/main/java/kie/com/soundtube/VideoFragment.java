@@ -1,7 +1,6 @@
 package kie.com.soundtube;
 
 import android.app.Activity;
-import android.support.v4.app.FragmentActivity;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.media.MediaPlayer;
@@ -13,13 +12,10 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
 import android.support.v4.app.Fragment;
-import android.support.v4.view.MotionEventCompat;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.*;
 import android.widget.*;
-
-import java.util.List;
 
 
 public class VideoFragment extends Fragment {
@@ -30,6 +26,7 @@ public class VideoFragment extends Fragment {
     public boolean prepared = false;
     boolean connected = false;
     boolean controlshow = true;
+    boolean seekbarUpdating = false;
     private Button playbutton;
     private SurfaceView surfaceView;
     private SurfaceHolder surfaceHolder;
@@ -174,6 +171,7 @@ public class VideoFragment extends Fragment {
             float prevX = 0;
             float prevY = 0;
             float threshold = 15f;
+
             @Override
             public boolean onTouch(View v, MotionEvent event) {
                 int action = event.getAction();
@@ -184,9 +182,9 @@ public class VideoFragment extends Fragment {
 
                     Log.d("surface", "touchdown");
 
-                } else if(action == MotionEvent.ACTION_UP) {
+                } else if (action == MotionEvent.ACTION_UP) {
                     mainActivity.viewPager.setSwipingEnabled(true);
-                    if(Math.abs(event.getX() - prevX) <= threshold && Math.abs(event.getY() - prevY) <=threshold)  {
+                    if (Math.abs(event.getX() - prevX) <= threshold && Math.abs(event.getY() - prevY) <= threshold) {
                         if (controlshow) {
                             showcontrols(false);
                         } else {
@@ -244,6 +242,14 @@ public class VideoFragment extends Fragment {
     }
 
     @Override
+    public void onStart() {
+        super.onStart();
+//        if (mediaService.updateSeekBar) {
+//            updateSeekBar();
+//        }
+    }
+
+    @Override
     public void onStop() {
         super.onStop();
         connected = false;
@@ -266,7 +272,7 @@ public class VideoFragment extends Fragment {
         if (info.isAvailable() && info.isConnected()) {
             for (int a : VideoRetriver.mPreferredVideoQualities) {
                 if (dataHolder.videoUris.containsKey(a)) {
-                    if(connected) {
+                    if (mediaService != null) {
                         mediaService.reset();
                         mediaService.prepare(dataHolder, a);
                         mediaService.setDisplay(surfaceHolder);
@@ -317,13 +323,16 @@ public class VideoFragment extends Fragment {
     }
 
     public void updateSeekBar() {
-        if (connected) {
+        if (activity != null && !seekbarUpdating) {
+            seekbarUpdating = true;
             activity.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    if(mediaService.updateSeekBar) {
+                    if (mediaService.updateSeekBar) {
                         seekBar.setProgress(mediaPlayer.getCurrentPosition());
                         seekHandler.postDelayed(this, 1000);
+                    } else {
+                        seekbarUpdating = false;
                     }
                 }
             });
@@ -379,9 +388,9 @@ public class VideoFragment extends Fragment {
         });
     }
 
-public interface OnFragmentInteractionListener {
+    public interface OnFragmentInteractionListener {
 
-    void onFragmentInteraction(Uri uri);
-}
+        void onFragmentInteraction(Uri uri);
+    }
 
 }

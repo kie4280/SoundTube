@@ -21,7 +21,6 @@ public class MediaPlayerService extends Service {
     Handler playHandler;
     HandlerThread thread;
     boolean prepared = false;
-    boolean connected = false;
     boolean updateSeekBar = true;
     Runnable task;
     DataHolder currentData = null;
@@ -45,7 +44,7 @@ public class MediaPlayerService extends Service {
                         task = null;
                     }
 
-                    if (connected) {
+                    if (videoFragment != null) {
                         videoFragment.buffering(false);
                         videoFragment.showcontrols(false);
                         videoFragment.setSeekBarMax(mediaPlayer.getDuration());
@@ -93,7 +92,7 @@ public class MediaPlayerService extends Service {
     public void onRebind(Intent intent) {
         super.onRebind(intent);
         Log.d("service", "onRebind");
-        connected = true;
+
         if(mediaPlayer.isPlaying()) {
             updateSeekBar = true;
             videoFragment.updateSeekBar();
@@ -102,7 +101,7 @@ public class MediaPlayerService extends Service {
 
     @Override
     public boolean onUnbind(Intent intent) {
-        connected = false;
+
         updateSeekBar = false;
         Log.d("service", "onUnbind");
         return true;
@@ -128,9 +127,11 @@ public class MediaPlayerService extends Service {
         wifiLock.setReferenceCounted(false);
 
 
-        Intent app = new Intent(MediaPlayerService.this, MainActivity.class);
+        Intent app = new Intent(getApplicationContext(), MainActivity.class);
+        app.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP|Intent.FLAG_ACTIVITY_CLEAR_TOP);
         PendingIntent pendingIntent = PendingIntent.getActivity(MediaPlayerService.this,
                 0, app, PendingIntent.FLAG_NO_CREATE);
+
         Notification.Builder builder = new Notification.Builder(MediaPlayerService.this);
         builder.setContentIntent(pendingIntent)
                 .setSmallIcon(R.drawable.icon)
