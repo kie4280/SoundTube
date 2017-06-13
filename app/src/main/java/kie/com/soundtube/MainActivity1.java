@@ -13,7 +13,7 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
-import com.sothree.slidinguppanel.SlidingUpPanelLayout;
+
 import kie.com.soundtube.MediaPlayerService2.MusicBinder;
 
 import java.util.HashMap;
@@ -28,7 +28,7 @@ public class MainActivity1 extends AppCompatActivity implements SearchFragment.O
 
     VideoFragment1 videoFragment;
     SearchFragment searchFragment;
-    SlidingUpPanelLayout slidingUpPanelLayout;
+
 
 
     @Override

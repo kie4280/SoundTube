@@ -130,12 +130,15 @@ public class MediaPlayerService extends Service {
         Intent app = new Intent(getApplicationContext(), MainActivity.class);
         app.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP|Intent.FLAG_ACTIVITY_CLEAR_TOP);
         PendingIntent pendingIntent = PendingIntent.getActivity(MediaPlayerService.this,
-                0, app, PendingIntent.FLAG_NO_CREATE);
+                0, app, PendingIntent.FLAG_UPDATE_CURRENT);
 
         Notification.Builder builder = new Notification.Builder(MediaPlayerService.this);
         builder.setContentIntent(pendingIntent)
                 .setSmallIcon(R.drawable.icon)
-                .setOngoing(true);
+                .setOngoing(true)
+                .setContentTitle("SoundTube");
+
+
 
         Notification not = builder.build();
         startForeground(1, not);

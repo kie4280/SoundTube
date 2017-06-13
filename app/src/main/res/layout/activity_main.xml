@@ -15,17 +15,19 @@
             android:id="@+id/toolbar" android:layout_alignParentStart="true">
         <RelativeLayout android:layout_width="wrap_content" android:layout_height="wrap_content">
             <Button
-                    android:text="Next"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content" android:id="@+id/nextButton"
                     android:textAllCaps="false"
-                    android:layout_alignParentTop="true" android:layout_alignParentEnd="true"/>
+                    android:layout_alignParentTop="true" android:layout_alignParentEnd="true"
+                    android:background="?android:attr/homeAsUpIndicator"
+                    style="@style/Widget.AppCompat.Button.Small" android:rotation="180"/>
             <Button
-                    android:text="Prev"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content" android:id="@+id/prevButton"
                     android:textAllCaps="false"
-                    android:layout_alignParentTop="true" android:layout_toStartOf="@+id/nextButton"/>
+                    android:layout_alignParentTop="true" android:layout_toStartOf="@+id/nextButton"
+                    android:background="?android:attr/homeAsUpIndicator"
+                    style="@style/Widget.AppCompat.Button.Small"/>
             <SearchView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content" android:id="@+id/searchView"

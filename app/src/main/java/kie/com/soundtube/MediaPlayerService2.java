@@ -12,21 +12,22 @@ import android.net.wifi.WifiManager;
 import android.os.*;
 import android.util.Log;
 import android.view.SurfaceHolder;
-import com.google.android.exoplayer2.ExoPlayerFactory;
-import com.google.android.exoplayer2.SimpleExoPlayer;
-import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
-import com.google.android.exoplayer2.extractor.ExtractorsFactory;
-import com.google.android.exoplayer2.source.ExtractorMediaSource;
-import com.google.android.exoplayer2.source.MediaSource;
-import com.google.android.exoplayer2.trackselection.AdaptiveTrackSelection;
-import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
-import com.google.android.exoplayer2.trackselection.TrackSelection;
-import com.google.android.exoplayer2.trackselection.TrackSelector;
-import com.google.android.exoplayer2.upstream.BandwidthMeter;
-import com.google.android.exoplayer2.upstream.DataSource;
-import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
-import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
-import com.google.android.exoplayer2.util.Util;
+//import android.view.SurfaceHolder;
+//import com.google.android.exoplayer2.ExoPlayerFactory;
+//import com.google.android.exoplayer2.SimpleExoPlayer;
+//import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
+//import com.google.android.exoplayer2.extractor.ExtractorsFactory;
+//import com.google.android.exoplayer2.source.ExtractorMediaSource;
+//import com.google.android.exoplayer2.source.MediaSource;
+//import com.google.android.exoplayer2.trackselection.AdaptiveTrackSelection;
+//import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
+//import com.google.android.exoplayer2.trackselection.TrackSelection;
+//import com.google.android.exoplayer2.trackselection.TrackSelector;
+//import com.google.android.exoplayer2.upstream.BandwidthMeter;
+//import com.google.android.exoplayer2.upstream.DataSource;
+//import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
+//import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
+//import com.google.android.exoplayer2.util.Util;
 
 import java.io.IOException;
 
@@ -46,7 +47,7 @@ public class MediaPlayerService2 extends Service {
     WifiManager.WifiLock wifiLock;
     WifiManager wifiManager;
     Context context;
-    SimpleExoPlayer player;
+//    SimpleExoPlayer player;
 
     MediaPlayer.OnPreparedListener preparedListener = new MediaPlayer.OnPreparedListener() {
         @Override
@@ -127,14 +128,14 @@ public class MediaPlayerService2 extends Service {
 
         // 1. Create a default TrackSelector
         Handler mainHandler = new Handler();
-        BandwidthMeter bandwidthMeter = new DefaultBandwidthMeter();
-        TrackSelection.Factory videoTrackSelectionFactory =
-                new AdaptiveTrackSelection.Factory(bandwidthMeter);
-        TrackSelector trackSelector =
-                new DefaultTrackSelector(videoTrackSelectionFactory);
-
-// 2. Create the player
-        player = ExoPlayerFactory.newSimpleInstance(context, trackSelector);
+//        BandwidthMeter bandwidthMeter = new DefaultBandwidthMeter();
+//        TrackSelection.Factory videoTrackSelectionFactory =
+//                new AdaptiveTrackSelection.Factory(bandwidthMeter);
+//        TrackSelector trackSelector =
+//                new DefaultTrackSelector(videoTrackSelectionFactory);
+//
+//// 2. Create the player
+//        player = ExoPlayerFactory.newSimpleInstance(context, trackSelector);
 
 
 
@@ -218,19 +219,19 @@ public class MediaPlayerService2 extends Service {
         playHandler.post(new Runnable() {
             @Override
             public void run() {
-                DefaultBandwidthMeter bandwidthMeter = new DefaultBandwidthMeter();
-// Produces DataSource instances through which media data is loaded.
-                DataSource.Factory dataSourceFactory = new DefaultDataSourceFactory(context,
-                        Util.getUserAgent(context, "yourApplicationName"), bandwidthMeter);
-// Produces Extractor instances for parsing the media data.
-                ExtractorsFactory extractorsFactory = new DefaultExtractorsFactory();
-// This is the MediaSource representing the media to be played.
-
-                MediaSource videoSource = new ExtractorMediaSource(Uri.parse(dataHolder.videoUris
-                        .get(a)), dataSourceFactory, extractorsFactory,
-                        null, null);
-// Prepare the player with the source.
-                player.prepare(videoSource);
+//                DefaultBandwidthMeter bandwidthMeter = new DefaultBandwidthMeter();
+//// Produces DataSource instances through which media data is loaded.
+//                DataSource.Factory dataSourceFactory = new DefaultDataSourceFactory(context,
+//                        Util.getUserAgent(context, "yourApplicationName"), bandwidthMeter);
+//// Produces Extractor instances for parsing the media data.
+//                ExtractorsFactory extractorsFactory = new DefaultExtractorsFactory();
+//// This is the MediaSource representing the media to be played.
+//
+//                MediaSource videoSource = new ExtractorMediaSource(Uri.parse(dataHolder.videoUris
+//                        .get(a)), dataSourceFactory, extractorsFactory,
+//                        null, null);
+//// Prepare the player with the source.
+//                player.prepare(videoSource);
 
 
             }
@@ -238,12 +239,12 @@ public class MediaPlayerService2 extends Service {
     }
 
     public void setDisplay(final SurfaceHolder surfaceHolder) {
-        playHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                player.setVideoSurfaceHolder(surfaceHolder);
-            }
-        });
+//        playHandler.post(new Runnable() {
+//            @Override
+//            public void run() {
+//                player.setVideoSurfaceHolder(surfaceHolder);
+//            }
+//        });
     }
 
     public void seekTo(final int millis) {
