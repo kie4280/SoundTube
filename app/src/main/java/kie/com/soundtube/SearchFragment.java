@@ -43,6 +43,7 @@ public class SearchFragment extends Fragment {
     private static Handler WorkHandler = null;
     private Context context;
     public VideoRetriver videoRetriver;
+    ListView listView;
 
     MainActivity mainActivity;
     Search searcher;
@@ -68,6 +69,7 @@ public class SearchFragment extends Fragment {
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         fragmentView = inflater.inflate(R.layout.fragment_search, container, false);
+        listView = (ListView) fragmentView.findViewById(R.id.result_list);
         return fragmentView;
 
     }
@@ -116,8 +118,6 @@ public class SearchFragment extends Fragment {
     }
 
     public void createListView(final List<DataHolder> data) {
-
-        ListView listView = (ListView) fragmentView.findViewById(R.id.result_list);
 
         ListAdapter listAdapter = new ListAdapter() {
 
@@ -309,6 +309,9 @@ public class SearchFragment extends Fragment {
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
+                    } else {
+                        Toast toast = Toast.makeText(context, "No next page", Toast.LENGTH_SHORT);
+                        toast.show();
                     }
 
                 }
@@ -332,6 +335,9 @@ public class SearchFragment extends Fragment {
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
+                    } else {
+                        Toast toast = Toast.makeText(context, "No previous page", Toast.LENGTH_SHORT);
+                        toast.show();
                     }
                 }
             });
@@ -344,47 +350,54 @@ public class SearchFragment extends Fragment {
             List<DataHolder> classes = new LinkedList<>();
 
             if (searchResultList != null) {
-                for (SearchResult searchResult : searchResultList) {
-                    videoList.add(searchResult.getId().getVideoId());
-                }
-                Joiner joiner = Joiner.on(',');
-                String videoID = joiner.join(videoList);
-                try {
-                    YouTube.Videos.List videoRequest = youtube.videos().list("snippet,contentDetails,id").setId(videoID);
-                    videoRequest.setKey(APIKey);
-                    videoRequest.setFields("items(id,snippet/publishedAt,snippet/title," +
-                            "snippet/thumbnails/default/url,contentDetails/duration)");
+                if (searchResultList.size() == 0) {
 
-                    VideoListResponse videoResponse = videoRequest.execute();
-                    List<Video> listResponse = videoResponse.getItems();
-                    ListIterator<Video> iterator = listResponse.listIterator();
+                    Toast toast = Toast.makeText(context, "No matching result", Toast.LENGTH_LONG);
+                    toast.show();
 
-                    while (iterator.hasNext()) {
-                        Video s = iterator.next();
 
-                        InputStream in = new URL(URI.create(s.getSnippet().getThumbnails().getDefault().getUrl())
-                                .toURL().toString()).openStream();
-                        Bitmap bitmap = BitmapFactory.decodeStream(in);
-                        in.close();
-
-                        DataHolder holder = new DataHolder();
-                        holder.thumbnail = bitmap;
-                        holder.title = s.getSnippet().getTitle();
-                        holder.publishdate = s.getSnippet().getPublishedAt().toString();
-                        String d = s.getContentDetails().getDuration().replace('H', ':');
-                        d = d.replace('M', ':');
-                        d = d.replace("S", "");
-                        d = d.replace("PT", "");
-                        holder.videolength = d;
-                        holder.videoID = s.getId();
-                        classes.add(holder);
+                } else {
+                    for (SearchResult searchResult : searchResultList) {
+                        videoList.add(searchResult.getId().getVideoId());
                     }
-                } catch (IOException e) {
-                    e.printStackTrace();
+                    Joiner joiner = Joiner.on(',');
+                    String videoID = joiner.join(videoList);
+                    try {
+                        YouTube.Videos.List videoRequest = youtube.videos().list("snippet,contentDetails,id").setId(videoID);
+                        videoRequest.setKey(APIKey);
+                        videoRequest.setFields("items(id,snippet/publishedAt,snippet/title," +
+                                "snippet/thumbnails/default/url,contentDetails/duration)");
+
+                        VideoListResponse videoResponse = videoRequest.execute();
+                        List<Video> listResponse = videoResponse.getItems();
+                        ListIterator<Video> iterator = listResponse.listIterator();
+
+                        while (iterator.hasNext()) {
+                            Video s = iterator.next();
+
+                            InputStream in = new URL(URI.create(s.getSnippet().getThumbnails().getDefault().getUrl())
+                                    .toURL().toString()).openStream();
+                            Bitmap bitmap = BitmapFactory.decodeStream(in);
+                            in.close();
+
+                            DataHolder holder = new DataHolder();
+                            holder.thumbnail = bitmap;
+                            holder.title = s.getSnippet().getTitle();
+                            holder.publishdate = s.getSnippet().getPublishedAt().toString();
+                            String d = s.getContentDetails().getDuration().replace('H', ':');
+                            d = d.replace('M', ':');
+                            d = d.replace("S", "");
+                            d = d.replace("PT", "");
+                            holder.videolength = d;
+                            holder.videoID = s.getId();
+                            classes.add(holder);
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+
                 }
-
             }
-
             return classes;
         }
 

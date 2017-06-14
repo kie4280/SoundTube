@@ -270,19 +270,26 @@ public class VideoFragment extends Fragment {
         ConnectivityManager connectmgr = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo info = connectmgr.getActiveNetworkInfo();
         if (info.isAvailable() && info.isConnected()) {
-            for (int a : VideoRetriver.mPreferredVideoQualities) {
-                if (dataHolder.videoUris.containsKey(a)) {
+            for (int a = 0; a<VideoRetriver.mPreferredVideoQualities.size(); a++) {
+                int quality = VideoRetriver.mPreferredVideoQualities.get(a);
+                if (dataHolder.videoUris.containsKey(quality)) {
                     if (mediaService != null) {
                         mediaService.reset();
-                        mediaService.prepare(dataHolder, a);
+                        mediaService.prepare(dataHolder, quality);
                         mediaService.setDisplay(surfaceHolder);
                         mediaService.play();
                         playbutton.setBackgroundResource(R.drawable.pause);
                         textView.setText(dataHolder.title);
 
+                    } else {
+                        Toast toast = Toast.makeText(context, "Error!!!", Toast.LENGTH_LONG);
+                        toast.show();
                     }
 
                     break;
+                } else if(a == VideoRetriver.mPreferredVideoQualities.size() - 1){
+                    Toast toast = Toast.makeText(context, "No video resolution", Toast.LENGTH_LONG);
+                    toast.show();
                 }
 
             }
