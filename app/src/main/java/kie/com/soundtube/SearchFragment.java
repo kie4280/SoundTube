@@ -57,10 +57,11 @@ public class SearchFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         context = getContext();
-        videoRetriver = new VideoRetriver();
+
         WorkerThread = new HandlerThread("WorkThread");
         WorkerThread.start();
         WorkHandler = new Handler(WorkerThread.getLooper());
+        videoRetriver = new VideoRetriver(WorkerThread);
         searcher = new Search();
     }
 

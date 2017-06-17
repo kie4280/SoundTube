@@ -71,7 +71,7 @@ public class VideoFragment1 extends Fragment {
         thread = new HandlerThread("seek");
         thread.start();
         seekHandler = new Handler(thread.getLooper());
-        videoRetriver = new VideoRetriver();
+        videoRetriver = new VideoRetriver(thread);
 
     }
 
@@ -156,6 +156,27 @@ public class VideoFragment1 extends Fragment {
                     mediaService.play();
                     playbutton.setBackgroundResource(R.drawable.pause);
                 }
+            }
+        });
+        playbutton.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                int action = event.getAction();
+                if (action == MotionEvent.ACTION_DOWN) {
+                    mainActivity.viewPager.setSwipingEnabled(false);
+
+                } else if (action == MotionEvent.ACTION_UP) {
+                    if (mediaPlayer.isPlaying()) {
+                        mediaService.pause();
+                        playbutton.setBackgroundResource(R.drawable.play);
+
+                    } else {
+                        mediaService.play();
+                        playbutton.setBackgroundResource(R.drawable.pause);
+                    }
+                    mainActivity.viewPager.setSwipingEnabled(true);
+                }
+                return true;
             }
         });
 
@@ -281,7 +302,7 @@ public class VideoFragment1 extends Fragment {
         ConnectivityManager connectmgr = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo info = connectmgr.getActiveNetworkInfo();
         if (info.isAvailable() && info.isConnected()) {
-            for (int a = 0; a<VideoRetriver.mPreferredVideoQualities.size(); a++) {
+            for (int a = 0; a < VideoRetriver.mPreferredVideoQualities.size(); a++) {
                 int quality = VideoRetriver.mPreferredVideoQualities.get(a);
                 if (dataHolder.videoUris.containsKey(quality)) {
                     if (mediaService != null) {
@@ -291,7 +312,7 @@ public class VideoFragment1 extends Fragment {
                         mediaService.play();
                         playbutton.setBackgroundResource(R.drawable.pause);
                         textView.setText(dataHolder.title);
-                        if(searcher != null) {
+                        if (searcher != null) {
                             searcher.loadRelatedVideos(dataHolder.videoID, new Searcher.YoutubeSearchResult() {
                                 @Override
                                 public void onFound(final List<DataHolder> data) {
@@ -306,14 +327,13 @@ public class VideoFragment1 extends Fragment {
                         }
 
 
-
                     } else {
                         Toast toast = Toast.makeText(context, "Error!!!", Toast.LENGTH_LONG);
                         toast.show();
                     }
 
                     break;
-                } else if(a == VideoRetriver.mPreferredVideoQualities.size() - 1){
+                } else if (a == VideoRetriver.mPreferredVideoQualities.size() - 1) {
                     Toast toast = Toast.makeText(context, "No video resolution", Toast.LENGTH_LONG);
                     toast.show();
                 }
@@ -388,7 +408,7 @@ public class VideoFragment1 extends Fragment {
                 int viewtype = getItemViewType(position);
                 if (convertView == null) {
 
-                    if(viewtype == 0) {
+                    if (viewtype == 0) {
                         convertView = textView;
                     } else {
 
@@ -408,11 +428,11 @@ public class VideoFragment1 extends Fragment {
                     }
                 } else {
 
-                    if(viewtype == 0) {
+                    if (viewtype == 0) {
                         convertView = textView;
                     } else {
                         DataHolder dataHolder = data.get(position - 1);
-                        ViewHolder viewHolder = (ViewHolder)convertView.getTag();
+                        ViewHolder viewHolder = (ViewHolder) convertView.getTag();
                         viewHolder.imageView.setImageBitmap(dataHolder.thumbnail);
                         viewHolder.titleview.setText(dataHolder.title);
                         viewHolder.durationview.setText(dataHolder.videolength);
@@ -423,9 +443,9 @@ public class VideoFragment1 extends Fragment {
 
             @Override
             public int getItemViewType(int position) {
-                if(position == 0) {
+                if (position == 0) {
                     return 0;
-                } else  {
+                } else {
                     return 1;
                 }
 
@@ -447,23 +467,27 @@ public class VideoFragment1 extends Fragment {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 System.out.println("clicked" + position);
+                Toast toast = Toast.makeText(context, "Decrypting...", Toast.LENGTH_SHORT);
+                toast.show();
+                if (position != 0) {
+                    final DataHolder dataHolder = data.get(position - 1);
+                    videoRetriver.startExtracting("https://www.youtube" +
+                            ".com/watch?v=" + dataHolder.videoID, new VideoRetriver.YouTubeExtractorListener() {
+                        @Override
+                        public void onSuccess(HashMap<Integer, String> result) {
+                            dataHolder.videoUris = result;
+                            start(dataHolder);
+                            //Log.d("search", ))
+                        }
 
-                final DataHolder dataHolder = data.get(position);
-                videoRetriver.startExtracting("https://www.youtube" +
-                        ".com/watch?v=" + dataHolder.videoID, new VideoRetriver.YouTubeExtractorListener() {
-                    @Override
-                    public void onSuccess(HashMap<Integer, String> result) {
-                        dataHolder.videoUris = result;
-                        start(dataHolder);
-                        //Log.d("search", ))
-                    }
+                        @Override
+                        public void onFailure(Error error) {
+                            Log.d("search", "errorextracting");
 
-                    @Override
-                    public void onFailure(Error error) {
-                        Log.d("search", "errorextracting");
+                        }
+                    });
+                }
 
-                    }
-                });
 
             }
         });

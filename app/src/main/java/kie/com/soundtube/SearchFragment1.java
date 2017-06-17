@@ -54,11 +54,11 @@ public class SearchFragment1 extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         context = getContext();
-        videoRetriver = new VideoRetriver();
         WorkerThread = new HandlerThread("WorkThread");
         WorkerThread.start();
         WorkHandler = new Handler(WorkerThread.getLooper());
         searcher = new Searcher(context, WorkHandler);
+        videoRetriver = new VideoRetriver(WorkerThread);
     }
 
     @Override
@@ -209,7 +209,8 @@ public class SearchFragment1 extends Fragment {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 System.out.println("clicked" + position);
-
+                Toast toast = Toast.makeText(context, "Decrypting...", Toast.LENGTH_SHORT);
+                toast.show();
                 final DataHolder dataHolder = data.get(position);
                 videoRetriver.startExtracting("https://www.youtube" +
                         ".com/watch?v=" + dataHolder.videoID, new VideoRetriver.YouTubeExtractorListener() {

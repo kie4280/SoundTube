@@ -89,7 +89,7 @@ public class VideoFragment extends Fragment {
         videoFragmentView = inflater.inflate(R.layout.fragment_video, container, false);
         surfaceView = (SurfaceView) videoFragmentView.findViewById(R.id.surfaceView);
         seekBar = (SeekBar) videoFragmentView.findViewById(R.id.seekBar);
-        textView = (TextView) videoFragmentView.findViewById(R.id.textView);
+        //textView = (TextView) videoFragmentView.findViewById(R.id.textView);
         listView = (ListView) videoFragmentView.findViewById(R.id.recoList);
         playbutton = (Button) videoFragmentView.findViewById(R.id.playbutton);
         progressBar = (ProgressBar) videoFragmentView.findViewById(R.id.progressBar1);

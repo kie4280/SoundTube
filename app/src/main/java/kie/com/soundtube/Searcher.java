@@ -35,11 +35,11 @@ public class Searcher {
     String prevPageToken = null;
     private static final long NUMBER_OF_VIDEOS_RETURNED = 25;
     private static final String APIKey = "AIzaSyANfhXgNlxpmkWKl7JNWdyRQZx4uS2vYuo";
-    private static final String Order = "viewCount";
+    private static final String Order = "relevance";
     private YouTube youtube;
     private Handler WorkHandler = null;
     private Context context;
-    private YoutubeSearchResult result = null;
+    private YoutubeSearchResult listener = null;
 
     public Searcher(Context context, Handler handler) {
         this.context = context;
@@ -61,7 +61,8 @@ public class Searcher {
                     // argument is required, but since we don't need anything
                     // initialized when the HttpRequest is initialized, we override
                     // the interface and provide a no-op function.
-
+                    Toast toast = Toast.makeText(context, "Loading...", Toast.LENGTH_SHORT);
+                    toast.show();
 
                     search = youtube.search().list("snippet");
                     // Define the API request for retrieving search results.
@@ -81,7 +82,8 @@ public class Searcher {
                     nextPageToken = searchResponse.getNextPageToken();
                     prevPageToken = searchResponse.getPrevPageToken();
                     List<SearchResult> searchResultList = searchResponse.getItems();
-                    result.onFound(toClass(searchResultList));
+                    listener = result;
+                    listener.onFound(toClass(searchResultList));
                 } catch (GoogleJsonResponseException e) {
                     System.err.println("There was a service error: " + e.getDetails().getCode() + " : "
                             + e.getDetails().getMessage());
@@ -103,11 +105,13 @@ public class Searcher {
                 if (nextPageToken != null) {
                     search.setPageToken(nextPageToken);
                     try {
+                        Toast toast = Toast.makeText(context, "Loading...", Toast.LENGTH_SHORT);
+                        toast.show();
                         SearchListResponse searchResponse = search.execute();
                         nextPageToken = searchResponse.getNextPageToken();
                         prevPageToken = searchResponse.getPrevPageToken();
                         List<SearchResult> searchResultList = searchResponse.getItems();
-                        result.onFound(toClass(searchResultList));
+                        listener.onFound(toClass(searchResultList));
 
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -129,11 +133,13 @@ public class Searcher {
                 if (prevPageToken != null) {
                     search.setPageToken(prevPageToken);
                     try {
+                        Toast toast = Toast.makeText(context, "Loading...", Toast.LENGTH_SHORT);
+                        toast.show();
                         SearchListResponse searchResponse = search.execute();
                         nextPageToken = searchResponse.getNextPageToken();
                         prevPageToken = searchResponse.getPrevPageToken();
                         List<SearchResult> searchResultList = searchResponse.getItems();
-                        result.onFound(toClass(searchResultList));
+                        listener.onFound(toClass(searchResultList));
 
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -177,7 +183,7 @@ public class Searcher {
         if (searchResultList != null) {
             if (searchResultList.size() == 0) {
 
-                Toast toast = Toast.makeText(context, "No matching result", Toast.LENGTH_LONG);
+                Toast toast = Toast.makeText(context, "No matching result", Toast.LENGTH_SHORT);
                 toast.show();
 
 

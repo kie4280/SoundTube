@@ -3,6 +3,7 @@ package kie.com.soundtube;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.jsoup.Jsoup;
@@ -47,17 +48,8 @@ public class VideoRetriver {
     String decipherfunc = null;
     String basejsurl = null;
 
-    public static void main(String[] args) {
-        VideoRetriver test = new VideoRetriver();
-        test.getVideo("https://www.youtube.com/watch?v=UtF6Jej8yb4");
-
-    }
-
-    public VideoRetriver() {
-        youtubeExtractorThread = new HandlerThread("YouTubeExtractorThread",
-                THREAD_PRIORITY_BACKGROUND);
-        youtubeExtractorThread.start();
-        youtubeExtractorHandler = new Handler(youtubeExtractorThread.getLooper());
+    public VideoRetriver(HandlerThread thread) {
+        youtubeExtractorHandler = new Handler(thread.getLooper());
         listenerHandler = new Handler(Looper.getMainLooper());
     }
 
@@ -136,9 +128,14 @@ public class VideoRetriver {
         if (videojson.has("url_encoded_fmt_stream_map")) {
 
             String encoded_s = videojson.get("url_encoded_fmt_stream_map").getAsString();
-            String adaptiveurl = videojson.get("adaptive_fmts").getAsString();
+            JsonElement jsonElement = videojson.get("adaptive_fmts");
+            String adaptiveurl = null;
+            if (jsonElement != null) {
+                adaptiveurl = jsonElement.getAsString();
+            }
+
             List<String> videos = new LinkedList<>(asList(encoded_s.split(",")));
-            videos.addAll(asList(adaptiveurl.split(",")));
+//            videos.addAll(asList(adaptiveurl.split(",")));
 
 
             for (String e : videos) {
@@ -187,7 +184,7 @@ public class VideoRetriver {
             String url_encoded_fmt = videoinfomap.get(("url_encoded_fmt_stream_map"));
             String adaptive_fmt = videoinfomap.get(("adaptive_fmts"));
             List<String> videos = new LinkedList<>(asList(url_encoded_fmt.split(",")));
-            videos.addAll(asList(adaptive_fmt.split(",")));
+//            videos.addAll(asList(adaptive_fmt.split(",")));
         }
 
         return links;

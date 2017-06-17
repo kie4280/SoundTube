@@ -126,8 +126,7 @@ public class MediaPlayerService1 extends Service {
         wifiLock = wifiManager.createWifiLock(WifiManager.WIFI_MODE_FULL, "ServiceWifilock");
         wifiLock.setReferenceCounted(false);
 
-
-        Intent app = new Intent(getApplicationContext(), MainActivity.class);
+        Intent app = new Intent(getApplicationContext(), MainActivity1.class);
         app.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP|Intent.FLAG_ACTIVITY_CLEAR_TOP);
         PendingIntent pendingIntent = PendingIntent.getActivity(MediaPlayerService1.this,
                 0, app, PendingIntent.FLAG_UPDATE_CURRENT);
