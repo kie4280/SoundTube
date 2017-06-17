@@ -369,7 +369,7 @@ public class VideoFragment1 extends Fragment {
 
             @Override
             public DataHolder getItem(int position) {
-                return data.get(position);
+                return null;
             }
 
             @Override
@@ -385,9 +385,10 @@ public class VideoFragment1 extends Fragment {
             @Override
             public View getView(int position, View convertView, ViewGroup parent) {
 
+                int viewtype = getItemViewType(position);
                 if (convertView == null) {
 
-                    if(position == 0) {
+                    if(viewtype == 0) {
                         convertView = textView;
                     } else {
 
@@ -403,10 +404,11 @@ public class VideoFragment1 extends Fragment {
                         viewHolder.titleview.setText(dataHolder.title);
                         viewHolder.durationview.setText(dataHolder.videolength);
                         convertView = inflatedView;
+                        convertView.setTag(viewHolder);
                     }
                 } else {
 
-                    if(position == 0) {
+                    if(viewtype == 0) {
                         convertView = textView;
                     } else {
                         DataHolder dataHolder = data.get(position - 1);
