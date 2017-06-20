@@ -126,8 +126,7 @@ public class MediaPlayerService extends Service {
         wifiLock = wifiManager.createWifiLock(WifiManager.WIFI_MODE_FULL, "ServiceWifilock");
         wifiLock.setReferenceCounted(false);
 
-
-        Intent app = new Intent(getApplicationContext(), MainActivity.class);
+        Intent app = new Intent(getApplicationContext(), MainActivity1.class);
         app.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP|Intent.FLAG_ACTIVITY_CLEAR_TOP);
         PendingIntent pendingIntent = PendingIntent.getActivity(MediaPlayerService.this,
                 0, app, PendingIntent.FLAG_UPDATE_CURRENT);
@@ -147,14 +146,13 @@ public class MediaPlayerService extends Service {
 
     @Override
     public void onDestroy() {
-
+        super.onDestroy();
         mediaPlayer.release();
         wifiLock.release();
         wakeLock.release();
         thread.quit();
         updateSeekBar = false;
         Log.d("service", "onDestroy");
-        super.onDestroy();
         stopForeground(true);
     }
 
@@ -246,8 +244,13 @@ public class MediaPlayerService extends Service {
         playHandler.post(new Runnable() {
             @Override
             public void run() {
-                mediaPlayer.setDisplay(surfaceHolder);
-                mediaPlayer.setScreenOnWhilePlaying(true);
+                if (videoFragment.prepared) {
+                    mediaPlayer.setDisplay(surfaceHolder);
+                    mediaPlayer.setScreenOnWhilePlaying(true);
+                } else {
+                    mediaPlayer.setDisplay(null);
+                }
+
             }
         });
     }

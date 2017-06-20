@@ -17,24 +17,19 @@ import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
-
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.SearchView;
 import android.widget.Toast;
-
-import kie.com.soundtube.MediaPlayerService.*;
+import kie.com.soundtube.MediaPlayerService.MusicBinder;
 
 public class MainActivity extends AppCompatActivity implements SearchFragment.OnFragmentInteractionListener, VideoFragment.OnFragmentInteractionListener {
 
     public static Handler UiHandler = null;
-    public MediaPlayerService mediaService;
+
     private boolean servicebound = false;
     private Intent playIntent;
     private SearchView searchView;
@@ -43,11 +38,10 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     private Button nextButton;
     public static boolean netConncted = false;
     public CustomViewPager viewPager;
-
     VideoFragment videoFragment;
     SearchFragment searchFragment;
+    MediaPlayerService mediaService;
     Context context;
-
     ConnectivityManager connectmgr;
     Fragment[] fragments = new Fragment[2];
 
@@ -112,7 +106,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
                 System.out.println("submit");
                 if (query != null) {
                     if (MainActivity.netConncted) {
-                        searchFragment.searcher.newSearch(query);
+                        searchFragment.search(query);
                     } else {
                         Toast toast = Toast.makeText(context, getString(R.string.needNetwork), Toast.LENGTH_SHORT);
                         toast.show();
@@ -172,7 +166,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     private ServiceConnection serviceConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
-            MusicBinder musicBinder = (MediaPlayerService.MusicBinder)service;
+            MusicBinder musicBinder = (MusicBinder) service;
             mediaService = musicBinder.getService();
             servicebound = true;
             connect();
@@ -262,10 +256,10 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
 
     }
 
-
     @Override
-    public void onreturnVideo(DataHolder dataHolder) {
+    public void onreturnVideo(DataHolder dataHolder, Handler handler) {
         viewPager.setCurrentItem(1, true);
+        videoFragment.setSearchWorker(handler);
         videoFragment.start(dataHolder);
     }
 

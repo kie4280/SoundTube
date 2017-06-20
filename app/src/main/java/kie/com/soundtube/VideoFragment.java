@@ -3,6 +3,8 @@ package kie.com.soundtube;
 import android.app.Activity;
 import android.content.Context;
 import android.content.res.Configuration;
+import android.database.DataSetObserver;
+import android.graphics.Color;
 import android.media.MediaPlayer;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -16,6 +18,9 @@ import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.*;
 import android.widget.*;
+
+import java.util.HashMap;
+import java.util.List;
 
 
 public class VideoFragment extends Fragment {
@@ -34,7 +39,6 @@ public class VideoFragment extends Fragment {
     private RelativeLayout drelativeLayout;
     private View videoFragmentView;
     private SeekBar seekBar;
-    private Handler ui;
     private ProgressBar progressBar;
     private TextView textView;
     private ListView listView;
@@ -43,12 +47,14 @@ public class VideoFragment extends Fragment {
     private RelativeLayout.LayoutParams portraitlayout;
     private RelativeLayout.LayoutParams landscapelayout;
     private Activity activity;
-    private Handler seekHandler;
+    private Handler seekHandler, workHandler;
     private HandlerThread thread;
+    public VideoRetriver videoRetriver;
 
     MediaPlayerService mediaService;
     MediaPlayer mediaPlayer;
     MainActivity mainActivity;
+    Searcher searcher = null;
 
     public VideoFragment() {
         // Required empty public constructor
@@ -57,14 +63,14 @@ public class VideoFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        ui = new Handler(Looper.getMainLooper());
         context = getContext();
         activity = getActivity();
         displayMetrics = context.getResources().getDisplayMetrics();
         thread = new HandlerThread("seek");
         thread.start();
         seekHandler = new Handler(thread.getLooper());
+        videoRetriver = new VideoRetriver(thread);
+
     }
 
     @Override
@@ -89,12 +95,15 @@ public class VideoFragment extends Fragment {
         videoFragmentView = inflater.inflate(R.layout.fragment_video, container, false);
         surfaceView = (SurfaceView) videoFragmentView.findViewById(R.id.surfaceView);
         seekBar = (SeekBar) videoFragmentView.findViewById(R.id.seekBar);
-        //textView = (TextView) videoFragmentView.findViewById(R.id.textView);
+        textView = new TextView(context);
+        textView.setTextSize(24f);
+        textView.setTextColor(Color.BLACK);
         listView = (ListView) videoFragmentView.findViewById(R.id.recoList);
         playbutton = (Button) videoFragmentView.findViewById(R.id.playbutton);
         progressBar = (ProgressBar) videoFragmentView.findViewById(R.id.progressBar1);
         progressBar.setMax(100);
         progressBar.setIndeterminate(false);
+
         vrelativeLayout = (RelativeLayout) videoFragmentView.findViewById(R.id.videoRelativeLayout);
         drelativeLayout = (RelativeLayout) videoFragmentView.findViewById(R.id.descriptionRelativeLayout);
         landscapelayout = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT);
@@ -147,6 +156,27 @@ public class VideoFragment extends Fragment {
                 }
             }
         });
+        playbutton.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                int action = event.getAction();
+                if (action == MotionEvent.ACTION_DOWN) {
+                    mainActivity.viewPager.setSwipingEnabled(false);
+
+                } else if (action == MotionEvent.ACTION_UP) {
+                    if (mediaPlayer.isPlaying()) {
+                        mediaService.pause();
+                        playbutton.setBackgroundResource(R.drawable.play);
+
+                    } else {
+                        mediaService.play();
+                        playbutton.setBackgroundResource(R.drawable.pause);
+                    }
+                    mainActivity.viewPager.setSwipingEnabled(true);
+                }
+                return true;
+            }
+        });
 
         seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
@@ -167,43 +197,47 @@ public class VideoFragment extends Fragment {
 
             }
         });
-        surfaceView.setOnTouchListener(new View.OnTouchListener() {
-            float prevX = 0;
-            float prevY = 0;
-            float threshold = 15f;
-
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                int action = event.getAction();
-                if (action == MotionEvent.ACTION_DOWN) {
-                    mainActivity.viewPager.setSwipingEnabled(false);
-                    prevX = event.getX();
-                    prevY = event.getY();
-
-                    Log.d("surface", "touchdown");
-
-                } else if (action == MotionEvent.ACTION_UP) {
-                    mainActivity.viewPager.setSwipingEnabled(true);
-                    if (Math.abs(event.getX() - prevX) <= threshold && Math.abs(event.getY() - prevY) <= threshold) {
-                        if (controlshow) {
-                            showcontrols(false);
-                        } else {
-                            showcontrols(true);
-                        }
-                    }
-
-                    Log.d("surface", "touchup");
-                }
-
-                return true;
-            }
-        });
+        surfaceView.setOnTouchListener(touchListener);
 
 
         Log.d("video", "createView");
 
         return videoFragmentView;
     }
+
+    private View.OnTouchListener touchListener = new View.OnTouchListener() {
+        float prevX = 0;
+        float prevY = 0;
+        float thresholdX = 15f;
+        float thresholdY = 15f;
+
+        @Override
+        public boolean onTouch(View v, MotionEvent event) {
+            int action = event.getAction();
+            if (action == MotionEvent.ACTION_DOWN) {
+                mainActivity.viewPager.setSwipingEnabled(false);
+                prevX = event.getX();
+                prevY = event.getY();
+
+                Log.d("surface", "touchdown");
+
+            } else if (action == MotionEvent.ACTION_UP) {
+
+                if (Math.abs(event.getX() - prevX) <= thresholdX && Math.abs(event.getY() - prevY) <= thresholdY) {
+                    if (controlshow) {
+                        showcontrols(false);
+                    } else {
+                        showcontrols(true);
+                    }
+                }
+
+                mainActivity.viewPager.setSwipingEnabled(true);
+                Log.d("surface", "touchup");
+            }
+
+            return true;
+        }
+    };
 
 
     public void onButtonPressed(Uri uri) {
@@ -270,7 +304,7 @@ public class VideoFragment extends Fragment {
         ConnectivityManager connectmgr = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo info = connectmgr.getActiveNetworkInfo();
         if (info.isAvailable() && info.isConnected()) {
-            for (int a = 0; a<VideoRetriver.mPreferredVideoQualities.size(); a++) {
+            for (int a = 0; a < VideoRetriver.mPreferredVideoQualities.size(); a++) {
                 int quality = VideoRetriver.mPreferredVideoQualities.get(a);
                 if (dataHolder.videoUris.containsKey(quality)) {
                     if (mediaService != null) {
@@ -280,6 +314,20 @@ public class VideoFragment extends Fragment {
                         mediaService.play();
                         playbutton.setBackgroundResource(R.drawable.pause);
                         textView.setText(dataHolder.title);
+                        if (searcher != null) {
+                            searcher.loadRelatedVideos(dataHolder.videoID, new Searcher.YoutubeSearchResult() {
+                                @Override
+                                public void onFound(final List<DataHolder> data) {
+                                    mainActivity.runOnUiThread(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            createListView(data);
+                                        }
+                                    });
+                                }
+                            });
+                        }
+
 
                     } else {
                         Toast toast = Toast.makeText(context, "Error!!!", Toast.LENGTH_LONG);
@@ -287,7 +335,7 @@ public class VideoFragment extends Fragment {
                     }
 
                     break;
-                } else if(a == VideoRetriver.mPreferredVideoQualities.size() - 1){
+                } else if (a == VideoRetriver.mPreferredVideoQualities.size() - 1) {
                     Toast toast = Toast.makeText(context, "No video resolution", Toast.LENGTH_LONG);
                     toast.show();
                 }
@@ -303,6 +351,148 @@ public class VideoFragment extends Fragment {
     public void resume() {
 
 
+    }
+
+    private class ViewHolder {
+        ImageView imageView;
+        TextView titleview;
+        TextView durationview;
+    }
+
+    public void createListView(final List<DataHolder> data) {
+
+        ListAdapter listAdapter = new ListAdapter() {
+
+
+            @Override
+            public boolean areAllItemsEnabled() {
+                return true;
+            }
+
+            @Override
+            public boolean isEnabled(int position) {
+                return true;
+            }
+
+            @Override
+            public void registerDataSetObserver(DataSetObserver observer) {
+
+            }
+
+            @Override
+            public void unregisterDataSetObserver(DataSetObserver observer) {
+
+            }
+
+            @Override
+            public int getCount() {
+                return data.size() + 1;
+            }
+
+            @Override
+            public DataHolder getItem(int position) {
+                return null;
+            }
+
+            @Override
+            public long getItemId(int position) {
+                return 0;
+            }
+
+            @Override
+            public boolean hasStableIds() {
+                return false;
+            }
+
+            @Override
+            public View getView(int position, View convertView, ViewGroup parent) {
+
+                int viewtype = getItemViewType(position);
+                if (convertView == null) {
+
+                    if (viewtype == 0) {
+                        convertView = textView;
+                    } else {
+
+                        LayoutInflater inflater = (LayoutInflater) context.getSystemService(
+                                Context.LAYOUT_INFLATER_SERVICE);
+                        View inflatedView = inflater.inflate(R.layout.video_layout, parent, false);
+                        ViewHolder viewHolder = new ViewHolder();
+                        viewHolder.imageView = (ImageView) inflatedView.findViewById(R.id.imageView);
+                        viewHolder.titleview = (TextView) inflatedView.findViewById(R.id.titleview);
+                        viewHolder.durationview = (TextView) inflatedView.findViewById(R.id.durationview);
+                        DataHolder dataHolder = data.get(position - 1);
+                        viewHolder.imageView.setImageBitmap(dataHolder.thumbnail);
+                        viewHolder.titleview.setText(dataHolder.title);
+                        viewHolder.durationview.setText(dataHolder.videolength);
+                        convertView = inflatedView;
+                        convertView.setTag(viewHolder);
+                    }
+                } else {
+
+                    if (viewtype == 0) {
+                        convertView = textView;
+                    } else {
+                        DataHolder dataHolder = data.get(position - 1);
+                        ViewHolder viewHolder = (ViewHolder) convertView.getTag();
+                        viewHolder.imageView.setImageBitmap(dataHolder.thumbnail);
+                        viewHolder.titleview.setText(dataHolder.title);
+                        viewHolder.durationview.setText(dataHolder.videolength);
+                    }
+                }
+                return convertView;
+            }
+
+            @Override
+            public int getItemViewType(int position) {
+                if (position == 0) {
+                    return 0;
+                } else {
+                    return 1;
+                }
+
+            }
+
+            @Override
+            public int getViewTypeCount() {
+                return 2;
+            }
+
+            @Override
+            public boolean isEmpty() {
+                return false;
+            }
+        };
+        listView.setAdapter(listAdapter);
+
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                System.out.println("clicked" + position);
+                Toast toast = Toast.makeText(context, "Decrypting...", Toast.LENGTH_SHORT);
+                toast.show();
+                if (position != 0) {
+                    final DataHolder dataHolder = data.get(position - 1);
+                    videoRetriver.startExtracting("https://www.youtube" +
+                            ".com/watch?v=" + dataHolder.videoID, new VideoRetriver.YouTubeExtractorListener() {
+                        @Override
+                        public void onSuccess(HashMap<Integer, String> result) {
+                            dataHolder.videoUris = result;
+                            start(dataHolder);
+                            //Log.d("search", ))
+                        }
+
+                        @Override
+                        public void onFailure(Error error) {
+                            Log.d("search", "errorextracting");
+
+                        }
+                    });
+                }
+
+
+            }
+        });
     }
 
     public void buffering(final boolean buff) {
@@ -364,6 +554,11 @@ public class VideoFragment extends Fragment {
 
     }
 
+    public void setSearchWorker(Handler handler) {
+        this.workHandler = handler;
+        searcher = new Searcher(context, workHandler);
+    }
+
     public void changeToPortrait() {
         vrelativeLayout.setLayoutParams(portraitlayout);
         drelativeLayout.setVisibility(View.VISIBLE);
@@ -394,6 +589,7 @@ public class VideoFragment extends Fragment {
             }
         });
     }
+
 
     public interface OnFragmentInteractionListener {
 
