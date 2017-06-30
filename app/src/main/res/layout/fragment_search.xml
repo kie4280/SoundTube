@@ -1,21 +1,14 @@
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-             android:layout_width="match_parent"
-             android:layout_height="match_parent"
->
-
-    <!-- TODO: Update blank fragment layout -->
-    <RelativeLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
-
-        <ListView
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:id="@+id/result_list"
-                android:layout_alignParentStart="true"
-                android:dividerHeight="1px">
+                android:layout_height="match_parent">
 
-        </ListView>
-    </RelativeLayout>
+    <ListView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:id="@+id/result_list"
+            android:layout_alignParentStart="true"
+            android:dividerHeight="1px">
 
-</FrameLayout>
+    </ListView>
+
+</RelativeLayout>

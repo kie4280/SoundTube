@@ -39,11 +39,10 @@ public class VideoRetriver {
     public static final int YOUTUBE_VIDEO_QUALITY_HD_720 = 22;
     public static final int YOUTUBE_VIDEO_QUALITY_HD_1080 = 37;
     public static final int YOUTUBE_VIDEO_QUALITY_4K = 38;
-    public static final int YOUTUBE_VIDEO_QUALITY_AUTO = 0;
-    HandlerThread youtubeExtractorThread;
+    public static final int YOUTUBE_VIDEO_QUALITY_AUTO = -1;
+
     Handler youtubeExtractorHandler, listenerHandler;
     public static List<Integer> mPreferredVideoQualities = asList(YOUTUBE_VIDEO_QUALITY_4K, YOUTUBE_VIDEO_QUALITY_HD_1080, YOUTUBE_VIDEO_QUALITY_HD_720, YOUTUBE_VIDEO_QUALITY_MEDIUM_360, YOUTUBE_VIDEO_QUALITY_SMALL_240);
-    ;
     JsonObject jsonObj = null;
     String decipherfunc = null;
     String basejsurl = null;

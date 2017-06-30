@@ -12,8 +12,8 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.os.Looper;
 import android.support.v4.app.Fragment;
+import android.support.v4.view.MotionEventCompat;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.*;
@@ -28,6 +28,7 @@ public class VideoFragment extends Fragment {
     private OnFragmentInteractionListener mListener;
     public float Displayratio = 16f / 9f;
     public float Videoratio = 16f / 9f;
+    private float scaleFactor = 1f;
     public boolean prepared = false;
     boolean connected = false;
     boolean controlshow = true;
@@ -37,10 +38,13 @@ public class VideoFragment extends Fragment {
     private SurfaceHolder surfaceHolder;
     private RelativeLayout vrelativeLayout;
     private RelativeLayout drelativeLayout;
+    private RelativeLayout header;
     private View videoFragmentView;
     private SeekBar seekBar;
     private ProgressBar progressBar;
-    private TextView textView;
+    private TextView titleView;
+    private TextView currentTime;
+    private TextView totalTime;
     private ListView listView;
     private DisplayMetrics displayMetrics;
     private Context context;
@@ -55,6 +59,8 @@ public class VideoFragment extends Fragment {
     MediaPlayer mediaPlayer;
     MainActivity mainActivity;
     Searcher searcher = null;
+
+    ScaleGestureDetector scaleGestureDetector;
 
     public VideoFragment() {
         // Required empty public constructor
@@ -95,9 +101,12 @@ public class VideoFragment extends Fragment {
         videoFragmentView = inflater.inflate(R.layout.fragment_video, container, false);
         surfaceView = (SurfaceView) videoFragmentView.findViewById(R.id.surfaceView);
         seekBar = (SeekBar) videoFragmentView.findViewById(R.id.seekBar);
-        textView = new TextView(context);
-        textView.setTextSize(24f);
-        textView.setTextColor(Color.BLACK);
+        titleView = new TextView(context);
+        currentTime = (TextView) videoFragmentView.findViewById(R.id.currentTime);
+        totalTime = (TextView) videoFragmentView.findViewById(R.id.totalTime);
+        header = (RelativeLayout) videoFragmentView.findViewById(R.id.headerView);
+        titleView.setTextSize(24f);
+        titleView.setTextColor(Color.BLACK);
         listView = (ListView) videoFragmentView.findViewById(R.id.recoList);
         playbutton = (Button) videoFragmentView.findViewById(R.id.playbutton);
         progressBar = (ProgressBar) videoFragmentView.findViewById(R.id.progressBar1);
@@ -143,38 +152,48 @@ public class VideoFragment extends Fragment {
 
             }
         });
-        playbutton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (mediaPlayer.isPlaying()) {
-                    mediaService.pause();
-                    playbutton.setBackgroundResource(R.drawable.play);
-
-                } else {
-                    mediaService.play();
-                    playbutton.setBackgroundResource(R.drawable.pause);
-                }
-            }
-        });
+//        playbutton.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                if (mediaPlayer.isPlaying()) {
+//                    mediaService.pause();
+//                    playbutton.setBackgroundResource(R.drawable.play);
+//
+//                } else {
+//                    mediaService.play();
+//                    playbutton.setBackgroundResource(R.drawable.pause);
+//                }
+//            }
+//        });
         playbutton.setOnTouchListener(new View.OnTouchListener() {
+            float prevX = 0;
+            float prevY = 0;
+            float thresholdX = 15f;
+            float thresholdY = 15f;
+
             @Override
             public boolean onTouch(View v, MotionEvent event) {
-                int action = event.getAction();
+                int action = MotionEventCompat.getActionMasked(event);
                 if (action == MotionEvent.ACTION_DOWN) {
-                    mainActivity.viewPager.setSwipingEnabled(false);
-
+//                    mainActivity.viewPager.setSwipingEnabled(false);
+                    Log.d("playbutton", "down");
+                    prevX = event.getX();
+                    prevY = event.getY();
                 } else if (action == MotionEvent.ACTION_UP) {
-                    if (mediaPlayer.isPlaying()) {
-                        mediaService.pause();
-                        playbutton.setBackgroundResource(R.drawable.play);
+                    if (Math.abs(event.getX() - prevX) <= thresholdX && Math.abs(event.getY() - prevY) <= thresholdY) {
+                        if (mediaPlayer.isPlaying()) {
+                            mediaService.pause();
+                            playbutton.setBackgroundResource(R.drawable.play);
 
-                    } else {
-                        mediaService.play();
-                        playbutton.setBackgroundResource(R.drawable.pause);
+                        } else {
+                            mediaService.play();
+                            playbutton.setBackgroundResource(R.drawable.pause);
+                        }
+//                    mainActivity.viewPager.setSwipingEnabled(true);
                     }
-                    mainActivity.viewPager.setSwipingEnabled(true);
+
                 }
-                return true;
+                return false;
             }
         });
 
@@ -197,7 +216,27 @@ public class VideoFragment extends Fragment {
 
             }
         });
-        surfaceView.setOnTouchListener(touchListener);
+
+        scaleGestureDetector = new ScaleGestureDetector(vrelativeLayout.getContext(), new ScaleGestureDetector.OnScaleGestureListener() {
+            @Override
+            public boolean onScale(ScaleGestureDetector detector) {
+                Log.d("scale", Float.toString(scaleFactor));
+                scaleFactor *= detector.getScaleFactor();
+                scaleFactor = Math.max(0.1f, Math.min(scaleFactor, 5.0f));
+                return true;
+            }
+
+            @Override
+            public boolean onScaleBegin(ScaleGestureDetector detector) {
+                return true;
+            }
+
+            @Override
+            public void onScaleEnd(ScaleGestureDetector detector) {
+
+            }
+        });
+        vrelativeLayout.setOnTouchListener(touchListener);
 
 
         Log.d("video", "createView");
@@ -213,27 +252,36 @@ public class VideoFragment extends Fragment {
 
         @Override
         public boolean onTouch(View v, MotionEvent event) {
-            int action = event.getAction();
-            if (action == MotionEvent.ACTION_DOWN) {
-                mainActivity.viewPager.setSwipingEnabled(false);
-                prevX = event.getX();
-                prevY = event.getY();
+            int action = MotionEventCompat.getActionMasked(event);
+            int pointerIndex = event.getActionIndex();
+            int pointerID = event.getPointerId(pointerIndex);
+            switch (action) {
+                case MotionEvent.ACTION_DOWN:
+                    prevX = event.getX();
+                    prevY = event.getY();
+                case MotionEvent.ACTION_POINTER_DOWN:
+                    Log.d("surface", "touchdown");
+                case MotionEvent.ACTION_MOVE:
+//                    mainActivity.viewPager.setSwipingEnabled(false);
 
-                Log.d("surface", "touchdown");
-
-            } else if (action == MotionEvent.ACTION_UP) {
-
-                if (Math.abs(event.getX() - prevX) <= thresholdX && Math.abs(event.getY() - prevY) <= thresholdY) {
-                    if (controlshow) {
-                        showcontrols(false);
-                    } else {
-                        showcontrols(true);
+//                    Log.d("surface", "move");
+                    scaleGestureDetector.onTouchEvent(event);
+                    break;
+                case MotionEvent.ACTION_POINTER_UP:
+                case MotionEvent.ACTION_UP:
+                    if (Math.abs(event.getX() - prevX) <= thresholdX && Math.abs(event.getY() - prevY) <= thresholdY) {
+                        if (controlshow) {
+                            showcontrols(false);
+                        } else {
+                            showcontrols(true);
+                        }
                     }
-                }
 
-                mainActivity.viewPager.setSwipingEnabled(true);
-                Log.d("surface", "touchup");
+//                    mainActivity.viewPager.setSwipingEnabled(true);
+                    Log.d("surface", "touchup");
+                    break;
             }
+
 
             return true;
         }
@@ -304,43 +352,35 @@ public class VideoFragment extends Fragment {
         ConnectivityManager connectmgr = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo info = connectmgr.getActiveNetworkInfo();
         if (info.isAvailable() && info.isConnected()) {
-            for (int a = 0; a < VideoRetriver.mPreferredVideoQualities.size(); a++) {
-                int quality = VideoRetriver.mPreferredVideoQualities.get(a);
-                if (dataHolder.videoUris.containsKey(quality)) {
-                    if (mediaService != null) {
-                        mediaService.reset();
-                        mediaService.prepare(dataHolder, quality);
-                        mediaService.setDisplay(surfaceHolder);
-                        mediaService.play();
-                        playbutton.setBackgroundResource(R.drawable.pause);
-                        textView.setText(dataHolder.title);
-                        if (searcher != null) {
-                            searcher.loadRelatedVideos(dataHolder.videoID, new Searcher.YoutubeSearchResult() {
+
+            if (mediaService != null) {
+                mediaService.reset();
+                mediaService.prepare(dataHolder);
+                mediaService.setDisplay(surfaceHolder);
+                mediaService.play();
+                playbutton.setBackgroundResource(R.drawable.pause);
+                titleView.setText(dataHolder.title);
+                if (searcher != null) {
+                    searcher.loadRelatedVideos(dataHolder.videoID, new Searcher.YoutubeSearchResult() {
+                        @Override
+                        public void onFound(final List<DataHolder> data) {
+                            mainActivity.runOnUiThread(new Runnable() {
                                 @Override
-                                public void onFound(final List<DataHolder> data) {
-                                    mainActivity.runOnUiThread(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            createListView(data);
-                                        }
-                                    });
+                                public void run() {
+                                    createListView(data);
                                 }
                             });
                         }
-
-
-                    } else {
-                        Toast toast = Toast.makeText(context, "Error!!!", Toast.LENGTH_LONG);
-                        toast.show();
-                    }
-
-                    break;
-                } else if (a == VideoRetriver.mPreferredVideoQualities.size() - 1) {
-                    Toast toast = Toast.makeText(context, "No video resolution", Toast.LENGTH_LONG);
-                    toast.show();
+                    });
                 }
 
+
+            } else {
+                Toast toast = Toast.makeText(context, "Error!!!", Toast.LENGTH_LONG);
+                toast.show();
             }
+
+
         } else {
             Toast toast = Toast.makeText(context, getString(R.string.needNetwork), Toast.LENGTH_SHORT);
             toast.show();
@@ -411,7 +451,7 @@ public class VideoFragment extends Fragment {
                 if (convertView == null) {
 
                     if (viewtype == 0) {
-                        convertView = textView;
+                        convertView = titleView;
                     } else {
 
                         LayoutInflater inflater = (LayoutInflater) context.getSystemService(
@@ -431,7 +471,7 @@ public class VideoFragment extends Fragment {
                 } else {
 
                     if (viewtype == 0) {
-                        convertView = textView;
+                        convertView = titleView;
                     } else {
                         DataHolder dataHolder = data.get(position - 1);
                         ViewHolder viewHolder = (ViewHolder) convertView.getTag();
@@ -515,6 +555,7 @@ public class VideoFragment extends Fragment {
             @Override
             public void run() {
                 seekBar.setMax(max);
+//                totalTime.setText(max);
             }
         });
     }
@@ -526,7 +567,9 @@ public class VideoFragment extends Fragment {
                 @Override
                 public void run() {
                     if (mediaService.updateSeekBar) {
-                        seekBar.setProgress(mediaPlayer.getCurrentPosition());
+                        int pos = mediaPlayer.getCurrentPosition();
+                        seekBar.setProgress(pos);
+//                        currentTime.setText(pos);
                         seekHandler.postDelayed(this, 1000);
                     } else {
                         seekbarUpdating = false;
@@ -588,6 +631,16 @@ public class VideoFragment extends Fragment {
                 }
             }
         });
+    }
+
+    public void setHeaderVisibility(boolean visibility) {
+        if (visibility) {
+            header.setVisibility(View.VISIBLE);
+            vrelativeLayout.setVisibility(View.GONE);
+        } else {
+            header.setVisibility(View.GONE);
+            vrelativeLayout.setVisibility(View.VISIBLE);
+        }
     }
 
 

@@ -1,5 +1,7 @@
 package kie.com.soundtube;
 
+import android.support.v4.app.FragmentTransaction;
+import android.app.Service;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -13,6 +15,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.ActionBar;
@@ -24,6 +27,8 @@ import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.SearchView;
 import android.widget.Toast;
+import com.sothree.slidinguppanel.SlidingUpPanelLayout;
+import com.sothree.slidinguppanel.SlidingUpPanelLayout.*;
 import kie.com.soundtube.MediaPlayerService.MusicBinder;
 
 public class MainActivity extends AppCompatActivity implements SearchFragment.OnFragmentInteractionListener, VideoFragment.OnFragmentInteractionListener {
@@ -36,14 +41,15 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     public Toolbar toolbar;
     private Button prevButton;
     private Button nextButton;
+    public SlidingUpPanelLayout slidePanel;
     public static boolean netConncted = false;
-    public CustomViewPager viewPager;
+    //    public CustomViewPager viewPager;
     VideoFragment videoFragment;
     SearchFragment searchFragment;
     MediaPlayerService mediaService;
     Context context;
     ConnectivityManager connectmgr;
-    Fragment[] fragments = new Fragment[2];
+
 
 
     @Override
@@ -57,45 +63,23 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
         videoFragment.setActivity(this);
         searchFragment = new SearchFragment();
         searchFragment.setActivity(this);
-        viewPager = (CustomViewPager) findViewById(R.id.viewpager);
+//        viewPager = (CustomViewPager) findViewById(R.id.viewpager);
         toolbar = (Toolbar)findViewById(R.id.toolbar);
         nextButton = (Button) findViewById(R.id.nextButton);
         prevButton = (Button) findViewById(R.id.prevButton);
+        slidePanel = (SlidingUpPanelLayout) findViewById(R.id.slidePanel);
+
         setSupportActionBar(toolbar);
         getSupportActionBar().setTitle("");
-        viewPager.setAdapter(fragmentPagerAdapter);
-        fragments[0] = searchFragment;
-        fragments[1] = videoFragment;
+//        viewPager.setAdapter(fragmentPagerAdapter);
 
-        viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
-            @Override
-            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
-
-            }
-
-            @Override
-            public void onPageSelected(int position) {
-                ActionBar actionBar = getSupportActionBar();
-                if(position == 0) {
-                    setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-                    if(actionBar != null) {
-                        getSupportActionBar().show();
-                    }
-
-                } else if(position == 1) {
-                    setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR);
-                    if(actionBar != null) {
-                        getSupportActionBar().hide();
-                    }
-                }
-            }
-
-            @Override
-            public void onPageScrollStateChanged(int state) {
-
-            }
-        });
-
+        FragmentManager manager = getSupportFragmentManager();
+        FragmentTransaction transaction = manager.beginTransaction();
+        transaction
+                .add(R.id.videoPanel, videoFragment)
+                .add(R.id.searchPanel, searchFragment)
+                .commit();
+        slidePanel.addPanelSlideListener(panelSlideListener);
         searchView = (SearchView) findViewById(R.id.searchView);
         searchView.setIconifiedByDefault(true);
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
@@ -149,19 +133,27 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
 
     }
 
-    private FragmentPagerAdapter fragmentPagerAdapter = new FragmentPagerAdapter(getSupportFragmentManager()) {
+    private PanelSlideListener panelSlideListener = new PanelSlideListener() {
         @Override
-        public Fragment getItem(int position) {
-            return fragments[position];
+        public void onPanelSlide(View panel, float slideOffset) {
+//            Log.d("panel", Float.toString(slideOffset));
+            toolbar.setAlpha(1 - slideOffset);
+            toolbar.setTranslationY(-toolbar.getHeight() * slideOffset);
         }
 
         @Override
-        public int getCount() {
-            return 2;
+        public void onPanelStateChanged(View panel, PanelState previousState, PanelState newState) {
+            if (newState == PanelState.EXPANDED) {
+                videoFragment.setHeaderVisibility(false);
+                Log.d("Panel", "expanded");
+            } else if (newState == PanelState.COLLAPSED) {
+                videoFragment.setHeaderVisibility(true);
+                Log.d("Panel", "collapsed");
+            }
+
+
         }
     };
-
-
 
     private ServiceConnection serviceConnection = new ServiceConnection() {
         @Override
@@ -171,7 +163,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
             servicebound = true;
             connect();
             if(mediaService.mediaPlayer.isPlaying()) {
-                viewPager.setCurrentItem(1, true);
+//                viewPager.setCurrentItem(1, true);
             }
             if(mediaService.currentData != null) {
                 videoFragment.resume();
@@ -258,7 +250,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
 
     @Override
     public void onreturnVideo(DataHolder dataHolder, Handler handler) {
-        viewPager.setCurrentItem(1, true);
+//        viewPager.setCurrentItem(1, true);
         videoFragment.setSearchWorker(handler);
         videoFragment.start(dataHolder);
     }

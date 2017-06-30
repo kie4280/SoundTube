@@ -3,6 +3,7 @@ package kie.com.soundtube;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
@@ -11,8 +12,11 @@ import android.net.wifi.WifiManager;
 import android.os.*;
 import android.util.Log;
 import android.view.SurfaceHolder;
+import android.widget.Toast;
 
 import java.io.IOException;
+import java.util.LinkedList;
+import java.util.List;
 
 public class MediaPlayerService extends Service {
     public int mposition = 0;
@@ -28,6 +32,8 @@ public class MediaPlayerService extends Service {
     PowerManager.WakeLock wakeLock;
     WifiManager.WifiLock wifiLock;
     WifiManager wifiManager;
+    List<DataHolder> playList;
+    Context context;
 
     MediaPlayer.OnPreparedListener preparedListener = new MediaPlayer.OnPreparedListener() {
         @Override
@@ -37,7 +43,7 @@ public class MediaPlayerService extends Service {
                 @Override
                 public void run() {
                     mp.setVideoScalingMode(MediaPlayer.VIDEO_SCALING_MODE_SCALE_TO_FIT_WITH_CROPPING);
-                    videoFragment.Videoratio = (float) mp.getVideoWidth() / (float) mp.getVideoHeight();
+
                     prepared = true;
                     if (task != null) {
                         playHandler.post(task);
@@ -45,6 +51,7 @@ public class MediaPlayerService extends Service {
                     }
 
                     if (videoFragment != null) {
+                        videoFragment.Videoratio = (float) mp.getVideoWidth() / (float) mp.getVideoHeight();
                         videoFragment.buffering(false);
                         videoFragment.showcontrols(false);
                         videoFragment.setSeekBarMax(mediaPlayer.getDuration());
@@ -59,8 +66,15 @@ public class MediaPlayerService extends Service {
         @Override
         public void onCompletion(MediaPlayer mp) {
             updateSeekBar = false;
-            Log.d("service", "complete");
-            videoFragment.onComplete();
+            if (!playList.isEmpty()) {
+                prepared = false;
+                prepare(playList.get(0));
+            } else if (videoFragment != null) {
+
+                Log.d("service", "complete");
+                videoFragment.onComplete();
+            }
+
         }
     };
     MediaPlayer.OnErrorListener errorListener = new MediaPlayer.OnErrorListener() {
@@ -73,9 +87,9 @@ public class MediaPlayerService extends Service {
         @Override
         public boolean onInfo(MediaPlayer mp, int what, int extra) {
             if (what == MediaPlayer.MEDIA_INFO_BUFFERING_START) {
-                videoFragment.buffering(true);
+                buffering(true);
             } else if (what == MediaPlayer.MEDIA_INFO_BUFFERING_END) {
-                videoFragment.buffering(false);
+                buffering(false);
             }
             return true;
         }
@@ -93,9 +107,9 @@ public class MediaPlayerService extends Service {
         super.onRebind(intent);
         Log.d("service", "onRebind");
 
-        if(mediaPlayer.isPlaying()) {
+        if (mediaPlayer.isPlaying()) {
             updateSeekBar = true;
-            videoFragment.updateSeekBar();
+            updateSeekBar();
         }
     }
 
@@ -103,6 +117,7 @@ public class MediaPlayerService extends Service {
     public boolean onUnbind(Intent intent) {
 
         updateSeekBar = false;
+        videoFragment = null;
         Log.d("service", "onUnbind");
         return true;
     }
@@ -110,6 +125,8 @@ public class MediaPlayerService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
+        context = getApplicationContext();
+        playList = new LinkedList<>();
         mediaPlayer = new MediaPlayer();
         mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
         mediaPlayer.setOnPreparedListener(preparedListener);
@@ -127,7 +144,7 @@ public class MediaPlayerService extends Service {
         wifiLock.setReferenceCounted(false);
 
         Intent app = new Intent(getApplicationContext(), MainActivity1.class);
-        app.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP|Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        app.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         PendingIntent pendingIntent = PendingIntent.getActivity(MediaPlayerService.this,
                 0, app, PendingIntent.FLAG_UPDATE_CURRENT);
 
@@ -136,7 +153,6 @@ public class MediaPlayerService extends Service {
                 .setSmallIcon(R.drawable.icon)
                 .setOngoing(true)
                 .setContentTitle("SoundTube");
-
 
 
         Notification not = builder.build();
@@ -163,7 +179,7 @@ public class MediaPlayerService extends Service {
                 public void run() {
                     mediaPlayer.start();
                     updateSeekBar = true;
-                    videoFragment.updateSeekBar();
+                    updateSeekBar();
                     wifiLock.acquire();
                     wakeLock.acquire();
 
@@ -176,7 +192,7 @@ public class MediaPlayerService extends Service {
                 public void run() {
                     mediaPlayer.start();
                     updateSeekBar = true;
-                    videoFragment.updateSeekBar();
+                    updateSeekBar();
                     wifiLock.acquire();
                     wakeLock.acquire();
 
@@ -222,29 +238,41 @@ public class MediaPlayerService extends Service {
         });
     }
 
-    public void prepare(final DataHolder dataHolder, final int a) {
+    public void prepare(final DataHolder dataHolder) {
         currentData = dataHolder;
         playHandler.post(new Runnable() {
             @Override
             public void run() {
-                try {
-                    mediaPlayer.setDataSource(getApplicationContext(),
-                            Uri.parse(dataHolder.videoUris.get(a)));
-                    mediaPlayer.prepareAsync();
+                for (int a = 0; a < VideoRetriver.mPreferredVideoQualities.size(); a++) {
+                    int quality = VideoRetriver.mPreferredVideoQualities.get(a);
+                    if (dataHolder.videoUris.containsKey(quality)) {
+                        try {
+                            mediaPlayer.setDataSource(context,
+                                    Uri.parse(dataHolder.videoUris.get(quality)));
+                            mediaPlayer.prepareAsync();
 //                    mediaPlayer.setOnBufferingUpdateListener(onBufferingUpdateListener);
 
-                } catch (IOException e) {
-                    e.printStackTrace();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                        break;
+                    } else if (a == VideoRetriver.mPreferredVideoQualities.size() - 1) {
+                        Toast toast = Toast.makeText(context, "No video resolution", Toast.LENGTH_LONG);
+                        toast.show();
+                    }
+
                 }
+
             }
         });
     }
+
 
     public void setDisplay(final SurfaceHolder surfaceHolder) {
         playHandler.post(new Runnable() {
             @Override
             public void run() {
-                if (videoFragment.prepared) {
+                if (videoFragment != null && videoFragment.prepared) {
                     mediaPlayer.setDisplay(surfaceHolder);
                     mediaPlayer.setScreenOnWhilePlaying(true);
                 } else {
@@ -264,6 +292,22 @@ public class MediaPlayerService extends Service {
                 }
             }
         });
+    }
+
+    public void addToPlayList(DataHolder dataHolder) {
+        playList.add(dataHolder);
+    }
+
+    public void updateSeekBar() {
+        if (videoFragment != null) {
+            videoFragment.updateSeekBar();
+        }
+    }
+
+    public void buffering(boolean buff) {
+        if (videoFragment != null) {
+            videoFragment.buffering(buff);
+        }
     }
 
     public class MusicBinder extends Binder {
