@@ -13,7 +13,7 @@
             android:supportsRtl="true"
             android:theme="@style/Theme.Design.Light.NoActionBar">
         <activity android:name=".MainActivity" android:windowSoftInputMode="stateHidden"
-                  android:configChanges="orientation|screenSize" android:screenOrientation="portrait"
+                  android:configChanges="orientation|screenSize"
                   android:launchMode="singleInstance">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>

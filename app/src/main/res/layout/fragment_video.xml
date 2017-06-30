@@ -6,31 +6,18 @@
 
     <RelativeLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content" android:id="@+id/headerView" android:layout_alignParentTop="true">
+            android:layout_height="60dp" android:id="@+id/headerView" android:layout_alignParentTop="true">
 
         <TextView
                 android:text="TextView"
                 android:layout_width="match_parent"
-                android:id="@+id/textView" android:layout_height="wrap_content"
+                android:id="@+id/textView" android:layout_height="match_parent"
                 android:textSize="36sp"/>
     </RelativeLayout>
     <RelativeLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:id="@+id/descriptionRelativeLayout"
-            android:layout_below="@+id/videoRelativeLayout">
-
-        <ListView
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_alignParentStart="true"
-                android:id="@+id/recoList" android:layout_alignParentTop="true"/>
-    </RelativeLayout>
-    <RelativeLayout
-            android:layout_width="match_parent"
             android:id="@+id/videoRelativeLayout" android:layout_height="200dp"
-            android:layout_below="@+id/headerView"
-    >
+            android:layout_below="@+id/headerView" android:layout_alignParentTop="false">
 
         <SurfaceView
                 android:layout_width="match_parent"
@@ -66,5 +53,17 @@
                 android:layout_height="wrap_content"
                 android:id="@+id/currentTime" android:layout_above="@+id/seekBar"
                 android:layout_toEndOf="@+id/progressBar1" android:visibility="gone"/>
+    </RelativeLayout>
+    <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/descriptionRelativeLayout"
+            android:layout_below="@+id/videoRelativeLayout" android:layout_alignParentBottom="true">
+
+        <ListView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_alignParentStart="true"
+                android:id="@+id/recoList" android:layout_alignParentTop="true"/>
     </RelativeLayout>
 </RelativeLayout>

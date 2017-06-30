@@ -139,15 +139,16 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
 //            Log.d("panel", Float.toString(slideOffset));
             toolbar.setAlpha(1 - slideOffset);
             toolbar.setTranslationY(-toolbar.getHeight() * slideOffset);
+            videoFragment.setHeaderPos(slideOffset);
         }
 
         @Override
         public void onPanelStateChanged(View panel, PanelState previousState, PanelState newState) {
             if (newState == PanelState.EXPANDED) {
-                videoFragment.setHeaderVisibility(false);
+
                 Log.d("Panel", "expanded");
             } else if (newState == PanelState.COLLAPSED) {
-                videoFragment.setHeaderVisibility(true);
+
                 Log.d("Panel", "collapsed");
             }
 

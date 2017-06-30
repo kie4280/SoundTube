@@ -105,6 +105,7 @@ public class VideoFragment extends Fragment {
         currentTime = (TextView) videoFragmentView.findViewById(R.id.currentTime);
         totalTime = (TextView) videoFragmentView.findViewById(R.id.totalTime);
         header = (RelativeLayout) videoFragmentView.findViewById(R.id.headerView);
+
         titleView.setTextSize(24f);
         titleView.setTextColor(Color.BLACK);
         listView = (ListView) videoFragmentView.findViewById(R.id.recoList);
@@ -115,15 +116,21 @@ public class VideoFragment extends Fragment {
 
         vrelativeLayout = (RelativeLayout) videoFragmentView.findViewById(R.id.videoRelativeLayout);
         drelativeLayout = (RelativeLayout) videoFragmentView.findViewById(R.id.descriptionRelativeLayout);
-        landscapelayout = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT);
+        RelativeLayout.LayoutParams orig = (RelativeLayout.LayoutParams) vrelativeLayout.getLayoutParams();
+
+        orig.height = RelativeLayout.LayoutParams.MATCH_PARENT;
+        landscapelayout = new RelativeLayout.LayoutParams(orig);
+
         if (context.getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
             int w = (int) (displayMetrics.heightPixels / Displayratio);
-            portraitlayout = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, w);
+            orig.height = w;
+            portraitlayout = new RelativeLayout.LayoutParams(orig);
             changeToLandscape();
 
         } else {
             int w = (int) (displayMetrics.widthPixels / Displayratio);
-            portraitlayout = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, w);
+            orig.height = w;
+            portraitlayout = new RelativeLayout.LayoutParams(orig);
             changeToPortrait();
         }
 
@@ -314,6 +321,7 @@ public class VideoFragment extends Fragment {
 
     @Override
     public void onResume() {
+
         if (context.getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
             activity.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
                     View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
@@ -533,6 +541,7 @@ public class VideoFragment extends Fragment {
 
             }
         });
+
     }
 
     public void buffering(final boolean buff) {
@@ -633,13 +642,13 @@ public class VideoFragment extends Fragment {
         });
     }
 
-    public void setHeaderVisibility(boolean visibility) {
-        if (visibility) {
-            header.setVisibility(View.VISIBLE);
-            vrelativeLayout.setVisibility(View.GONE);
-        } else {
-            header.setVisibility(View.GONE);
-            vrelativeLayout.setVisibility(View.VISIBLE);
+    public void setHeaderPos(float alpha) {
+        header.setAlpha(1 - alpha);
+        float offset = -header.getHeight() * alpha;
+        header.setTranslationY(offset);
+        vrelativeLayout.setTranslationY(offset);
+        if (alpha == 0.0) {
+
         }
     }
 
