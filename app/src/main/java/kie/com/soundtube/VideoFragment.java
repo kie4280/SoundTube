@@ -29,6 +29,7 @@ public class VideoFragment extends Fragment {
     public float Displayratio = 16f / 9f;
     public float Videoratio = 16f / 9f;
     private float scaleFactor = 1f;
+    private int HeaderDP = 70;
     public boolean prepared = false;
     boolean connected = false;
     boolean controlshow = true;
@@ -105,7 +106,7 @@ public class VideoFragment extends Fragment {
         currentTime = (TextView) videoFragmentView.findViewById(R.id.currentTime);
         totalTime = (TextView) videoFragmentView.findViewById(R.id.totalTime);
         header = (RelativeLayout) videoFragmentView.findViewById(R.id.headerView);
-
+        headersize = Tools.convertDpToPixel(HeaderDP, context);
         titleView.setTextSize(24f);
         titleView.setTextColor(Color.BLACK);
         listView = (ListView) videoFragmentView.findViewById(R.id.recoList);
@@ -642,14 +643,18 @@ public class VideoFragment extends Fragment {
         });
     }
 
+    float headersize = 0;
+
     public void setHeaderPos(float alpha) {
         header.setAlpha(1 - alpha);
-        float offset = -header.getHeight() * alpha;
+        float offset = -headersize * alpha;
         header.setTranslationY(offset);
-        vrelativeLayout.setTranslationY(offset);
-        if (alpha == 0.0) {
+        ViewGroup.LayoutParams layoutParams = header.getLayoutParams();
+        layoutParams.height = (int) (headersize * (1 - alpha));
+        header.setLayoutParams(layoutParams);
+//        vrelativeLayout.setTranslationY(offset);
+//        header.setY(offset);
 
-        }
     }
 
 

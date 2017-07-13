@@ -6,18 +6,20 @@
 
     <RelativeLayout
             android:layout_width="match_parent"
-            android:layout_height="60dp" android:id="@+id/headerView" android:layout_alignParentTop="true">
+            android:id="@+id/headerView" android:layout_alignParentTop="true"
+            android:animateLayoutChanges="false" android:layout_height="70dp">
 
         <TextView
                 android:text="TextView"
                 android:layout_width="match_parent"
                 android:id="@+id/textView" android:layout_height="match_parent"
-                android:textSize="36sp"/>
+                android:textSize="36sp" android:gravity="center"/>
     </RelativeLayout>
     <RelativeLayout
             android:layout_width="match_parent"
             android:id="@+id/videoRelativeLayout" android:layout_height="200dp"
-            android:layout_below="@+id/headerView" android:layout_alignParentTop="false">
+            android:layout_below="@+id/headerView" android:animateLayoutChanges="false"
+    >
 
         <SurfaceView
                 android:layout_width="match_parent"
@@ -56,9 +58,10 @@
     </RelativeLayout>
     <RelativeLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:id="@+id/descriptionRelativeLayout"
-            android:layout_below="@+id/videoRelativeLayout" android:layout_alignParentBottom="true">
+            android:layout_below="@+id/videoRelativeLayout" android:layout_alignParentBottom="true"
+            android:animateLayoutChanges="false">
 
         <ListView
                 android:layout_width="match_parent"

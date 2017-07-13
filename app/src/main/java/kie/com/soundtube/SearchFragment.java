@@ -1,19 +1,21 @@
 package kie.com.soundtube;
 
 import android.content.Context;
-import android.database.DataSetObserver;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.support.v4.app.Fragment;
-import android.util.Log;
+import android.support.v7.widget.DefaultItemAnimator;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.*;
+import android.widget.ImageView;
+import android.widget.ListView;
+import android.widget.TextView;
 
-import java.util.HashMap;
 import java.util.List;
 
 public class SearchFragment extends Fragment {
@@ -24,10 +26,12 @@ public class SearchFragment extends Fragment {
     private static Handler WorkHandler = null;
     private Context context;
     public VideoRetriver videoRetriver;
-    ListView listView;
+
+    private RecyclerView recyclerView;
 
     MainActivity mainActivity;
     Searcher searcher;
+    RecyclerAdapter adapter;
 
 
     public SearchFragment() {
@@ -50,11 +54,9 @@ public class SearchFragment extends Fragment {
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         fragmentView = inflater.inflate(R.layout.fragment_search, container, false);
-        listView = (ListView) fragmentView.findViewById(R.id.result_list);
+        recyclerView = (RecyclerView) fragmentView.findViewById(R.id.recyclerView);
         return fragmentView;
-
     }
-
 
     public void onButtonPressed(Uri uri) {
         if (mListener != null) {
@@ -92,128 +94,137 @@ public class SearchFragment extends Fragment {
         void onreturnVideo(DataHolder dataHolder, Handler handler);
     }
 
-    private class ViewHolder {
-        ImageView imageView;
-        TextView titleview;
-        TextView durationview;
+    public void updateListView(final List<DataHolder> data) {
+        if (adapter == null) {
+            createListView(data);
+        }
+        adapter.dataHolders = data;
+        adapter.notifyDataSetChanged();
+
     }
 
     public void createListView(final List<DataHolder> data) {
 
-        ListAdapter listAdapter = new ListAdapter() {
-
-            @Override
-            public boolean areAllItemsEnabled() {
-                return true;
-            }
-
-            @Override
-            public boolean isEnabled(int position) {
-                return true;
-            }
-
-            @Override
-            public void registerDataSetObserver(DataSetObserver observer) {
-
-            }
-
-            @Override
-            public void unregisterDataSetObserver(DataSetObserver observer) {
-
-            }
-
-            @Override
-            public int getCount() {
-                return data.size();
-            }
-
-            @Override
-            public DataHolder getItem(int position) {
-                return data.get(position);
-            }
-
-            @Override
-            public long getItemId(int position) {
-                return 0;
-            }
-
-            @Override
-            public boolean hasStableIds() {
-                return false;
-            }
-
-            @Override
-            public View getView(int position, View convertView, ViewGroup parent) {
-                View view;
-                if (convertView == null) {
-                    LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                    view = inflater.inflate(R.layout.video_layout, parent, false);
-                    DataHolder dataHolder = data.get(position);
-                    ViewHolder viewHolder = new ViewHolder();
-                    viewHolder.imageView = (ImageView) view.findViewById(R.id.imageView);
-                    viewHolder.titleview = (TextView) view.findViewById(R.id.titleview);
-                    viewHolder.durationview = (TextView) view.findViewById(R.id.durationview);
-                    viewHolder.imageView.setImageBitmap(dataHolder.thumbnail);
-                    viewHolder.titleview.setText(dataHolder.title);
-                    viewHolder.durationview.setText(dataHolder.videolength);
-                    view.setTag(viewHolder);
+        adapter = new RecyclerAdapter(data);
+        recyclerView.setLayoutManager(new LinearLayoutManager(context));
+        recyclerView.setItemAnimator(new DefaultItemAnimator());
+        recyclerView.setAdapter(adapter);
 
 
-                } else {
-                    view = convertView;
-                    DataHolder dataHolder = data.get(position);
-                    ViewHolder viewHolder = (ViewHolder) view.getTag();
-                    viewHolder.imageView.setImageBitmap(dataHolder.thumbnail);
-                    viewHolder.titleview.setText(dataHolder.title);
-                    viewHolder.durationview.setText(dataHolder.videolength);
-
-                }
-
-                return view;
-            }
-
-            @Override
-            public int getItemViewType(int position) {
-                return 0;
-            }
-
-            @Override
-            public int getViewTypeCount() {
-                return 1;
-            }
-
-            @Override
-            public boolean isEmpty() {
-                return false;
-            }
-        };
-        listView.setAdapter(listAdapter);
-
-        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                System.out.println("clicked" + position);
-                Toast toast = Toast.makeText(context, "Decrypting...", Toast.LENGTH_SHORT);
-                toast.show();
-                final DataHolder dataHolder = data.get(position);
-                videoRetriver.startExtracting("https://www.youtube" +
-                        ".com/watch?v=" + dataHolder.videoID, new VideoRetriver.YouTubeExtractorListener() {
-                    @Override
-                    public void onSuccess(HashMap<Integer, String> result) {
-                        dataHolder.videoUris = result;
-                        mListener.onreturnVideo(dataHolder, WorkHandler);
-                        //Log.d("search", ))
-                    }
-
-                    @Override
-                    public void onFailure(Error error) {
-                        Log.d("search", "error extracting");
-
-                    }
-                });
-
-            }
-        });
+//        ListAdapter listAdapter = new ListAdapter() {
+//
+//            @Override
+//            public boolean areAllItemsEnabled() {
+//                return true;
+//            }
+//
+//            @Override
+//            public boolean isEnabled(int position) {
+//                return true;
+//            }
+//
+//            @Override
+//            public void registerDataSetObserver(DataSetObserver observer) {
+//
+//            }
+//
+//            @Override
+//            public void unregisterDataSetObserver(DataSetObserver observer) {
+//
+//            }
+//
+//            @Override
+//            public int getCount() {
+//                return data.size();
+//            }
+//
+//            @Override
+//            public DataHolder getItem(int position) {
+//                return data.get(position);
+//            }
+//
+//            @Override
+//            public long getItemId(int position) {
+//                return 0;
+//            }
+//
+//            @Override
+//            public boolean hasStableIds() {
+//                return false;
+//            }
+//
+//            @Override
+//            public View getView(int position, View convertView, ViewGroup parent) {
+//                View view;
+//                if (convertView == null) {
+//                    LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+//                    view = inflater.inflate(R.layout.video_layout, parent, false);
+//                    DataHolder dataHolder = data.get(position);
+//                    ViewHolder viewHolder = new ViewHolder();
+//                    viewHolder.imageView = (ImageView) view.findViewById(R.id.imageView);
+//                    viewHolder.titleview = (TextView) view.findViewById(R.id.titleview);
+//                    viewHolder.durationview = (TextView) view.findViewById(R.id.durationview);
+//                    viewHolder.imageView.setImageBitmap(dataHolder.thumbnail);
+//                    viewHolder.titleview.setText(dataHolder.title);
+//                    viewHolder.durationview.setText(dataHolder.videolength);
+//                    view.setTag(viewHolder);
+//
+//
+//                } else {
+//                    view = convertView;
+//                    DataHolder dataHolder = data.get(position);
+//                    ViewHolder viewHolder = (ViewHolder) view.getTag();
+//                    viewHolder.imageView.setImageBitmap(dataHolder.thumbnail);
+//                    viewHolder.titleview.setText(dataHolder.title);
+//                    viewHolder.durationview.setText(dataHolder.videolength);
+//
+//                }
+//
+//                return view;
+//            }
+//
+//            @Override
+//            public int getItemViewType(int position) {
+//                return 0;
+//            }
+//
+//            @Override
+//            public int getViewTypeCount() {
+//                return 1;
+//            }
+//
+//            @Override
+//            public boolean isEmpty() {
+//                return false;
+//            }
+//        };
+//        listView.setAdapter(listAdapter);
+//
+//        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+//            @Override
+//            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+//                System.out.println("clicked" + position);
+//                Toast toast = Toast.makeText(context, "Decrypting...", Toast.LENGTH_SHORT);
+//                toast.show();
+//                final DataHolder dataHolder = data.get(position);
+//                videoRetriver.startExtracting("https://www.youtube" +
+//                        ".com/watch?v=" + dataHolder.videoID, new VideoRetriver.YouTubeExtractorListener() {
+//                    @Override
+//                    public void onSuccess(HashMap<Integer, String> result) {
+//                        dataHolder.videoUris = result;
+//                        mListener.onreturnVideo(dataHolder, WorkHandler);
+//                        //Log.d("search", ))
+//                    }
+//
+//                    @Override
+//                    public void onFailure(Error error) {
+//                        Log.d("search", "error extracting");
+//
+//                    }
+//                });
+//
+//            }
+//        });
 
     }
 
@@ -224,7 +235,7 @@ public class SearchFragment extends Fragment {
                 mainActivity.runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        createListView(data);
+                        updateListView(data);
                     }
                 });
             }
