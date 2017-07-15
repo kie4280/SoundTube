@@ -66,7 +66,7 @@ public class SearchFragment1 extends Fragment {
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         fragmentView = inflater.inflate(R.layout.fragment_search, container, false);
-        listView = (ListView) fragmentView.findViewById(R.id.result_list);
+//        listView = (ListView) fragmentView.findViewById(R.id.result_list);
         return fragmentView;
 
     }

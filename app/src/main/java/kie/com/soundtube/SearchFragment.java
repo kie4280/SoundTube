@@ -1,22 +1,27 @@
 package kie.com.soundtube;
 
+import android.app.ActionBar;
 import android.content.Context;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.support.v4.app.Fragment;
+import android.support.v4.view.ViewPager;
 import android.support.v7.widget.DefaultItemAnimator;
+import android.support.v4.view.ViewPager.*;
+
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
-import android.widget.ListView;
-import android.widget.TextView;
+import android.widget.*;
 
+import java.util.HashMap;
 import java.util.List;
+
 
 public class SearchFragment extends Fragment {
 
@@ -28,6 +33,7 @@ public class SearchFragment extends Fragment {
     public VideoRetriver videoRetriver;
 
     private RecyclerView recyclerView;
+    private ViewPager viewPager;
 
     MainActivity mainActivity;
     Searcher searcher;
@@ -54,9 +60,49 @@ public class SearchFragment extends Fragment {
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         fragmentView = inflater.inflate(R.layout.fragment_search, container, false);
-        recyclerView = (RecyclerView) fragmentView.findViewById(R.id.recyclerView);
+//        recyclerView = (RecyclerView) fragmentView.findViewById(R.id.recyclerView);
+        viewPager = (ViewPager) fragmentView.findViewById(R.id.searchViewPager);
+        TextView t1 = new TextView(context);
+        recyclerView = new RecyclerView(context);
+        TextView t2 = new TextView(context);
+        CustomPagerAdapter pagerAdapter = new CustomPagerAdapter();
+        pagerAdapter.addView(t1);
+        pagerAdapter.addView(recyclerView);
+        pagerAdapter.addView(t2);
+        pagerAdapter.count = 3;
+        viewPager.setAdapter(pagerAdapter);
+        viewPager.setCurrentItem(1);
+        viewPager.addOnPageChangeListener(onPageChangeListener);
+
+
         return fragmentView;
     }
+
+    private OnPageChangeListener onPageChangeListener = new OnPageChangeListener() {
+        @Override
+        public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+
+        }
+
+        @Override
+        public void onPageSelected(int position) {
+            if (position == 2) {
+                viewPager.setCurrentItem(1);
+                searcher.nextPage();
+                Log.d("pager", "nextpage");
+            } else if (position == 0) {
+                viewPager.setCurrentItem(1);
+                searcher.prevPage();
+                Log.d("pager", "prevpage");
+            }
+
+        }
+
+        @Override
+        public void onPageScrollStateChanged(int state) {
+
+        }
+    };
 
     public void onButtonPressed(Uri uri) {
         if (mListener != null) {
@@ -105,11 +151,58 @@ public class SearchFragment extends Fragment {
 
     public void createListView(final List<DataHolder> data) {
 
+//        Log.d("createlist", "create");
         adapter = new RecyclerAdapter(data);
         recyclerView.setLayoutManager(new LinearLayoutManager(context));
         recyclerView.setItemAnimator(new DefaultItemAnimator());
         recyclerView.setAdapter(adapter);
+        RecyclerTouchListener listener = new RecyclerTouchListener(context, recyclerView, new OnItemClicked() {
+            @Override
+            public void onClick(View view, int position) {
+                System.out.println("clicked" + position);
+                Toast toast = Toast.makeText(context, "Decrypting...", Toast.LENGTH_SHORT);
+                toast.show();
+                final DataHolder dataHolder = data.get(position);
+                videoRetriver.startExtracting("https://www.youtube" +
+                        ".com/watch?v=" + dataHolder.videoID, new VideoRetriver.YouTubeExtractorListener() {
+                    @Override
+                    public void onSuccess(HashMap<Integer, String> result) {
+                        dataHolder.videoUris = result;
+                        mListener.onreturnVideo(dataHolder, WorkHandler);
+                        //Log.d("search", ))
+                    }
 
+                    @Override
+                    public void onFailure(Error error) {
+                        Log.d("search", "error extracting");
+
+                    }
+                });
+            }
+
+            @Override
+            public void onLongClick(View view, int position) {
+
+            }
+        });
+        recyclerView.addOnItemTouchListener(listener);
+        recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            boolean scrollup = false;
+
+            @Override
+            public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
+
+            }
+
+            @Override
+            public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+//                Log.d("recyclerView dx", Integer.toString(dx));
+                scrollup = dy > 0;
+
+                mainActivity.setToolbar(dy);
+
+            }
+        });
 
 //        ListAdapter listAdapter = new ListAdapter() {
 //

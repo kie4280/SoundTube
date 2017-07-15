@@ -2,10 +2,14 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent">
 
+    <android.support.v4.view.ViewPager android:layout_width="match_parent"
+                                       android:layout_height="match_parent" android:id="@+id/searchViewPager"
+                                       android:layout_alignBottom="@+id/textView2"
+                                       android:layout_alignTop="@+id/textView2"/>
     <android.support.v7.widget.RecyclerView
             android:layout_width="match_parent"
-            android:layout_height="match_parent" android:layout_alignParentTop="true"
-            android:layout_toEndOf="@+id/result_list" android:id="@+id/recyclerView" android:clipToPadding="false"
-            android:clipChildren="false"/>
+            android:layout_height="match_parent"
+            android:id="@+id/recyclerView" android:clipToPadding="false"
+            android:clipChildren="false" android:layout_alignParentTop="true" android:visibility="gone"/>
 
 </RelativeLayout>

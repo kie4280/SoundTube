@@ -1,5 +1,6 @@
 package kie.com.soundtube;
 
+import android.content.res.Configuration;
 import android.support.v4.app.FragmentTransaction;
 import android.app.Service;
 import android.content.ComponentName;
@@ -144,12 +145,23 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
 
         @Override
         public void onPanelStateChanged(View panel, PanelState previousState, PanelState newState) {
-            if (newState == PanelState.EXPANDED) {
 
+            if (newState == PanelState.EXPANDED) {
+                videoFragment.setHeaderVisible(false);
+                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR);
+                if (getSupportActionBar() != null) {
+                    getSupportActionBar().hide();
+                }
                 Log.d("Panel", "expanded");
             } else if (newState == PanelState.COLLAPSED) {
-
+                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+                if (getSupportActionBar() != null) {
+                    getSupportActionBar().show();
+                }
                 Log.d("Panel", "collapsed");
+            } else if (newState == PanelState.DRAGGING) {
+                videoFragment.setHeaderVisible(true);
+                Log.d("Panel", "dragging");
             }
 
 
@@ -260,5 +272,32 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     public void onBackPressed() {
         System.out.println("activity back");
         moveTaskToBack(true);
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        switch (newConfig.orientation) {
+            case Configuration.ORIENTATION_LANDSCAPE:
+                videoFragment.changeToLandscape();
+                slidePanel.setTouchEnabled(false);
+                break;
+            case Configuration.ORIENTATION_PORTRAIT:
+                videoFragment.changeToPortrait();
+                slidePanel.setTouchEnabled(true);
+                break;
+            default:
+                break;
+        }
+    }
+
+    public void setToolbar(int dy) {
+        int toolbaroffset = (int) (dy - toolbar.getTranslationY());
+        if (dy > 0) {
+
+        } else {
+
+        }
+
     }
 }

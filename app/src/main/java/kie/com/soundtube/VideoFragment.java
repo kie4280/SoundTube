@@ -30,6 +30,7 @@ public class VideoFragment extends Fragment {
     public float Videoratio = 16f / 9f;
     private float scaleFactor = 1f;
     private int HeaderDP = 70;
+    private float headersize = 0;
     public boolean prepared = false;
     boolean connected = false;
     boolean controlshow = true;
@@ -81,21 +82,6 @@ public class VideoFragment extends Fragment {
     }
 
     @Override
-    public void onConfigurationChanged(Configuration newConfig) {
-        super.onConfigurationChanged(newConfig);
-        switch (newConfig.orientation) {
-            case Configuration.ORIENTATION_LANDSCAPE:
-                changeToLandscape();
-                break;
-            case Configuration.ORIENTATION_PORTRAIT:
-                changeToPortrait();
-                break;
-            default:
-                break;
-        }
-    }
-
-    @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
@@ -115,6 +101,7 @@ public class VideoFragment extends Fragment {
         progressBar.setMax(100);
         progressBar.setIndeterminate(false);
 
+        mainActivity.slidePanel.setScrollableView(listView);
         vrelativeLayout = (RelativeLayout) videoFragmentView.findViewById(R.id.videoRelativeLayout);
         drelativeLayout = (RelativeLayout) videoFragmentView.findViewById(R.id.descriptionRelativeLayout);
         RelativeLayout.LayoutParams orig = (RelativeLayout.LayoutParams) vrelativeLayout.getLayoutParams();
@@ -613,17 +600,22 @@ public class VideoFragment extends Fragment {
     }
 
     public void changeToPortrait() {
-        vrelativeLayout.setLayoutParams(portraitlayout);
-        drelativeLayout.setVisibility(View.VISIBLE);
-        activity.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
-        drelativeLayout.setVisibility(View.VISIBLE);
+        if (vrelativeLayout != null && drelativeLayout != null && activity != null) {
+            vrelativeLayout.setLayoutParams(portraitlayout);
+            drelativeLayout.setVisibility(View.VISIBLE);
+            activity.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
+        }
     }
 
     public void changeToLandscape() {
-        vrelativeLayout.setLayoutParams(landscapelayout);
-        activity.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
-                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
-        drelativeLayout.setVisibility(View.GONE);
+        if (vrelativeLayout != null && drelativeLayout != null && activity != null) {
+            vrelativeLayout.setLayoutParams(landscapelayout);
+            drelativeLayout.setVisibility(View.GONE);
+            activity.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN |
+                    View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
+                    View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+        }
+
     }
 
     public void showcontrols(final boolean show) {
@@ -643,18 +635,23 @@ public class VideoFragment extends Fragment {
         });
     }
 
-    float headersize = 0;
-
     public void setHeaderPos(float alpha) {
         header.setAlpha(1 - alpha);
-        float offset = -headersize * alpha;
-        header.setTranslationY(offset);
-        ViewGroup.LayoutParams layoutParams = header.getLayoutParams();
-        layoutParams.height = (int) (headersize * (1 - alpha));
-        header.setLayoutParams(layoutParams);
-//        vrelativeLayout.setTranslationY(offset);
-//        header.setY(offset);
+        float offset = headersize * (1 - alpha);
+//        header.setTranslationY(offset);
+        vrelativeLayout.setTranslationY(offset);
+        drelativeLayout.setTranslationY(offset);
+    }
 
+    public void setHeaderVisible(boolean visible) {
+        if (header != null) {
+            if (visible) {
+                header.setVisibility(View.VISIBLE);
+            } else {
+                header.setVisibility(View.GONE);
+            }
+
+        }
     }
 
 
