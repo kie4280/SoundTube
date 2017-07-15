@@ -294,8 +294,18 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     public void setToolbar(int dy) {
         int toolbaroffset = (int) (dy - toolbar.getTranslationY());
         if (dy > 0) {
+            if (toolbaroffset < toolbar.getHeight()) {
+                toolbar.setTranslationY(-toolbaroffset);
+            } else {
+                toolbar.setTranslationY(-toolbar.getHeight());
+            }
 
         } else {
+            if (toolbaroffset < 0) {
+                toolbar.setTranslationY(0);
+            } else {
+                toolbar.setTranslationY(-toolbaroffset);
+            }
 
         }
 
