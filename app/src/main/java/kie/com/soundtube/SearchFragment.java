@@ -62,9 +62,9 @@ public class SearchFragment extends Fragment {
         fragmentView = inflater.inflate(R.layout.fragment_search, container, false);
 //        recyclerView = (RecyclerView) fragmentView.findViewById(R.id.recyclerView);
         viewPager = (ViewPager) fragmentView.findViewById(R.id.searchViewPager);
-        TextView t1 = new TextView(context);
-        recyclerView = new RecyclerView(context);
-        TextView t2 = new TextView(context);
+        TextView t1 = (TextView) fragmentView.findViewById(R.id.textView3);
+        recyclerView = (RecyclerView) fragmentView.findViewById(R.id.recyclerView);
+        TextView t2 = (TextView) fragmentView.findViewById(R.id.textView4);
         CustomPagerAdapter pagerAdapter = new CustomPagerAdapter();
         pagerAdapter.addView(t1);
         pagerAdapter.addView(recyclerView);
@@ -73,7 +73,6 @@ public class SearchFragment extends Fragment {
         viewPager.setAdapter(pagerAdapter);
         viewPager.setCurrentItem(1);
         viewPager.addOnPageChangeListener(onPageChangeListener);
-
 
         return fragmentView;
     }
@@ -144,6 +143,7 @@ public class SearchFragment extends Fragment {
         if (adapter == null) {
             createListView(data);
         }
+//        recyclerView.setTranslationY(mainActivity.toolbar.getHeight());
         adapter.dataHolders = data;
         adapter.notifyDataSetChanged();
 
@@ -159,10 +159,10 @@ public class SearchFragment extends Fragment {
         RecyclerTouchListener listener = new RecyclerTouchListener(context, recyclerView, new OnItemClicked() {
             @Override
             public void onClick(View view, int position) {
-                System.out.println("clicked" + position);
+                System.out.println("clicked" + (position - 1));
                 Toast toast = Toast.makeText(context, "Decrypting...", Toast.LENGTH_SHORT);
                 toast.show();
-                final DataHolder dataHolder = data.get(position);
+                final DataHolder dataHolder = data.get(position - 1);
                 videoRetriver.startExtracting("https://www.youtube" +
                         ".com/watch?v=" + dataHolder.videoID, new VideoRetriver.YouTubeExtractorListener() {
                     @Override
@@ -187,7 +187,7 @@ public class SearchFragment extends Fragment {
         });
         recyclerView.addOnItemTouchListener(listener);
         recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
-            boolean scrollup = false;
+
 
             @Override
             public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
@@ -197,8 +197,6 @@ public class SearchFragment extends Fragment {
             @Override
             public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
 //                Log.d("recyclerView dx", Integer.toString(dx));
-                scrollup = dy > 0;
-
                 mainActivity.setToolbar(dy);
 
             }

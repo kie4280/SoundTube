@@ -138,8 +138,6 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
         @Override
         public void onPanelSlide(View panel, float slideOffset) {
 //            Log.d("panel", Float.toString(slideOffset));
-            toolbar.setAlpha(1 - slideOffset);
-            toolbar.setTranslationY(-toolbar.getHeight() * slideOffset);
             videoFragment.setHeaderPos(slideOffset);
         }
 
@@ -149,15 +147,16 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
             if (newState == PanelState.EXPANDED) {
                 videoFragment.setHeaderVisible(false);
                 setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR);
-                if (getSupportActionBar() != null) {
-                    getSupportActionBar().hide();
-                }
+//                if (getSupportActionBar() != null) {
+//                    getSupportActionBar().hide();
+//                }
+
                 Log.d("Panel", "expanded");
             } else if (newState == PanelState.COLLAPSED) {
                 setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-                if (getSupportActionBar() != null) {
-                    getSupportActionBar().show();
-                }
+//                if (getSupportActionBar() != null) {
+//                    getSupportActionBar().show();
+//                }
                 Log.d("Panel", "collapsed");
             } else if (newState == PanelState.DRAGGING) {
                 videoFragment.setHeaderVisible(true);
@@ -292,6 +291,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     }
 
     public void setToolbar(int dy) {
+
         int toolbaroffset = (int) (dy - toolbar.getTranslationY());
         if (dy > 0) {
             if (toolbaroffset < toolbar.getHeight()) {

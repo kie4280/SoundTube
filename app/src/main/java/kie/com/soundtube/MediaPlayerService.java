@@ -139,11 +139,11 @@ public class MediaPlayerService extends Service {
         PowerManager powerManager = (PowerManager) getSystemService(Service.POWER_SERVICE);
         wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "serviceWakeLock");
         wakeLock.setReferenceCounted(false);
-        wifiManager = (WifiManager) getSystemService(Service.WIFI_SERVICE);
+        wifiManager = (WifiManager) getApplicationContext().getSystemService(Service.WIFI_SERVICE);
         wifiLock = wifiManager.createWifiLock(WifiManager.WIFI_MODE_FULL, "ServiceWifilock");
         wifiLock.setReferenceCounted(false);
 
-        Intent app = new Intent(getApplicationContext(), MainActivity1.class);
+        Intent app = new Intent(getApplicationContext(), MainActivity.class);
         app.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         PendingIntent pendingIntent = PendingIntent.getActivity(MediaPlayerService.this,
                 0, app, PendingIntent.FLAG_UPDATE_CURRENT);
