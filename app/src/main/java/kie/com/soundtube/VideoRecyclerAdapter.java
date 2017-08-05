@@ -1,5 +1,6 @@
 package kie.com.soundtube;
 
+import android.graphics.Color;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -10,12 +11,13 @@ import android.widget.TextView;
 
 import java.util.List;
 
-
-public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.ViewHolder> {
+public class VideoRecyclerAdapter extends RecyclerView.Adapter<VideoRecyclerAdapter.ViewHolder> {
 
     public List<DataHolder> dataHolders;
+    TextView titleView;
+    String text;
 
-    public RecyclerAdapter(List<DataHolder> dataHolders) {
+    public VideoRecyclerAdapter(List<DataHolder> dataHolders) {
         this.dataHolders = dataHolders;
     }
 
@@ -23,10 +25,10 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.ViewHo
     public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         View view;
         if (viewType == 0) {
-            RelativeLayout relativeLayout = new RelativeLayout(parent.getContext());
-            relativeLayout.setLayoutParams(new ViewGroup.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT, Tools.convertDpToPixel(56, parent.getContext())));
-            view = relativeLayout;
+            titleView = new TextView(parent.getContext());
+            titleView.setTextSize(24f);
+            titleView.setTextColor(Color.BLACK);
+            view = titleView;
         } else {
             view = LayoutInflater.from(parent.getContext()).inflate(R.layout.video_layout, parent, false);
         }
@@ -42,6 +44,8 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.ViewHo
             holder.imageView.setImageBitmap(dataHolder.thumbnail);
             holder.titleview.setText(dataHolder.title);
             holder.durationview.setText(dataHolder.videolength);
+        } else {
+            titleView.setText(text);
         }
 
     }
@@ -58,9 +62,9 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerAdapter.ViewHo
 
     public class ViewHolder extends RecyclerView.ViewHolder {
 
-        public ImageView imageView;
-        public TextView titleview;
-        public TextView durationview;
+        public ImageView imageView = null;
+        public TextView titleview = null;
+        public TextView durationview = null;
 
         public ViewHolder(View itemView) {
             super(itemView);

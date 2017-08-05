@@ -65,10 +65,37 @@
             android:layout_below="@+id/videoRelativeLayout" android:layout_alignParentBottom="true"
             android:animateLayoutChanges="false">
 
-        <ListView
+        <android.support.v4.view.ViewPager
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:id="@+id/searchViewPager">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="TextView" />
+
+            <android.support.v7.widget.RecyclerView
+                android:id="@+id/videorecyclerView"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:layout_alignParentStart="true"
-                android:id="@+id/recoList" android:layout_alignParentTop="true"/>
+                android:layout_alignParentTop="true"
+                android:clipChildren="false"
+                android:clipToPadding="false" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="TextView" />
+
+        </android.support.v4.view.ViewPager>
+
+        <ListView
+            android:id="@+id/recoList"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_alignParentStart="true"
+            android:layout_alignParentTop="true"
+            android:visibility="gone" />
     </RelativeLayout>
 </RelativeLayout>

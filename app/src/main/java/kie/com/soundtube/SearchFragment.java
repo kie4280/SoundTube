@@ -1,6 +1,5 @@
 package kie.com.soundtube;
 
-import android.app.ActionBar;
 import android.content.Context;
 import android.net.Uri;
 import android.os.Bundle;
@@ -37,7 +36,7 @@ public class SearchFragment extends Fragment {
 
     MainActivity mainActivity;
     Searcher searcher;
-    RecyclerAdapter adapter;
+    SearchRecyclerAdapter adapter;
 
 
     public SearchFragment() {
@@ -63,7 +62,7 @@ public class SearchFragment extends Fragment {
 //        recyclerView = (RecyclerView) fragmentView.findViewById(R.id.recyclerView);
         viewPager = (ViewPager) fragmentView.findViewById(R.id.searchViewPager);
         TextView t1 = (TextView) fragmentView.findViewById(R.id.textView3);
-        recyclerView = (RecyclerView) fragmentView.findViewById(R.id.recyclerView);
+        recyclerView = (RecyclerView) fragmentView.findViewById(R.id.searchrecyclerView);
         TextView t2 = (TextView) fragmentView.findViewById(R.id.textView4);
         CustomPagerAdapter pagerAdapter = new CustomPagerAdapter();
         pagerAdapter.addView(t1);
@@ -152,7 +151,7 @@ public class SearchFragment extends Fragment {
     public void createListView(final List<DataHolder> data) {
 
 //        Log.d("createlist", "create");
-        adapter = new RecyclerAdapter(data);
+        adapter = new SearchRecyclerAdapter(data);
         recyclerView.setLayoutManager(new LinearLayoutManager(context));
         recyclerView.setItemAnimator(new DefaultItemAnimator());
         recyclerView.setAdapter(adapter);
@@ -337,5 +336,5 @@ public class SearchFragment extends Fragment {
         this.mainActivity = activity;
     }
 
-
 }
+

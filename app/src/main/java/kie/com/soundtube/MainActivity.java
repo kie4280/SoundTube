@@ -22,6 +22,8 @@ import android.support.v4.view.ViewPager;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.telephony.PhoneStateListener;
+import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
@@ -32,7 +34,8 @@ import com.sothree.slidinguppanel.SlidingUpPanelLayout;
 import com.sothree.slidinguppanel.SlidingUpPanelLayout.*;
 import kie.com.soundtube.MediaPlayerService.MusicBinder;
 
-public class MainActivity extends AppCompatActivity implements SearchFragment.OnFragmentInteractionListener, VideoFragment.OnFragmentInteractionListener {
+public class MainActivity extends AppCompatActivity implements SearchFragment.OnFragmentInteractionListener,
+        VideoFragment.OnFragmentInteractionListener {
 
     public static Handler UiHandler = null;
 
@@ -50,6 +53,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     MediaPlayerService mediaService;
     Context context;
     ConnectivityManager connectmgr;
+    TelephonyManager telephonyManager;
 
 
 
@@ -58,6 +62,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         connectmgr = (ConnectivityManager) getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
+        telephonyManager = (TelephonyManager) getApplicationContext().getSystemService(Context.TELEPHONY_SERVICE);
         context = getApplicationContext();
         UiHandler = new Handler(Looper.getMainLooper());
         videoFragment = new VideoFragment();
@@ -132,7 +137,32 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
             }
         });
 
+        telephonyManager.listen(phoneStateListener, PhoneStateListener.LISTEN_CALL_STATE);
+
     }
+
+    private PhoneStateListener phoneStateListener = new PhoneStateListener() {
+        @Override
+        public void onCallStateChanged(int state, String incomingNumber) {
+            switch (state) {
+                case TelephonyManager.CALL_STATE_RINGING:
+                    if (mediaService != null) {
+                        mediaService.phonecall(true);
+                    }
+
+                    break;
+                case TelephonyManager.CALL_STATE_IDLE:
+                    if (mediaService != null) {
+                        mediaService.phonecall(false);
+                    }
+                    break;
+                case TelephonyManager.CALL_STATE_OFFHOOK:
+                    break;
+
+            }
+            super.onCallStateChanged(state, incomingNumber);
+        }
+    };
 
     private PanelSlideListener panelSlideListener = new PanelSlideListener() {
         @Override

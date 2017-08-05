@@ -238,6 +238,20 @@ public class MediaPlayerService extends Service {
         });
     }
 
+    boolean suspend = false;
+
+    public void phonecall(boolean calling) {
+        if (calling) {
+            pause();
+            suspend = true;
+        } else {
+            if (suspend) {
+                play();
+            }
+            suspend = false;
+        }
+    }
+
     public void prepare(final DataHolder dataHolder) {
         currentData = dataHolder;
         playHandler.post(new Runnable() {

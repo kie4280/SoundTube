@@ -3,7 +3,6 @@ package kie.com.soundtube;
 import android.app.Activity;
 import android.content.Context;
 import android.content.res.Configuration;
-import android.database.DataSetObserver;
 import android.graphics.Color;
 import android.media.MediaPlayer;
 import android.net.ConnectivityManager;
@@ -14,6 +13,10 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.support.v4.app.Fragment;
 import android.support.v4.view.MotionEventCompat;
+import android.support.v4.view.ViewPager;
+import android.support.v7.widget.DefaultItemAnimator;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.*;
@@ -44,7 +47,6 @@ public class VideoFragment extends Fragment {
     private View videoFragmentView;
     private SeekBar seekBar;
     private ProgressBar progressBar;
-    private TextView titleView;
     private TextView currentTime;
     private TextView totalTime;
     private ListView listView;
@@ -55,11 +57,14 @@ public class VideoFragment extends Fragment {
     private Activity activity;
     private Handler seekHandler, workHandler;
     private HandlerThread thread;
+    private RecyclerView recyclerView;
+    private ViewPager viewPager;
     public VideoRetriver videoRetriver;
 
     MediaPlayerService mediaService;
     MediaPlayer mediaPlayer;
     MainActivity mainActivity;
+    VideoRecyclerAdapter adapter;
     Searcher searcher = null;
 
     ScaleGestureDetector scaleGestureDetector;
@@ -88,24 +93,29 @@ public class VideoFragment extends Fragment {
         videoFragmentView = inflater.inflate(R.layout.fragment_video, container, false);
         surfaceView = (SurfaceView) videoFragmentView.findViewById(R.id.surfaceView);
         seekBar = (SeekBar) videoFragmentView.findViewById(R.id.seekBar);
-        titleView = new TextView(context);
+
         currentTime = (TextView) videoFragmentView.findViewById(R.id.currentTime);
         totalTime = (TextView) videoFragmentView.findViewById(R.id.totalTime);
         header = (RelativeLayout) videoFragmentView.findViewById(R.id.headerView);
+        recyclerView = (RecyclerView) videoFragmentView.findViewById(R.id.videorecyclerView);
+        viewPager = (ViewPager) videoFragmentView.findViewById(R.id.searchViewPager);
         headersize = Tools.convertDpToPixel(HeaderDP, context);
-        titleView.setTextSize(24f);
-        titleView.setTextColor(Color.BLACK);
+
         listView = (ListView) videoFragmentView.findViewById(R.id.recoList);
         playbutton = (Button) videoFragmentView.findViewById(R.id.playbutton);
         progressBar = (ProgressBar) videoFragmentView.findViewById(R.id.progressBar1);
         progressBar.setMax(100);
         progressBar.setIndeterminate(false);
+        mainActivity.slidePanel.setScrollableView(recyclerView);
+        CustomPagerAdapter pagerAdapter = new CustomPagerAdapter();
+        pagerAdapter.addView(recyclerView);
+        pagerAdapter.count = 1;
+        viewPager.setAdapter(pagerAdapter);
+        viewPager.setCurrentItem(1);
 
-        mainActivity.slidePanel.setScrollableView(listView);
         vrelativeLayout = (RelativeLayout) videoFragmentView.findViewById(R.id.videoRelativeLayout);
         drelativeLayout = (RelativeLayout) videoFragmentView.findViewById(R.id.descriptionRelativeLayout);
         RelativeLayout.LayoutParams orig = (RelativeLayout.LayoutParams) vrelativeLayout.getLayoutParams();
-
         orig.height = RelativeLayout.LayoutParams.MATCH_PARENT;
         landscapelayout = new RelativeLayout.LayoutParams(orig);
 
@@ -147,19 +157,7 @@ public class VideoFragment extends Fragment {
 
             }
         });
-//        playbutton.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                if (mediaPlayer.isPlaying()) {
-//                    mediaService.pause();
-//                    playbutton.setBackgroundResource(R.drawable.play);
-//
-//                } else {
-//                    mediaService.play();
-//                    playbutton.setBackgroundResource(R.drawable.pause);
-//                }
-//            }
-//        });
+
         playbutton.setOnTouchListener(new View.OnTouchListener() {
             float prevX = 0;
             float prevY = 0;
@@ -355,7 +353,7 @@ public class VideoFragment extends Fragment {
                 mediaService.setDisplay(surfaceHolder);
                 mediaService.play();
                 playbutton.setBackgroundResource(R.drawable.pause);
-                titleView.setText(dataHolder.title);
+
                 if (searcher != null) {
                     searcher.loadRelatedVideos(dataHolder.videoID, new Searcher.YoutubeSearchResult() {
                         @Override
@@ -363,7 +361,7 @@ public class VideoFragment extends Fragment {
                             mainActivity.runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
-                                    createListView(data);
+                                    updateListView(dataHolder.title, data);
                                 }
                             });
                         }
@@ -389,126 +387,33 @@ public class VideoFragment extends Fragment {
 
     }
 
-    private class ViewHolder {
-        ImageView imageView;
-        TextView titleview;
-        TextView durationview;
+    public void updateListView(final String text, final List<DataHolder> data) {
+        if (adapter == null) {
+            createListView(data);
+        }
+//        recyclerView.setTranslationY(mainActivity.toolbar.getHeight());
+        adapter.dataHolders = data;
+        adapter.text = text;
+        adapter.notifyDataSetChanged();
+
     }
 
     public void createListView(final List<DataHolder> data) {
 
-        ListAdapter listAdapter = new ListAdapter() {
+        //        Log.d("createlist", "create");
+        adapter = new VideoRecyclerAdapter(data);
 
-
+        recyclerView.setLayoutManager(new LinearLayoutManager(context));
+        recyclerView.setItemAnimator(new DefaultItemAnimator());
+        recyclerView.setAdapter(adapter);
+        RecyclerTouchListener listener = new RecyclerTouchListener(context, recyclerView, new OnItemClicked() {
             @Override
-            public boolean areAllItemsEnabled() {
-                return true;
-            }
-
-            @Override
-            public boolean isEnabled(int position) {
-                return true;
-            }
-
-            @Override
-            public void registerDataSetObserver(DataSetObserver observer) {
-
-            }
-
-            @Override
-            public void unregisterDataSetObserver(DataSetObserver observer) {
-
-            }
-
-            @Override
-            public int getCount() {
-                return data.size() + 1;
-            }
-
-            @Override
-            public DataHolder getItem(int position) {
-                return null;
-            }
-
-            @Override
-            public long getItemId(int position) {
-                return 0;
-            }
-
-            @Override
-            public boolean hasStableIds() {
-                return false;
-            }
-
-            @Override
-            public View getView(int position, View convertView, ViewGroup parent) {
-
-                int viewtype = getItemViewType(position);
-                if (convertView == null) {
-
-                    if (viewtype == 0) {
-                        convertView = titleView;
-                    } else {
-
-                        LayoutInflater inflater = (LayoutInflater) context.getSystemService(
-                                Context.LAYOUT_INFLATER_SERVICE);
-                        View inflatedView = inflater.inflate(R.layout.video_layout, parent, false);
-                        ViewHolder viewHolder = new ViewHolder();
-                        viewHolder.imageView = (ImageView) inflatedView.findViewById(R.id.imageView);
-                        viewHolder.titleview = (TextView) inflatedView.findViewById(R.id.titleview);
-                        viewHolder.durationview = (TextView) inflatedView.findViewById(R.id.durationview);
-                        DataHolder dataHolder = data.get(position - 1);
-                        viewHolder.imageView.setImageBitmap(dataHolder.thumbnail);
-                        viewHolder.titleview.setText(dataHolder.title);
-                        viewHolder.durationview.setText(dataHolder.videolength);
-                        convertView = inflatedView;
-                        convertView.setTag(viewHolder);
-                    }
-                } else {
-
-                    if (viewtype == 0) {
-                        convertView = titleView;
-                    } else {
-                        DataHolder dataHolder = data.get(position - 1);
-                        ViewHolder viewHolder = (ViewHolder) convertView.getTag();
-                        viewHolder.imageView.setImageBitmap(dataHolder.thumbnail);
-                        viewHolder.titleview.setText(dataHolder.title);
-                        viewHolder.durationview.setText(dataHolder.videolength);
-                    }
-                }
-                return convertView;
-            }
-
-            @Override
-            public int getItemViewType(int position) {
-                if (position == 0) {
-                    return 0;
-                } else {
-                    return 1;
-                }
-
-            }
-
-            @Override
-            public int getViewTypeCount() {
-                return 2;
-            }
-
-            @Override
-            public boolean isEmpty() {
-                return false;
-            }
-        };
-        listView.setAdapter(listAdapter);
-
-        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                System.out.println("clicked" + position);
-                Toast toast = Toast.makeText(context, "Decrypting...", Toast.LENGTH_SHORT);
-                toast.show();
-                if (position != 0) {
-                    final DataHolder dataHolder = data.get(position - 1);
+            public void onClick(View view, int position) {
+                if (position >= 1) {
+                    System.out.println("clicked" + (position - 1));
+                    Toast toast = Toast.makeText(context, "Decrypting...", Toast.LENGTH_SHORT);
+                    toast.show();
+                    final DataHolder dataHolder = adapter.dataHolders.get(position - 1);
                     videoRetriver.startExtracting("https://www.youtube" +
                             ".com/watch?v=" + dataHolder.videoID, new VideoRetriver.YouTubeExtractorListener() {
                         @Override
@@ -520,15 +425,167 @@ public class VideoFragment extends Fragment {
 
                         @Override
                         public void onFailure(Error error) {
-                            Log.d("search", "errorextracting");
+                            Log.d("search", "error extracting");
 
                         }
                     });
                 }
 
+            }
+
+            @Override
+            public void onLongClick(View view, int position) {
 
             }
         });
+        recyclerView.addOnItemTouchListener(listener);
+        recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+
+
+            @Override
+            public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
+
+            }
+
+            @Override
+            public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+//                Log.d("recyclerView dx", Integer.toString(dx));
+                mainActivity.setToolbar(dy);
+
+            }
+        });
+//        ListAdapter listAdapter = new ListAdapter() {
+//
+//
+//            @Override
+//            public boolean areAllItemsEnabled() {
+//                return true;
+//            }
+//
+//            @Override
+//            public boolean isEnabled(int position) {
+//                return true;
+//            }
+//
+//            @Override
+//            public void registerDataSetObserver(DataSetObserver observer) {
+//
+//            }
+//
+//            @Override
+//            public void unregisterDataSetObserver(DataSetObserver observer) {
+//
+//            }
+//
+//            @Override
+//            public int getCount() {
+//                return data.size() + 1;
+//            }
+//
+//            @Override
+//            public DataHolder getItem(int position) {
+//                return null;
+//            }
+//
+//            @Override
+//            public long getItemId(int position) {
+//                return 0;
+//            }
+//
+//            @Override
+//            public boolean hasStableIds() {
+//                return false;
+//            }
+//
+//            @Override
+//            public View getView(int position, View convertView, ViewGroup parent) {
+//
+//                int viewtype = getItemViewType(position);
+//                if (convertView == null) {
+//
+//                    if (viewtype == 0) {
+//                        convertView = titleView;
+//                    } else {
+//
+//                        LayoutInflater inflater = (LayoutInflater) context.getSystemService(
+//                                Context.LAYOUT_INFLATER_SERVICE);
+//                        View inflatedView = inflater.inflate(R.layout.video_layout, parent, false);
+//                        ViewHolder viewHolder = new ViewHolder();
+//                        viewHolder.imageView = (ImageView) inflatedView.findViewById(R.id.imageView);
+//                        viewHolder.titleview = (TextView) inflatedView.findViewById(R.id.titleview);
+//                        viewHolder.durationview = (TextView) inflatedView.findViewById(R.id.durationview);
+//                        DataHolder dataHolder = data.get(position - 1);
+//                        viewHolder.imageView.setImageBitmap(dataHolder.thumbnail);
+//                        viewHolder.titleview.setText(dataHolder.title);
+//                        viewHolder.durationview.setText(dataHolder.videolength);
+//                        convertView = inflatedView;
+//                        convertView.setTag(viewHolder);
+//                    }
+//                } else {
+//
+//                    if (viewtype == 0) {
+//                        convertView = titleView;
+//                    } else {
+//                        DataHolder dataHolder = data.get(position - 1);
+//                        ViewHolder viewHolder = (ViewHolder) convertView.getTag();
+//                        viewHolder.imageView.setImageBitmap(dataHolder.thumbnail);
+//                        viewHolder.titleview.setText(dataHolder.title);
+//                        viewHolder.durationview.setText(dataHolder.videolength);
+//                    }
+//                }
+//                return convertView;
+//            }
+//
+//            @Override
+//            public int getItemViewType(int position) {
+//                if (position == 0) {
+//                    return 0;
+//                } else {
+//                    return 1;
+//                }
+//
+//            }
+//
+//            @Override
+//            public int getViewTypeCount() {
+//                return 2;
+//            }
+//
+//            @Override
+//            public boolean isEmpty() {
+//                return false;
+//            }
+//        };
+//        listView.setAdapter(listAdapter);
+//
+//        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+//            @Override
+//            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+//                System.out.println("clicked" + position);
+//                Toast toast = Toast.makeText(context, "Decrypting...", Toast.LENGTH_SHORT);
+//                toast.show();
+//                if (position != 0) {
+//                    final DataHolder dataHolder = data.get(position - 1);
+//                    videoRetriver.startExtracting("https://www.youtube" +
+//                            ".com/watch?v=" + dataHolder.videoID, new VideoRetriver.YouTubeExtractorListener() {
+//                        @Override
+//                        public void onSuccess(HashMap<Integer, String> result) {
+//                            dataHolder.videoUris = result;
+//                            start(dataHolder);
+//                            //Log.d("search", ))
+//                        }
+//
+//                        @Override
+//                        public void onFailure(Error error) {
+//                            Log.d("search", "errorextracting");
+//
+//                        }
+//                    });
+//                }
+//
+//
+//            }
+//        });
 
     }
 
@@ -661,3 +718,5 @@ public class VideoFragment extends Fragment {
     }
 
 }
+
+
