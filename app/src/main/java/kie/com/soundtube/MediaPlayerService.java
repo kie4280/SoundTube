@@ -99,6 +99,9 @@ public class MediaPlayerService extends Service {
     public IBinder onBind(Intent intent) {
         musicBinder = new MusicBinder();
         Log.d("service", "onBind");
+        if (videoFragment != null && videoFragment.prepared) {
+            setDisplay(videoFragment.surfaceHolder);
+        }
         return musicBinder;
     }
 
@@ -106,6 +109,9 @@ public class MediaPlayerService extends Service {
     public void onRebind(Intent intent) {
         super.onRebind(intent);
         Log.d("service", "onRebind");
+        if (videoFragment != null && videoFragment.prepared) {
+            setDisplay(videoFragment.surfaceHolder);
+        }
 
         if (mediaPlayer.isPlaying()) {
             updateSeekBar = true;
@@ -117,7 +123,6 @@ public class MediaPlayerService extends Service {
     public boolean onUnbind(Intent intent) {
 
         updateSeekBar = false;
-        videoFragment = null;
         Log.d("service", "onUnbind");
         return true;
     }
@@ -286,7 +291,8 @@ public class MediaPlayerService extends Service {
         playHandler.post(new Runnable() {
             @Override
             public void run() {
-                if (videoFragment != null && videoFragment.prepared) {
+
+                if (surfaceHolder != null) {
                     mediaPlayer.setDisplay(surfaceHolder);
                     mediaPlayer.setScreenOnWhilePlaying(true);
                 } else {

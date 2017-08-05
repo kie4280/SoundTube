@@ -30,8 +30,10 @@ import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.SearchView;
 import android.widget.Toast;
+
 import com.sothree.slidinguppanel.SlidingUpPanelLayout;
 import com.sothree.slidinguppanel.SlidingUpPanelLayout.*;
+
 import kie.com.soundtube.MediaPlayerService.MusicBinder;
 
 public class MainActivity extends AppCompatActivity implements SearchFragment.OnFragmentInteractionListener,
@@ -56,7 +58,6 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     TelephonyManager telephonyManager;
 
 
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -70,7 +71,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
         searchFragment = new SearchFragment();
         searchFragment.setActivity(this);
 //        viewPager = (CustomViewPager) findViewById(R.id.viewpager);
-        toolbar = (Toolbar)findViewById(R.id.toolbar);
+        toolbar = (Toolbar) findViewById(R.id.toolbar);
         nextButton = (Button) findViewById(R.id.nextButton);
         prevButton = (Button) findViewById(R.id.prevButton);
         slidePanel = (SlidingUpPanelLayout) findViewById(R.id.slidePanel);
@@ -117,7 +118,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
             public void onFocusChange(View v, boolean hasFocus) {
 //                InputMethodManager imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
 //                imm.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), InputMethodManager.RESULT_UNCHANGED_SHOWN);
-                if(!hasFocus) {
+                if (!hasFocus) {
                     getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
                 }
             }
@@ -204,14 +205,14 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
             mediaService = musicBinder.getService();
             servicebound = true;
             connect();
-            if(mediaService.mediaPlayer.isPlaying()) {
-//                viewPager.setCurrentItem(1, true);
-            }
-            if(mediaService.currentData != null) {
-                videoFragment.resume();
-            } else {
-
-            }
+//            if(mediaService.mediaPlayer.isPlaying()) {
+////                viewPager.setCurrentItem(1, true);
+//            }
+//            if(mediaService.currentData != null) {
+//                videoFragment.resume();
+//            } else {
+//
+//            }
             Log.d("activity", "service connected");
 
         }
@@ -219,7 +220,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
         @Override
         public void onServiceDisconnected(ComponentName name) {
             servicebound = false;
-
+            disconnect();
             Log.d("activity", "service unbind");
 
         }
@@ -228,7 +229,11 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     public void connect() {
         mediaService.videoFragment = videoFragment;
         videoFragment.mediaService = mediaService;
-        videoFragment.mediaPlayer = mediaService.mediaPlayer;
+    }
+
+    public void disconnect() {
+        mediaService.videoFragment = null;
+        videoFragment.mediaService = null;
     }
 
     @Override
@@ -264,7 +269,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     @Override
     protected void onStop() {
         super.onStop();
-        if(servicebound) {
+        if (servicebound) {
             unbindService(serviceConnection);
         }
 
@@ -294,6 +299,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     public void onreturnVideo(DataHolder dataHolder, Handler handler) {
 //        viewPager.setCurrentItem(1, true);
         videoFragment.setSearchWorker(handler);
+        slidePanel.setPanelState(PanelState.EXPANDED);
         videoFragment.start(dataHolder);
     }
 
