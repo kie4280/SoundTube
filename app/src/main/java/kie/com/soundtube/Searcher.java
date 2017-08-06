@@ -39,7 +39,6 @@ public class Searcher {
     private YouTube youtube;
     private Handler WorkHandler = null;
     private Context context;
-    private YoutubeSearchResult listener = null;
 
     public Searcher(Context context, Handler handler) {
         this.context = context;
@@ -63,7 +62,6 @@ public class Searcher {
                     // the interface and provide a no-op function.
                     Toast toast = Toast.makeText(context, "Loading...", Toast.LENGTH_SHORT);
                     toast.show();
-
                     search = youtube.search().list("snippet");
                     // Define the API request for retrieving search results.
                     search.setKey(APIKey);
@@ -82,8 +80,12 @@ public class Searcher {
                     nextPageToken = searchResponse.getNextPageToken();
                     prevPageToken = searchResponse.getPrevPageToken();
                     List<SearchResult> searchResultList = searchResponse.getItems();
-                    listener = result;
-                    listener.onFound(toClass(searchResultList));
+                    if (searchResultList.isEmpty()) {
+                        result.noData();
+                    } else {
+                        result.onFound(toClass(searchResultList), nextPageToken != null, prevPageToken != null);
+                    }
+
                 } catch (GoogleJsonResponseException e) {
                     System.err.println("There was a service error: " + e.getDetails().getCode() + " : "
                             + e.getDetails().getMessage());
@@ -98,7 +100,7 @@ public class Searcher {
         WorkHandler.post(run1);
     }
 
-    public void nextPage() {
+    public void nextPage(final YoutubeSearchResult result) {
         WorkHandler.post(new Runnable() {
             @Override
             public void run() {
@@ -111,14 +113,13 @@ public class Searcher {
                         nextPageToken = searchResponse.getNextPageToken();
                         prevPageToken = searchResponse.getPrevPageToken();
                         List<SearchResult> searchResultList = searchResponse.getItems();
-                        listener.onFound(toClass(searchResultList));
+                        result.onFound(toClass(searchResultList), nextPageToken != null, prevPageToken != null);
 
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
                 } else {
-                    Toast toast = Toast.makeText(context, "No next page", Toast.LENGTH_SHORT);
-                    toast.show();
+                    result.noData();
                 }
 
             }
@@ -126,7 +127,7 @@ public class Searcher {
 
     }
 
-    public void prevPage() {
+    public void prevPage(final YoutubeSearchResult result) {
         WorkHandler.post(new Runnable() {
             @Override
             public void run() {
@@ -139,14 +140,13 @@ public class Searcher {
                         nextPageToken = searchResponse.getNextPageToken();
                         prevPageToken = searchResponse.getPrevPageToken();
                         List<SearchResult> searchResultList = searchResponse.getItems();
-                        listener.onFound(toClass(searchResultList));
+                        result.onFound(toClass(searchResultList), nextPageToken != null, prevPageToken != null);
 
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
                 } else {
-                    Toast toast = Toast.makeText(context, "No previous page", Toast.LENGTH_SHORT);
-                    toast.show();
+                    result.noData();
                 }
             }
         });
@@ -165,7 +165,9 @@ public class Searcher {
                     search.setKey(APIKey);
                     search.setMaxResults(NUMBER_OF_VIDEOS_RETURNED);
                     SearchListResponse response = search.execute();
-                    result.onFound(toClass(response.getItems()));
+                    nextPageToken = response.getNextPageToken();
+                    prevPageToken = response.getPrevPageToken();
+                    result.onFound(toClass(response.getItems()), nextPageToken != null, prevPageToken != null);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -215,10 +217,47 @@ public class Searcher {
                         holder.thumbnail = bitmap;
                         holder.title = s.getSnippet().getTitle();
                         holder.publishdate = s.getSnippet().getPublishedAt().toString();
-                        String d = s.getContentDetails().getDuration().replace('H', ':');
-                        d = d.replace('M', ':');
-                        d = d.replace("S", "");
-                        d = d.replace("PT", "");
+                        String d = s.getContentDetails().getDuration();
+                        StringBuilder stringBuilder = new StringBuilder();
+                        int dots = 0;
+                        if (d.contains("D")) {
+                            dots = 3;
+
+                        } else {
+
+
+                        }
+                        if (d.contains("H")) {
+                            int index = d.indexOf("H");
+                            if (Character.isDigit(d.charAt(index - 2))) {
+                                stringBuilder.append(d.charAt(index - 2));
+                            } else {
+                                stringBuilder.append(0);
+                            }
+                            stringBuilder.append(d.charAt(index - 1));
+                            stringBuilder.append(":");
+                        }
+                        if (d.contains("M")) {
+                            int index = d.indexOf("M");
+                            if (Character.isDigit(d.charAt(index - 2))) {
+                                stringBuilder.append(d.charAt(index - 2));
+                            } else {
+                                stringBuilder.append(0);
+                            }
+                            stringBuilder.append(d.charAt(index - 1));
+                            stringBuilder.append(":");
+                        }
+                        if (d.contains("S")) {
+                            int index = d.indexOf("S");
+                            if (Character.isDigit(d.charAt(index - 2))) {
+                                stringBuilder.append(d.charAt(index - 2));
+                            } else {
+                                stringBuilder.append(0);
+                            }
+                            stringBuilder.append(d.charAt(index - 1));
+                        }
+
+
                         holder.videolength = d;
                         holder.videoID = s.getId();
                         classes.add(holder);
@@ -233,7 +272,9 @@ public class Searcher {
     }
 
     public interface YoutubeSearchResult {
-        void onFound(final List<DataHolder> data);
+        void onFound(final List<DataHolder> data, final boolean hasnext, final boolean hasprev);
+
+        void noData();
     }
 
 }

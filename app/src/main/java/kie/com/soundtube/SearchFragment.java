@@ -9,7 +9,6 @@ import android.support.v4.app.Fragment;
 import android.support.v4.view.ViewPager;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v4.view.ViewPager.*;
-
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -18,9 +17,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.*;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-
 
 public class SearchFragment extends Fragment {
 
@@ -30,14 +29,13 @@ public class SearchFragment extends Fragment {
     private static Handler WorkHandler = null;
     private Context context;
     public VideoRetriver videoRetriver;
-
-    private RecyclerView recyclerView;
     private ViewPager viewPager;
 
     MainActivity mainActivity;
     Searcher searcher;
-    SearchRecyclerAdapter adapter;
-
+    CustomPagerAdapter pagerAdapter;
+    ArrayList<View> pageviews = new ArrayList<>(3);
+    ArrayList<Page> pages = new ArrayList<>(3);
 
     public SearchFragment() {
         // Required empty public constructor
@@ -59,24 +57,37 @@ public class SearchFragment extends Fragment {
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         fragmentView = inflater.inflate(R.layout.fragment_search, container, false);
-//        recyclerView = (RecyclerView) fragmentView.findViewById(R.id.recyclerView);
+        pageviews.add(inflater.inflate(R.layout.searchpage, null));
+        pageviews.add(inflater.inflate(R.layout.searchpage, null));
+        pageviews.add(inflater.inflate(R.layout.searchpage, null));
+        pages.add(new Page(pageviews.get(0)));
+        pages.add(new Page(pageviews.get(1)));
+        pages.add(new Page(pageviews.get(2)));
+
         viewPager = (ViewPager) fragmentView.findViewById(R.id.searchViewPager);
-        TextView t1 = (TextView) fragmentView.findViewById(R.id.textView3);
-        recyclerView = (RecyclerView) fragmentView.findViewById(R.id.searchrecyclerView);
-        TextView t2 = (TextView) fragmentView.findViewById(R.id.textView4);
-        CustomPagerAdapter pagerAdapter = new CustomPagerAdapter();
-        pagerAdapter.addView(t1);
-        pagerAdapter.addView(recyclerView);
-        pagerAdapter.addView(t2);
-        pagerAdapter.count = 3;
+        pagerAdapter = new CustomPagerAdapter(pageviews);
+
+
         viewPager.setAdapter(pagerAdapter);
-        viewPager.setCurrentItem(1);
         viewPager.addOnPageChangeListener(onPageChangeListener);
 
         return fragmentView;
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+        mainActivity.toolbar.setTranslationY(0);
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        WorkerThread.quit();
+    }
+
     private OnPageChangeListener onPageChangeListener = new OnPageChangeListener() {
+
         @Override
         public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
 
@@ -84,23 +95,110 @@ public class SearchFragment extends Fragment {
 
         @Override
         public void onPageSelected(int position) {
-            if (position == 2) {
-                viewPager.setCurrentItem(1);
-                searcher.nextPage();
-                Log.d("pager", "nextpage");
-            } else if (position == 0) {
-                viewPager.setCurrentItem(1);
-                searcher.prevPage();
-                Log.d("pager", "prevpage");
-            }
 
         }
 
         @Override
         public void onPageScrollStateChanged(int state) {
 
+            if (state == ViewPager.SCROLL_STATE_SETTLING) {
+                int index = viewPager.getCurrentItem();
+                if (index == 2) {
+                    searcher.nextPage(new Searcher.YoutubeSearchResult() {
+                        @Override
+                        public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
+                            mainActivity.runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+
+                                }
+                            });
+                            viewPager.setCurrentItem(1, false);
+                        }
+
+                        @Override
+                        public void noData() {
+                            Toast toast = Toast.makeText(context, "No next page", Toast.LENGTH_SHORT);
+                            toast.show();
+                        }
+                    });
+                } else if (index == 0) {
+                    searcher.prevPage(new Searcher.YoutubeSearchResult() {
+                        @Override
+                        public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
+                            mainActivity.runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+
+                                }
+                            });
+                            viewPager.setCurrentItem(1, false);
+                        }
+
+                        @Override
+                        public void noData() {
+                            Toast toast = Toast.makeText(context, "No previous page", Toast.LENGTH_SHORT);
+                            toast.show();
+                        }
+                    });
+                }
+
+
+            }
+
         }
     };
+
+    public void changepage(boolean next, final boolean hasnext, final boolean hasprev, List<DataHolder> newData) {
+        mainActivity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                pagerAdapter.changeSate(hasnext, hasprev);
+                if (hasnext) {
+
+                    pages.get(0).updateListView(data);
+                }
+            }
+        });
+    }
+
+    public void search(String term) {
+
+        searcher.newSearch(term, new Searcher.YoutubeSearchResult() {
+            @Override
+            public void onFound(final List<DataHolder> data, final boolean hasnext, final boolean hasprev) {
+                mainActivity.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        pagerAdapter.changeSate(hasnext, hasprev);
+                        if (hasnext) {
+                            pages.get(0).updateListView(data);
+                            searcher.nextPage(new Searcher.YoutubeSearchResult() {
+                                @Override
+                                public void onFound(final List<DataHolder> data, final boolean hasnext, final boolean hasprev) {
+
+
+                                }
+
+                                @Override
+                                public void noData() {
+                                    Toast toast = Toast.makeText(context, "No next page", Toast.LENGTH_SHORT);
+                                    toast.show();
+                                }
+                            });
+                        }
+                    }
+                });
+
+            }
+
+            @Override
+            public void noData() {
+                Toast toast = Toast.makeText(context, "No result!", Toast.LENGTH_SHORT);
+                toast.show();
+            }
+        });
+    }
 
     public void onButtonPressed(Uri uri) {
         if (mListener != null) {
@@ -125,12 +223,6 @@ public class SearchFragment extends Fragment {
         mListener = null;
     }
 
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-        WorkerThread.quit();
-    }
-
     public interface OnFragmentInteractionListener {
 
         void onFragmentInteraction(Uri uri);
@@ -138,68 +230,82 @@ public class SearchFragment extends Fragment {
         void onreturnVideo(DataHolder dataHolder, Handler handler);
     }
 
-    public void updateListView(final List<DataHolder> data) {
-        if (adapter == null) {
-            createListView(data);
-        }
-//        recyclerView.setTranslationY(mainActivity.toolbar.getHeight());
-        adapter.dataHolders = data;
-        adapter.notifyDataSetChanged();
-
+    public void setActivity(MainActivity activity) {
+        this.mainActivity = activity;
     }
 
-    public void createListView(final List<DataHolder> data) {
+    private class Page {
+
+        public SearchRecyclerAdapter adapter = null;
+        public RecyclerView recyclerView;
+        public ProgressBar progressBar;
+
+        public Page(View page) {
+            recyclerView = (RecyclerView) page.findViewById(R.id.searchrecyclerView);
+            progressBar = (ProgressBar) page.findViewById(R.id.pageprogressBar);
+        }
+
+        public void updateListView(final List<DataHolder> data) {
+            if (adapter == null) {
+                createListView(recyclerView, data);
+            }
+//        recyclerView.setTranslationY(mainActivity.toolbar.getHeight());
+            adapter.dataHolders = data;
+            adapter.notifyDataSetChanged();
+        }
+
+        private void createListView(final RecyclerView recyclerView, final List<DataHolder> data) {
 
 //        Log.d("createlist", "create");
-        adapter = new SearchRecyclerAdapter(data);
-        recyclerView.setLayoutManager(new LinearLayoutManager(context));
-        recyclerView.setItemAnimator(new DefaultItemAnimator());
-        recyclerView.setAdapter(adapter);
-        RecyclerTouchListener listener = new RecyclerTouchListener(context, recyclerView, new OnItemClicked() {
-            @Override
-            public void onClick(View view, int position) {
-                System.out.println("clicked" + (position - 1));
-                Toast toast = Toast.makeText(context, "Decrypting...", Toast.LENGTH_SHORT);
-                toast.show();
-                final DataHolder dataHolder = data.get(position - 1);
-                videoRetriver.startExtracting("https://www.youtube" +
-                        ".com/watch?v=" + dataHolder.videoID, new VideoRetriver.YouTubeExtractorListener() {
-                    @Override
-                    public void onSuccess(HashMap<Integer, String> result) {
-                        dataHolder.videoUris = result;
-                        mListener.onreturnVideo(dataHolder, WorkHandler);
-                        //Log.d("search", ))
-                    }
+            adapter = new SearchRecyclerAdapter(data);
+            recyclerView.setLayoutManager(new LinearLayoutManager(context));
+            recyclerView.setItemAnimator(new DefaultItemAnimator());
+            recyclerView.setAdapter(adapter);
+            RecyclerTouchListener listener = new RecyclerTouchListener(context, recyclerView, new OnItemClicked() {
+                @Override
+                public void onClick(View view, int position) {
+                    System.out.println("clicked" + (position - 1));
+                    Toast toast = Toast.makeText(context, "Decrypting...", Toast.LENGTH_SHORT);
+                    toast.show();
+                    final DataHolder dataHolder = data.get(position - 1);
+                    videoRetriver.startExtracting("https://www.youtube" +
+                            ".com/watch?v=" + dataHolder.videoID, new VideoRetriver.YouTubeExtractorListener() {
+                        @Override
+                        public void onSuccess(HashMap<Integer, String> result) {
+                            dataHolder.videoUris = result;
+                            mListener.onreturnVideo(dataHolder, WorkHandler);
+                            //Log.d("search", ))
+                        }
 
-                    @Override
-                    public void onFailure(Error error) {
-                        Log.d("search", "error extracting");
+                        @Override
+                        public void onFailure(Error error) {
+                            Log.d("search", "error extracting");
 
-                    }
-                });
-            }
+                        }
+                    });
+                }
 
-            @Override
-            public void onLongClick(View view, int position) {
+                @Override
+                public void onLongClick(View view, int position) {
 
-            }
-        });
-        recyclerView.addOnItemTouchListener(listener);
-        recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+                }
+            });
+            recyclerView.addOnItemTouchListener(listener);
+            recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
 
 
-            @Override
-            public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
+                @Override
+                public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
 
-            }
+                }
 
-            @Override
-            public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+                @Override
+                public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
 //                Log.d("recyclerView dx", Integer.toString(dx));
-                mainActivity.setToolbar(dy);
+                    mainActivity.setToolbar(dy);
 
-            }
-        });
+                }
+            });
 
 //        ListAdapter listAdapter = new ListAdapter() {
 //
@@ -316,25 +422,7 @@ public class SearchFragment extends Fragment {
 //            }
 //        });
 
-    }
-
-    public void search(String term) {
-        searcher.newSearch(term, new Searcher.YoutubeSearchResult() {
-            @Override
-            public void onFound(final List<DataHolder> data) {
-                mainActivity.runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        updateListView(data);
-                    }
-                });
-            }
-        });
-    }
-
-    public void setActivity(MainActivity activity) {
-        this.mainActivity = activity;
+        }
     }
 
 }
-

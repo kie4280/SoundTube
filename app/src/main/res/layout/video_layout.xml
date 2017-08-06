@@ -4,28 +4,41 @@
                 android:layout_height="wrap_content">
 
     <ImageView
-            android:layout_height="wrap_content"
-            android:id="@+id/imageView"
-            app:srcCompat="@android:drawable/btn_dialog"
-            android:paddingEnd="0dp"
-            android:paddingStart="0dp"
-            android:paddingTop="0dp" android:paddingBottom="0dp"
-            android:adjustViewBounds="true" android:cropToPadding="true" android:layout_centerVertical="true"
-            android:layout_alignParentStart="true" android:layout_width="170dp"/>
+        android:id="@+id/imageView"
+        android:layout_width="160dp"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_centerVertical="true"
+        android:adjustViewBounds="true"
+        android:cropToPadding="true"
+        android:paddingBottom="10dp"
+        android:paddingEnd="10dp"
+        android:paddingStart="10dp"
+        android:paddingTop="10dp"
+        app:srcCompat="@android:drawable/btn_dialog" />
+
     <TextView
-            android:text="title"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:id="@+id/titleview"
-            android:paddingTop="0dp" android:paddingBottom="0dp"
-            android:paddingStart="10dp" android:layout_alignTop="@+id/imageView" android:layout_alignParentEnd="true"
-            android:layout_toEndOf="@+id/imageView" android:layout_above="@+id/durationview"/>
+        android:id="@+id/titleview"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/durationview"
+        android:layout_alignParentEnd="true"
+        android:layout_alignTop="@+id/imageView"
+        android:layout_toEndOf="@+id/imageView"
+        android:paddingBottom="0dp"
+        android:paddingStart="10dp"
+        android:paddingTop="30dp"
+        android:text="title" />
+
     <TextView
-            android:text="duration"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:id="@+id/durationview"
-            android:layout_alignBottom="@+id/imageView" android:layout_toStartOf="@+id/titleview"
-            android:background="@android:color/black" android:textSize="12sp"
-            android:textColor="@android:color/background_light"/>
+        android:id="@+id/durationview"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/imageView"
+        android:layout_toStartOf="@+id/titleview"
+        android:background="@android:color/black"
+        android:text="duration"
+        android:textAlignment="center"
+        android:textColor="@android:color/background_light"
+        android:textSize="12sp" />
 </RelativeLayout>

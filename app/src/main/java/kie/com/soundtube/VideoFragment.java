@@ -95,7 +95,8 @@ public class VideoFragment extends Fragment {
         currentTime = (TextView) videoFragmentView.findViewById(R.id.currentTime);
         totalTime = (TextView) videoFragmentView.findViewById(R.id.totalTime);
         header = (RelativeLayout) videoFragmentView.findViewById(R.id.headerView);
-        recyclerView = (RecyclerView) videoFragmentView.findViewById(R.id.videorecyclerView);
+//        recyclerView = (RecyclerView) videoFragmentView.findViewById(R.id.videorecyclerView);
+        recyclerView = new RecyclerView(context);
         viewPager = (ViewPager) videoFragmentView.findViewById(R.id.searchViewPager);
         headersize = Tools.convertDpToPixel(HeaderDP, context);
 

@@ -104,7 +104,6 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
                     }
                     searchView.clearFocus();
                 }
-
                 return true;
             }
 

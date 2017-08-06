@@ -279,13 +279,10 @@ public class MediaPlayerService extends Service {
                         Toast toast = Toast.makeText(context, "No video resolution", Toast.LENGTH_LONG);
                         toast.show();
                     }
-
                 }
-
             }
         });
     }
-
 
     public void setDisplay(final SurfaceHolder surfaceHolder) {
         playHandler.post(new Runnable() {
