@@ -5,6 +5,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Handler;
 import android.widget.Toast;
+
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.api.client.http.HttpRequest;
 import com.google.api.client.http.HttpRequestInitializer;
@@ -39,6 +40,8 @@ public class Searcher {
     private YouTube youtube;
     private Handler WorkHandler = null;
     private Context context;
+    public LinkedList<String> tokens = new LinkedList<>();
+    public ListIterator<String> iterator = tokens.listIterator();
 
     public Searcher(Context context, Handler handler) {
         this.context = context;
@@ -107,8 +110,7 @@ public class Searcher {
                 if (nextPageToken != null) {
                     search.setPageToken(nextPageToken);
                     try {
-                        Toast toast = Toast.makeText(context, "Loading...", Toast.LENGTH_SHORT);
-                        toast.show();
+
                         SearchListResponse searchResponse = search.execute();
                         nextPageToken = searchResponse.getNextPageToken();
                         prevPageToken = searchResponse.getPrevPageToken();
@@ -134,8 +136,7 @@ public class Searcher {
                 if (prevPageToken != null) {
                     search.setPageToken(prevPageToken);
                     try {
-                        Toast toast = Toast.makeText(context, "Loading...", Toast.LENGTH_SHORT);
-                        toast.show();
+
                         SearchListResponse searchResponse = search.execute();
                         nextPageToken = searchResponse.getNextPageToken();
                         prevPageToken = searchResponse.getPrevPageToken();
@@ -182,92 +183,86 @@ public class Searcher {
         List<String> videoList = new ArrayList<>((int) NUMBER_OF_VIDEOS_RETURNED);
         List<DataHolder> classes = new LinkedList<>();
 
-        if (searchResultList != null) {
-            if (searchResultList.size() == 0) {
-
-                Toast toast = Toast.makeText(context, "No matching result", Toast.LENGTH_SHORT);
-                toast.show();
-
-
-            } else {
-                for (SearchResult searchResult : searchResultList) {
-                    videoList.add(searchResult.getId().getVideoId());
-                }
-                Joiner joiner = Joiner.on(',');
-                String videoID = joiner.join(videoList);
-                try {
-                    YouTube.Videos.List videoRequest = youtube.videos().list("snippet,contentDetails,id").setId(videoID);
-                    videoRequest.setKey(APIKey);
-                    videoRequest.setFields("items(id,snippet/publishedAt,snippet/title," +
-                            "snippet/thumbnails/default/url,contentDetails/duration)");
-
-                    VideoListResponse videoResponse = videoRequest.execute();
-                    List<Video> listResponse = videoResponse.getItems();
-                    ListIterator<Video> iterator = listResponse.listIterator();
-
-                    while (iterator.hasNext()) {
-                        Video s = iterator.next();
-
-                        InputStream in = new URL(URI.create(s.getSnippet().getThumbnails().getDefault().getUrl())
-                                .toURL().toString()).openStream();
-                        Bitmap bitmap = BitmapFactory.decodeStream(in);
-                        in.close();
-
-                        DataHolder holder = new DataHolder();
-                        holder.thumbnail = bitmap;
-                        holder.title = s.getSnippet().getTitle();
-                        holder.publishdate = s.getSnippet().getPublishedAt().toString();
-                        String d = s.getContentDetails().getDuration();
-                        StringBuilder stringBuilder = new StringBuilder();
-                        int dots = 0;
-                        if (d.contains("D")) {
-                            dots = 3;
-
-                        } else {
+//        if (searchResultList != null) {
+//            if (searchResultList.size() == 0) {
+//                Toast toast = Toast.makeText(context, "No matching result", Toast.LENGTH_SHORT);
+//                toast.show();
+//            } else {
 
 
-                        }
-                        if (d.contains("H")) {
-                            int index = d.indexOf("H");
-                            if (Character.isDigit(d.charAt(index - 2))) {
-                                stringBuilder.append(d.charAt(index - 2));
-                            } else {
-                                stringBuilder.append(0);
-                            }
-                            stringBuilder.append(d.charAt(index - 1));
-                            stringBuilder.append(":");
-                        }
-                        if (d.contains("M")) {
-                            int index = d.indexOf("M");
-                            if (Character.isDigit(d.charAt(index - 2))) {
-                                stringBuilder.append(d.charAt(index - 2));
-                            } else {
-                                stringBuilder.append(0);
-                            }
-                            stringBuilder.append(d.charAt(index - 1));
-                            stringBuilder.append(":");
-                        }
-                        if (d.contains("S")) {
-                            int index = d.indexOf("S");
-                            if (Character.isDigit(d.charAt(index - 2))) {
-                                stringBuilder.append(d.charAt(index - 2));
-                            } else {
-                                stringBuilder.append(0);
-                            }
-                            stringBuilder.append(d.charAt(index - 1));
-                        }
-
-
-                        holder.videolength = d;
-                        holder.videoID = s.getId();
-                        classes.add(holder);
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-
-            }
+        for (SearchResult searchResult : searchResultList) {
+            videoList.add(searchResult.getId().getVideoId());
         }
+        Joiner joiner = Joiner.on(',');
+        String videoID = joiner.join(videoList);
+        try {
+            YouTube.Videos.List videoRequest = youtube.videos().list("snippet,contentDetails,id").setId(videoID);
+            videoRequest.setKey(APIKey);
+            videoRequest.setFields("items(id,snippet/publishedAt,snippet/title," +
+                    "snippet/thumbnails/default/url,contentDetails/duration)");
+
+            VideoListResponse videoResponse = videoRequest.execute();
+            List<Video> listResponse = videoResponse.getItems();
+
+            for (Video s : listResponse) {
+                InputStream in = new URL(URI.create(s.getSnippet().getThumbnails().getDefault().getUrl())
+                        .toURL().toString()).openStream();
+                Bitmap bitmap = BitmapFactory.decodeStream(in);
+                in.close();
+
+                DataHolder holder = new DataHolder();
+                holder.thumbnail = bitmap;
+                holder.title = s.getSnippet().getTitle();
+                holder.publishdate = s.getSnippet().getPublishedAt().toString();
+                String d = s.getContentDetails().getDuration();
+                StringBuilder stringBuilder = new StringBuilder();
+                if (d.contains("D")) {
+                    stringBuilder.append(d.substring(d.indexOf("P") + 1, d.indexOf("D")));
+                    stringBuilder.append(":");
+                }
+                if (d.contains("H")) {
+                    int index = d.indexOf("H");
+                    if (Character.isDigit(d.charAt(index - 2))) {
+                        stringBuilder.append(d.charAt(index - 2));
+                    } else {
+                        stringBuilder.append(0);
+                    }
+                    stringBuilder.append(d.charAt(index - 1));
+                    stringBuilder.append(":");
+                }
+                if (d.contains("M")) {
+                    int index = d.indexOf("M");
+                    if (Character.isDigit(d.charAt(index - 2))) {
+                        stringBuilder.append(d.charAt(index - 2));
+                    } else {
+                        stringBuilder.append(0);
+                    }
+                    stringBuilder.append(d.charAt(index - 1));
+                    stringBuilder.append(":");
+                }
+                if (d.contains("S")) {
+                    int index = d.indexOf("S");
+                    if (Character.isDigit(d.charAt(index - 2))) {
+                        stringBuilder.append(d.charAt(index - 2));
+                    } else {
+                        stringBuilder.append(0);
+                    }
+                    stringBuilder.append(d.charAt(index - 1));
+                }
+
+
+                holder.videolength = stringBuilder.toString();
+                holder.videoID = s.getId();
+                classes.add(holder);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+//            }
+//        }
+
+
         return classes;
     }
 

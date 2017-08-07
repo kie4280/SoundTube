@@ -30,6 +30,7 @@ public class SearchFragment extends Fragment {
     private Context context;
     public VideoRetriver videoRetriver;
     private ViewPager viewPager;
+    final int PREV_PAGE = 0, LOAD_RELATED = 1, NEXT_PAGE = 2;
 
     MainActivity mainActivity;
     Searcher searcher;
@@ -149,17 +150,29 @@ public class SearchFragment extends Fragment {
         }
     };
 
-    public void changepage(boolean next, final boolean hasnext, final boolean hasprev, List<DataHolder> newData) {
-        mainActivity.runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                pagerAdapter.changeSate(hasnext, hasprev);
-                if (hasnext) {
+    public void loadpage(int type, final boolean hasnext, final boolean hasprev, List<DataHolder> newData) {
+        switch (type) {
+            case PREV_PAGE:
+                break;
+            case LOAD_RELATED:
+                break;
+            case NEXT_PAGE:
+                pages.get(0).updateListView(pages.get(1).adapter.dataHolders);
+                pages.get(1).updateListView(pages.get(2).adapter.dataHolders);
+                searcher.nextPage(new Searcher.YoutubeSearchResult() {
+                    @Override
+                    public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
+                        pages.get(2).updateListView(data);
+                    }
 
-                    pages.get(0).updateListView(data);
-                }
-            }
-        });
+                    @Override
+                    public void noData() {
+
+                    }
+                });
+                break;
+        }
+
     }
 
     public void search(String term) {
@@ -170,23 +183,7 @@ public class SearchFragment extends Fragment {
                 mainActivity.runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        pagerAdapter.changeSate(hasnext, hasprev);
-                        if (hasnext) {
-                            pages.get(0).updateListView(data);
-                            searcher.nextPage(new Searcher.YoutubeSearchResult() {
-                                @Override
-                                public void onFound(final List<DataHolder> data, final boolean hasnext, final boolean hasprev) {
 
-
-                                }
-
-                                @Override
-                                public void noData() {
-                                    Toast toast = Toast.makeText(context, "No next page", Toast.LENGTH_SHORT);
-                                    toast.show();
-                                }
-                            });
-                        }
                     }
                 });
 
