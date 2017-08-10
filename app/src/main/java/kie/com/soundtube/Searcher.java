@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
@@ -30,10 +31,11 @@ import java.util.ListIterator;
 
 public class Searcher {
 
-    //private int tokenIndex = 0;
     YouTube.Search.List search;
+    YouTube.Search.List tokensearch;
     String nextPageToken = null;
     String prevPageToken = null;
+
     private static final long NUMBER_OF_VIDEOS_RETURNED = 25;
     private static final String APIKey = "AIzaSyANfhXgNlxpmkWKl7JNWdyRQZx4uS2vYuo";
     private static final String Order = "relevance";
@@ -41,7 +43,11 @@ public class Searcher {
     private Handler WorkHandler = null;
     private Context context;
     public LinkedList<String> tokens = new LinkedList<>();
-    public ListIterator<String> iterator = tokens.listIterator();
+    public HashMap<String, List<DataHolder>> pages = new HashMap<>(500);
+    public ListIterator<String> previter, nextiter;
+    private SearchListResponse searchResponse;
+    private SearchListResponse tokenseachResponse;
+
 
     public Searcher(Context context, Handler handler) {
         this.context = context;
@@ -53,9 +59,9 @@ public class Searcher {
 
     }
 
-    public void newSearch(final String queryTerm, final YoutubeSearchResult result) {
+    public void newSearch(final String queryTerm) {
 
-        Runnable run1 = new Runnable() {
+        WorkHandler.post(new Runnable() {
             @Override
             public void run() {
                 try {
@@ -63,8 +69,7 @@ public class Searcher {
                     // argument is required, but since we don't need anything
                     // initialized when the HttpRequest is initialized, we override
                     // the interface and provide a no-op function.
-                    Toast toast = Toast.makeText(context, "Loading...", Toast.LENGTH_SHORT);
-                    toast.show();
+
                     search = youtube.search().list("snippet");
                     // Define the API request for retrieving search results.
                     search.setKey(APIKey);
@@ -74,54 +79,63 @@ public class Searcher {
                     search.setType("video");
                     // To increase efficiency, only retrieve the fields that the
                     // application uses.
-                    search.setFields("items(id/kind,id/videoId),nextPageToken,prevPageToken,pageInfo/totalResults");
+                    search.setFields("items(id/kind,id/videoId)");
                     search.setMaxResults(NUMBER_OF_VIDEOS_RETURNED);
                     search.setQ(queryTerm);
                     search.setOrder(Order);
-                    // Call the API and print results.
-                    SearchListResponse searchResponse = search.execute();
-                    nextPageToken = searchResponse.getNextPageToken();
-                    prevPageToken = searchResponse.getPrevPageToken();
-                    List<SearchResult> searchResultList = searchResponse.getItems();
-                    if (searchResultList.isEmpty()) {
-                        result.noData();
-                    } else {
-                        result.onFound(toClass(searchResultList), nextPageToken != null, prevPageToken != null);
+
+                    tokensearch = youtube.search().list("snippet");
+                    tokensearch.setKey(APIKey);
+                    tokensearch.setFields("nextPageToken,prevPageToken,pageInfo/totalResults");
+                    tokensearch.setMaxResults(NUMBER_OF_VIDEOS_RETURNED);
+                    tokensearch.setQ(queryTerm);
+                    tokensearch.setOrder(Order);
+                    tokenseachResponse = tokensearch.execute();
+                    nextPageToken = tokenseachResponse.getNextPageToken();
+
+                    prevPageToken = tokenseachResponse.getPrevPageToken();
+                    tokens.clear();
+                    previter = tokens.listIterator();
+                    nextiter = tokens.listIterator();
+                    if (nextPageToken != null) {
+                        String head = tokensearch.setPageToken(nextPageToken).execute().getPrevPageToken();
+                        nextiter.add(head);
                     }
 
-                } catch (GoogleJsonResponseException e) {
-                    System.err.println("There was a service error: " + e.getDetails().getCode() + " : "
-                            + e.getDetails().getMessage());
+
                 } catch (IOException e) {
                     System.err.println("There was an IO error: " + e.getCause() + " : " + e.getMessage());
                 } catch (Throwable t) {
                     t.printStackTrace();
                 }
             }
-        };
+        });
 
-        WorkHandler.post(run1);
     }
 
-    public void nextPage(final YoutubeSearchResult result) {
+    public void nextPage() {
         WorkHandler.post(new Runnable() {
             @Override
             public void run() {
                 if (nextPageToken != null) {
-                    search.setPageToken(nextPageToken);
-                    try {
+                    if (nextiter.hasNext()) {
+                        nextPageToken = nextiter.next();
+                        prevPageToken = previter.next();
+                    } else {
+                        try {
+                            tokensearch.setPageToken(nextPageToken);
+                            tokenseachResponse = tokensearch.execute();
+                            nextPageToken = tokenseachResponse.getNextPageToken();
+                            prevPageToken = tokenseachResponse.getPrevPageToken();
+                            if (nextPageToken != null) {
+                                nextiter.add(nextPageToken);
+                                previter.next();
+                            }
 
-                        SearchListResponse searchResponse = search.execute();
-                        nextPageToken = searchResponse.getNextPageToken();
-                        prevPageToken = searchResponse.getPrevPageToken();
-                        List<SearchResult> searchResultList = searchResponse.getItems();
-                        result.onFound(toClass(searchResultList), nextPageToken != null, prevPageToken != null);
-
-                    } catch (IOException e) {
-                        e.printStackTrace();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
                     }
-                } else {
-                    result.noData();
                 }
 
             }
@@ -129,46 +143,112 @@ public class Searcher {
 
     }
 
-    public void prevPage(final YoutubeSearchResult result) {
+    public void prevPage() {
         WorkHandler.post(new Runnable() {
             @Override
             public void run() {
                 if (prevPageToken != null) {
-                    search.setPageToken(prevPageToken);
-                    try {
+                    if (previter.hasPrevious()) {
+                        prevPageToken = previter.previous();
+                        nextPageToken = nextiter.previous();
+                    } else {
+                        try {
+                            tokensearch.setPageToken(prevPageToken);
+                            tokenseachResponse = tokensearch.execute();
+                            nextPageToken = tokenseachResponse.getNextPageToken();
+                            prevPageToken = tokenseachResponse.getPrevPageToken();
+                            if (prevPageToken != null) {
+                                previter.add(prevPageToken);
+                                previter.previous();
+                                nextiter.previous();
+                            }
 
-                        SearchListResponse searchResponse = search.execute();
-                        nextPageToken = searchResponse.getNextPageToken();
-                        prevPageToken = searchResponse.getPrevPageToken();
-                        List<SearchResult> searchResultList = searchResponse.getItems();
-                        result.onFound(toClass(searchResultList), nextPageToken != null, prevPageToken != null);
-
-                    } catch (IOException e) {
-                        e.printStackTrace();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
                     }
-                } else {
-                    result.noData();
+
                 }
             }
         });
 
     }
 
-    public void loadRelatedVideos(final String id, final YoutubeSearchResult result) {
+
+    public void getResults(final YoutubeSearchResult result) {
+        WorkHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                if (previter.hasNext()) {
+                    String key = previter.next();
+                    previter.previous();
+                    if (pages.containsKey(key)) {
+                        result.onFound(pages.get(key), nextPageToken != null, prevPageToken != null);
+                    } else {
+                        try {
+                            search.setPageToken(key);
+                            searchResponse = search.execute();
+                            List<SearchResult> searchResultList = searchResponse.getItems();
+                            if (searchResultList.isEmpty()) {
+                                result.noData();
+                            } else {
+                                List<DataHolder> dataHolders = toClass(searchResultList);
+                                pages.put(key, dataHolders);
+                                result.onFound(dataHolders, nextPageToken != null, prevPageToken != null);
+                            }
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                } else {
+                    try {
+                        searchResponse = search.execute();
+                        List<SearchResult> searchResultList = searchResponse.getItems();
+                        if (searchResultList.isEmpty()) {
+                            result.noData();
+                        } else {
+                            List<DataHolder> dataHolders = toClass(searchResultList);
+                            result.onFound(dataHolders, nextPageToken != null, prevPageToken != null);
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+
+            }
+        });
+    }
+
+    public void loadRelatedVideos(final String id) {
         WorkHandler.post(new Runnable() {
             @Override
             public void run() {
                 try {
-                    YouTube.Search.List search = youtube.search().list("snippet");
+                    search = youtube.search().list("snippet");
                     search.setRelatedToVideoId(id);
                     search.setType("video");
-                    search.setFields("items(id/kind,id/videoId),nextPageToken,prevPageToken,pageInfo/totalResults");
+                    search.setFields("items(id/kind,id/videoId)");
                     search.setKey(APIKey);
                     search.setMaxResults(NUMBER_OF_VIDEOS_RETURNED);
-                    SearchListResponse response = search.execute();
-                    nextPageToken = response.getNextPageToken();
-                    prevPageToken = response.getPrevPageToken();
-                    result.onFound(toClass(response.getItems()), nextPageToken != null, prevPageToken != null);
+                    tokensearch = youtube.search().list("snippet");
+                    tokensearch.setRelatedToVideoId(id);
+                    tokensearch.setKey(APIKey);
+                    tokensearch.setFields("nextPageToken,prevPageToken,pageInfo/totalResults");
+                    tokensearch.setMaxResults(NUMBER_OF_VIDEOS_RETURNED);
+//                    tokensearch.setOrder(Order);
+                    tokensearch.setType("video");
+                    tokenseachResponse = tokensearch.execute();
+                    nextPageToken = tokenseachResponse.getNextPageToken();
+                    prevPageToken = tokenseachResponse.getPrevPageToken();
+                    tokens.clear();
+                    previter = tokens.listIterator();
+                    nextiter = tokens.listIterator();
+                    if (nextPageToken != null) {
+                        String head = tokensearch.setPageToken(nextPageToken).execute().getPrevPageToken();
+                        nextiter.add(head);
+                    }
+
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -178,7 +258,7 @@ public class Searcher {
         });
     }
 
-    public List<DataHolder> toClass(List<SearchResult> searchResultList) {
+    private List<DataHolder> toClass(List<SearchResult> searchResultList) {
 
         List<String> videoList = new ArrayList<>((int) NUMBER_OF_VIDEOS_RETURNED);
         List<DataHolder> classes = new LinkedList<>();

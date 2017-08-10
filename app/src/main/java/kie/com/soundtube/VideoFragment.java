@@ -361,7 +361,7 @@ public class VideoFragment extends Fragment {
                 if (searcher != null) {
                     searcher.loadRelatedVideos(dataHolder.videoID, new Searcher.YoutubeSearchResult() {
                         @Override
-                        public void onFound(final List<DataHolder> data) {
+                        public void onFound(final List<DataHolder> data, boolean hasnext, boolean hasprev) {
                             mainActivity.runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
@@ -369,6 +369,13 @@ public class VideoFragment extends Fragment {
                                 }
                             });
                         }
+
+                        @Override
+                        public void noData() {
+
+                        }
+
+
                     });
                 }
 

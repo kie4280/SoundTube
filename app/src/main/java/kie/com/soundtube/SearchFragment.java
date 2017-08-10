@@ -159,42 +159,14 @@ public class SearchFragment extends Fragment {
             case NEXT_PAGE:
                 pages.get(0).updateListView(pages.get(1).adapter.dataHolders);
                 pages.get(1).updateListView(pages.get(2).adapter.dataHolders);
-                searcher.nextPage(new Searcher.YoutubeSearchResult() {
-                    @Override
-                    public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
-                        pages.get(2).updateListView(data);
-                    }
-
-                    @Override
-                    public void noData() {
-
-                    }
-                });
+                searcher.nextPage();
                 break;
         }
 
     }
 
     public void search(String term) {
-
-        searcher.newSearch(term, new Searcher.YoutubeSearchResult() {
-            @Override
-            public void onFound(final List<DataHolder> data, final boolean hasnext, final boolean hasprev) {
-                mainActivity.runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-
-                    }
-                });
-
-            }
-
-            @Override
-            public void noData() {
-                Toast toast = Toast.makeText(context, "No result!", Toast.LENGTH_SHORT);
-                toast.show();
-            }
-        });
+        searcher.newSearch(term);
     }
 
     public void onButtonPressed(Uri uri) {
