@@ -35,10 +35,12 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignBottom="@+id/imageView"
+        android:layout_marginBottom="10dp"
+        android:layout_marginRight="10dp"
         android:layout_toStartOf="@+id/titleview"
         android:background="@android:color/black"
         android:text="duration"
         android:textAlignment="center"
         android:textColor="@android:color/background_light"
-        android:textSize="12sp" />
+        android:textSize="10sp" />
 </RelativeLayout>

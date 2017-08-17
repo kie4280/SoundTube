@@ -106,11 +106,11 @@ public class VideoFragment extends Fragment {
         progressBar.setMax(100);
         progressBar.setIndeterminate(false);
         mainActivity.slidePanel.setScrollableView(recyclerView);
-        CustomPagerAdapter pagerAdapter = new CustomPagerAdapter();
-        pagerAdapter.addView(recyclerView);
-        pagerAdapter.count = 1;
-        viewPager.setAdapter(pagerAdapter);
-        viewPager.setCurrentItem(1);
+//        CustomPagerAdapter pagerAdapter = new CustomPagerAdapter();
+//        pagerAdapter.addView(recyclerView);
+//        pagerAdapter.count = 1;
+//        viewPager.setAdapter(pagerAdapter);
+//        viewPager.setCurrentItem(1);
 
         vrelativeLayout = (RelativeLayout) videoFragmentView.findViewById(R.id.videoRelativeLayout);
         drelativeLayout = (RelativeLayout) videoFragmentView.findViewById(R.id.descriptionRelativeLayout);
@@ -359,24 +359,7 @@ public class VideoFragment extends Fragment {
                 playbutton.setBackgroundResource(R.drawable.pause);
 
                 if (searcher != null) {
-                    searcher.loadRelatedVideos(dataHolder.videoID, new Searcher.YoutubeSearchResult() {
-                        @Override
-                        public void onFound(final List<DataHolder> data, boolean hasnext, boolean hasprev) {
-                            mainActivity.runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    updateListView(dataHolder.title, data);
-                                }
-                            });
-                        }
-
-                        @Override
-                        public void noData() {
-
-                        }
-
-
-                    });
+                    searcher.loadRelatedVideos(dataHolder.videoID);
                 }
 
 

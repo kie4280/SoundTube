@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Handler;
+import android.util.Log;
 import android.widget.Toast;
 
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
@@ -42,9 +43,9 @@ public class Searcher {
     private YouTube youtube;
     private Handler WorkHandler = null;
     private Context context;
-    public LinkedList<String> tokens = new LinkedList<>();
+    public ArrayList<String> tokens = new ArrayList<>(500);
     public HashMap<String, List<DataHolder>> pages = new HashMap<>(500);
-    public ListIterator<String> previter, nextiter;
+    public int index = 0;
     private SearchListResponse searchResponse;
     private SearchListResponse tokenseachResponse;
 
@@ -95,11 +96,10 @@ public class Searcher {
 
                     prevPageToken = tokenseachResponse.getPrevPageToken();
                     tokens.clear();
-                    previter = tokens.listIterator();
-                    nextiter = tokens.listIterator();
+                    index = 0;
                     if (nextPageToken != null) {
                         String head = tokensearch.setPageToken(nextPageToken).execute().getPrevPageToken();
-                        nextiter.add(head);
+                        tokens.add(head);
                     }
 
 
@@ -111,113 +111,6 @@ public class Searcher {
             }
         });
 
-    }
-
-    public void nextPage() {
-        WorkHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                if (nextPageToken != null) {
-                    if (nextiter.hasNext()) {
-                        nextPageToken = nextiter.next();
-                        prevPageToken = previter.next();
-                    } else {
-                        try {
-                            tokensearch.setPageToken(nextPageToken);
-                            tokenseachResponse = tokensearch.execute();
-                            nextPageToken = tokenseachResponse.getNextPageToken();
-                            prevPageToken = tokenseachResponse.getPrevPageToken();
-                            if (nextPageToken != null) {
-                                nextiter.add(nextPageToken);
-                                previter.next();
-                            }
-
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                }
-
-            }
-        });
-
-    }
-
-    public void prevPage() {
-        WorkHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                if (prevPageToken != null) {
-                    if (previter.hasPrevious()) {
-                        prevPageToken = previter.previous();
-                        nextPageToken = nextiter.previous();
-                    } else {
-                        try {
-                            tokensearch.setPageToken(prevPageToken);
-                            tokenseachResponse = tokensearch.execute();
-                            nextPageToken = tokenseachResponse.getNextPageToken();
-                            prevPageToken = tokenseachResponse.getPrevPageToken();
-                            if (prevPageToken != null) {
-                                previter.add(prevPageToken);
-                                previter.previous();
-                                nextiter.previous();
-                            }
-
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                    }
-
-                }
-            }
-        });
-
-    }
-
-
-    public void getResults(final YoutubeSearchResult result) {
-        WorkHandler.post(new Runnable() {
-            @Override
-            public void run() {
-                if (previter.hasNext()) {
-                    String key = previter.next();
-                    previter.previous();
-                    if (pages.containsKey(key)) {
-                        result.onFound(pages.get(key), nextPageToken != null, prevPageToken != null);
-                    } else {
-                        try {
-                            search.setPageToken(key);
-                            searchResponse = search.execute();
-                            List<SearchResult> searchResultList = searchResponse.getItems();
-                            if (searchResultList.isEmpty()) {
-                                result.noData();
-                            } else {
-                                List<DataHolder> dataHolders = toClass(searchResultList);
-                                pages.put(key, dataHolders);
-                                result.onFound(dataHolders, nextPageToken != null, prevPageToken != null);
-                            }
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                } else {
-                    try {
-                        searchResponse = search.execute();
-                        List<SearchResult> searchResultList = searchResponse.getItems();
-                        if (searchResultList.isEmpty()) {
-                            result.noData();
-                        } else {
-                            List<DataHolder> dataHolders = toClass(searchResultList);
-                            result.onFound(dataHolders, nextPageToken != null, prevPageToken != null);
-                        }
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-
-
-            }
-        });
     }
 
     public void loadRelatedVideos(final String id) {
@@ -242,11 +135,10 @@ public class Searcher {
                     nextPageToken = tokenseachResponse.getNextPageToken();
                     prevPageToken = tokenseachResponse.getPrevPageToken();
                     tokens.clear();
-                    previter = tokens.listIterator();
-                    nextiter = tokens.listIterator();
+                    index = 0;
                     if (nextPageToken != null) {
                         String head = tokensearch.setPageToken(nextPageToken).execute().getPrevPageToken();
-                        nextiter.add(head);
+                        tokens.add(head);
                     }
 
                 } catch (IOException e) {
@@ -257,6 +149,101 @@ public class Searcher {
             }
         });
     }
+
+    public void nextPage() {
+        WorkHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                if (nextPageToken != null) {
+                    Log.d("index", Integer.toString(index));
+
+                    if (index < tokens.size() - 1) {
+                        nextPageToken = tokens.get(index + 1);
+                        prevPageToken = tokens.get(index);
+                    } else {
+                        try {
+                            tokensearch.setPageToken(nextPageToken);
+                            tokenseachResponse = tokensearch.execute();
+                            nextPageToken = tokenseachResponse.getNextPageToken();
+                            prevPageToken = tokenseachResponse.getPrevPageToken();
+                            if (nextPageToken != null) {
+                                tokens.add(nextPageToken);
+                            }
+
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    index++;
+                }
+
+            }
+        });
+
+    }
+
+    public void prevPage() {
+        WorkHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                if (prevPageToken != null) {
+                    Log.d("index", Integer.toString(index));
+                    index--;
+                    if (index >= 1) {
+                        prevPageToken = tokens.get(index - 1);
+                        nextPageToken = tokens.get(index);
+                    } else {
+                        try {
+                            tokensearch.setPageToken(prevPageToken);
+                            tokenseachResponse = tokensearch.execute();
+                            nextPageToken = tokenseachResponse.getNextPageToken();
+                            prevPageToken = tokenseachResponse.getPrevPageToken();
+                            index = 0;
+                            if (prevPageToken != null) {
+                                tokens.add(0, prevPageToken);
+                            }
+
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+
+                }
+            }
+        });
+
+    }
+
+
+    public void getResults(final YoutubeSearchResult result) {
+        WorkHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                if (index >= 0 && index < tokens.size()) {
+                    String key = tokens.get(index);
+                    if (pages.containsKey(key)) {
+                        result.onFound(pages.get(key), nextPageToken != null, prevPageToken != null);
+                    } else {
+                        try {
+                            search.setPageToken(key);
+                            searchResponse = search.execute();
+                            List<SearchResult> searchResultList = searchResponse.getItems();
+                            if (searchResultList.isEmpty()) {
+                                result.noData();
+                            } else {
+                                List<DataHolder> dataHolders = toClass(searchResultList);
+                                pages.put(key, dataHolders);
+                                result.onFound(dataHolders, nextPageToken != null, prevPageToken != null);
+                            }
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }
+        });
+    }
+
 
     private List<DataHolder> toClass(List<SearchResult> searchResultList) {
 
@@ -296,9 +283,11 @@ public class Searcher {
                 holder.publishdate = s.getSnippet().getPublishedAt().toString();
                 String d = s.getContentDetails().getDuration();
                 StringBuilder stringBuilder = new StringBuilder();
+                int highest = 0;
                 if (d.contains("D")) {
                     stringBuilder.append(d.substring(d.indexOf("P") + 1, d.indexOf("D")));
                     stringBuilder.append(":");
+                    highest = 3;
                 }
                 if (d.contains("H")) {
                     int index = d.indexOf("H");
@@ -309,7 +298,12 @@ public class Searcher {
                     }
                     stringBuilder.append(d.charAt(index - 1));
                     stringBuilder.append(":");
+                    highest = 2;
+                } else if (highest > 2) {
+                    stringBuilder.append("00");
+                    stringBuilder.append(":");
                 }
+
                 if (d.contains("M")) {
                     int index = d.indexOf("M");
                     if (Character.isDigit(d.charAt(index - 2))) {
@@ -319,7 +313,13 @@ public class Searcher {
                     }
                     stringBuilder.append(d.charAt(index - 1));
                     stringBuilder.append(":");
+                    highest = 1;
+
+                } else if (highest > 1) {
+                    stringBuilder.append("00");
+                    stringBuilder.append(":");
                 }
+
                 if (d.contains("S")) {
                     int index = d.indexOf("S");
                     if (Character.isDigit(d.charAt(index - 2))) {
@@ -328,9 +328,9 @@ public class Searcher {
                         stringBuilder.append(0);
                     }
                     stringBuilder.append(d.charAt(index - 1));
+                } else if (highest > 0) {
+                    stringBuilder.append("00");
                 }
-
-
                 holder.videolength = stringBuilder.toString();
                 holder.videoID = s.getId();
                 classes.add(holder);

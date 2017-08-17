@@ -1,6 +1,9 @@
 package kie.com.soundtube;
 
+import android.os.Handler;
+import android.os.Looper;
 import android.support.v4.view.PagerAdapter;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -14,27 +17,47 @@ public class CustomPagerAdapter extends PagerAdapter {
     ArrayList<Integer> showview = new ArrayList<>(3);
     ArrayList<View> pageviews = new ArrayList<>(3);
     boolean prePrev = false, preNext = false;
-    int count = 1;
+    Handler ui;
+
 
     public CustomPagerAdapter(ArrayList<View> pageviews) {
         this.pageviews = pageviews;
+        ui = new Handler(Looper.getMainLooper());
         showview.add(1);
+
     }
 
     @Override
     public Object instantiateItem(ViewGroup container, int position) {
-        container.addView(pageviews.get(showview.get(position)));
-        return pageviews.get(showview.get(position));
+//        View view = pageviews.get(showview.get(position));
+        View view = pageviews.get(position);
+        Log.d("pageradapter", "initiate" + Integer.toString(position));
+        container.addView(view);
+        return view;
+    }
+
+    @Override
+    public int getItemPosition(Object object) {
+
+        int index = pageviews.indexOf(object);
+        Log.d("pageradapter", "viewindex" + Integer.toString(index));
+        if (showview.contains(index)) {
+            return POSITION_UNCHANGED;
+        } else {
+            return POSITION_NONE;
+        }
     }
 
     @Override
     public void destroyItem(ViewGroup container, int position, Object object) {
+        Log.d("pageradapter", "destroyitem");
         container.removeView((View) object);
     }
 
     @Override
     public int getCount() {
-        return count;
+//        Log.d("pagecount", Integer.toString(showview.size()));
+        return showview.size();
     }
 
     @Override
@@ -43,23 +66,29 @@ public class CustomPagerAdapter extends PagerAdapter {
     }
 
 
-    public void changeSate(boolean hasnext, boolean hasprev) {
-        showview.clear();
-        count = 1;
-        if (hasprev) {
-            showview.add(0);
-            count++;
-        }
-        showview.add(1);
-        if (hasnext) {
-            showview.add(2);
-            count++;
-        }
-        if (hasnext != preNext || hasprev != prePrev) {
-            notifyDataSetChanged();
-        }
-        preNext = hasnext;
-        prePrev = hasprev;
+    public void changeSate(final boolean hasnext, final boolean hasprev) {
+
+        ui.post(new Runnable() {
+            @Override
+            public void run() {
+                showview.clear();
+                if (hasprev) {
+                    showview.add(0);
+                }
+                showview.add(1);
+                if (hasnext) {
+                    showview.add(2);
+                }
+                if (hasnext != preNext || hasprev != prePrev) {
+                    Log.d("pageradapter", "datachanged");
+                    notifyDataSetChanged();
+                }
+                preNext = hasnext;
+                prePrev = hasprev;
+            }
+        });
+
 
     }
+
 }

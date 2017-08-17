@@ -1,6 +1,12 @@
 package kie.com.soundtube;
 
 import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.ColorFilter;
+import android.graphics.Paint;
+import android.graphics.PixelFormat;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -30,7 +36,6 @@ public class SearchFragment extends Fragment {
     private Context context;
     public VideoRetriver videoRetriver;
     private ViewPager viewPager;
-    final int PREV_PAGE = 0, LOAD_RELATED = 1, NEXT_PAGE = 2;
 
     MainActivity mainActivity;
     Searcher searcher;
@@ -67,8 +72,6 @@ public class SearchFragment extends Fragment {
 
         viewPager = (ViewPager) fragmentView.findViewById(R.id.searchViewPager);
         pagerAdapter = new CustomPagerAdapter(pageviews);
-
-
         viewPager.setAdapter(pagerAdapter);
         viewPager.addOnPageChangeListener(onPageChangeListener);
 
@@ -88,6 +91,7 @@ public class SearchFragment extends Fragment {
     }
 
     private OnPageChangeListener onPageChangeListener = new OnPageChangeListener() {
+        int previndex = 0;
 
         @Override
         public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
@@ -96,25 +100,42 @@ public class SearchFragment extends Fragment {
 
         @Override
         public void onPageSelected(int position) {
-
+            previndex = position;
         }
 
         @Override
         public void onPageScrollStateChanged(int state) {
 
             if (state == ViewPager.SCROLL_STATE_SETTLING) {
-                int index = viewPager.getCurrentItem();
-                if (index == 2) {
-                    searcher.nextPage(new Searcher.YoutubeSearchResult() {
+                final int index = viewPager.getCurrentItem();
+                Log.d("viewpager", Integer.toString(index));
+                if (index > previndex) {
+                    Log.d("viewpager", "nextpage");
+                    searcher.nextPage();
+//                    pages.get(0).updateListView(pages.get(1).adapter.dataHolders);
+//                    pages.get(1).recyclerView.scrollTo(0, (int)(-mainActivity.toolbar.getTranslationY()));
+
+                    searcher.getResults(new Searcher.YoutubeSearchResult() {
                         @Override
                         public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
-                            mainActivity.runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-
+                            pagerAdapter.changeSate(hasnext, hasprev);
+                            if (hasnext && index > 1) {
+                                pages.get(0).updateListView(pages.get(1).adapter.dataHolders);
+                                if (pages.get(2).adapter != null) {
+                                    pages.get(1).updateListView(pages.get(2).adapter.dataHolders);
                                 }
-                            });
-                            viewPager.setCurrentItem(1, false);
+                                mainActivity.runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        viewPager.setCurrentItem(1, false);
+                                    }
+                                });
+                                pages.get(2).updateListView(data);
+                            }
+
+                            Log.d("hasnext", Boolean.toString(hasnext));
+                            Log.d("hasprev", Boolean.toString(hasprev));
+
                         }
 
                         @Override
@@ -123,17 +144,33 @@ public class SearchFragment extends Fragment {
                             toast.show();
                         }
                     });
-                } else if (index == 0) {
-                    searcher.prevPage(new Searcher.YoutubeSearchResult() {
+
+                } else if (index < previndex) {
+                    Log.d("viewpager", "prevpage");
+                    searcher.prevPage();
+//                    viewPager.setCurrentItem(1, false);
+
+//                    pages.get(2).recyclerView.scrollTo(0, (int)(-mainActivity.toolbar.getTranslationY()));
+
+                    searcher.getResults(new Searcher.YoutubeSearchResult() {
                         @Override
                         public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
-                            mainActivity.runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-
+                            Log.d("hasnext", Boolean.toString(hasnext));
+                            Log.d("hasprev", Boolean.toString(hasprev));
+                            pagerAdapter.changeSate(hasnext, hasprev);
+                            if (hasprev && index < 1) {
+                                pages.get(2).updateListView(pages.get(1).adapter.dataHolders);
+                                if (pages.get(0).adapter != null) {
+                                    pages.get(1).updateListView(pages.get(0).adapter.dataHolders);
                                 }
-                            });
-                            viewPager.setCurrentItem(1, false);
+                                mainActivity.runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        viewPager.setCurrentItem(1, false);
+                                    }
+                                });
+                                pages.get(0).updateListView(data);
+                            }
                         }
 
                         @Override
@@ -143,30 +180,47 @@ public class SearchFragment extends Fragment {
                         }
                     });
                 }
-
-
             }
-
         }
     };
 
-    public void loadpage(int type, final boolean hasnext, final boolean hasprev, List<DataHolder> newData) {
-        switch (type) {
-            case PREV_PAGE:
-                break;
-            case LOAD_RELATED:
-                break;
-            case NEXT_PAGE:
-                pages.get(0).updateListView(pages.get(1).adapter.dataHolders);
-                pages.get(1).updateListView(pages.get(2).adapter.dataHolders);
-                searcher.nextPage();
-                break;
-        }
-
-    }
-
     public void search(String term) {
         searcher.newSearch(term);
+        pages.get(0).loading();
+
+        searcher.getResults(new Searcher.YoutubeSearchResult() {
+            @Override
+            public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
+
+                pagerAdapter.changeSate(hasnext, hasprev);
+                pages.get(0).updateListView(data);
+
+                Log.d("searchFragment", "found");
+
+                if (hasnext) {
+                    pages.get(1).loading();
+                    searcher.nextPage();
+                    searcher.getResults(new Searcher.YoutubeSearchResult() {
+                        @Override
+                        public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
+                            pages.get(1).updateListView(data);
+                        }
+
+                        @Override
+                        public void noData() {
+
+                        }
+                    });
+                }
+
+            }
+
+            @Override
+            public void noData() {
+
+            }
+        });
+
     }
 
     public void onButtonPressed(Uri uri) {
@@ -203,24 +257,88 @@ public class SearchFragment extends Fragment {
         this.mainActivity = activity;
     }
 
+    private class TextDrawable extends Drawable {
+
+        private final String text;
+        private final Paint paint;
+
+        public TextDrawable(String text) {
+
+            this.text = text;
+            this.paint = new Paint();
+            paint.setColor(Color.WHITE);
+            paint.setTextSize(22f);
+            paint.setAntiAlias(true);
+            paint.setFakeBoldText(true);
+            paint.setShadowLayer(6f, 0, 0, Color.BLACK);
+            paint.setStyle(Paint.Style.FILL);
+            paint.setTextAlign(Paint.Align.CENTER);
+        }
+
+        @Override
+        public void draw(Canvas canvas) {
+            canvas.drawText(text, 0, 0, paint);
+        }
+
+        @Override
+        public void setAlpha(int alpha) {
+            paint.setAlpha(alpha);
+        }
+
+        @Override
+        public void setColorFilter(ColorFilter cf) {
+            paint.setColorFilter(cf);
+        }
+
+        @Override
+        public int getOpacity() {
+            return PixelFormat.TRANSLUCENT;
+        }
+    }
+
     private class Page {
 
         public SearchRecyclerAdapter adapter = null;
         public RecyclerView recyclerView;
         public ProgressBar progressBar;
+        public RelativeLayout relativeLayout;
+        boolean waiting = false;
+
 
         public Page(View page) {
             recyclerView = (RecyclerView) page.findViewById(R.id.searchrecyclerView);
             progressBar = (ProgressBar) page.findViewById(R.id.pageprogressBar);
+            relativeLayout = (RelativeLayout) page.findViewById(R.id.pageRL);
+
+//            relativeLayout.setBackground(new TextDrawable());
+        }
+
+        public void loading() {
+            if (!waiting) {
+                waiting = true;
+                recyclerView.setVisibility(View.GONE);
+                progressBar.setVisibility(View.VISIBLE);
+            }
         }
 
         public void updateListView(final List<DataHolder> data) {
-            if (adapter == null) {
-                createListView(recyclerView, data);
-            }
-//        recyclerView.setTranslationY(mainActivity.toolbar.getHeight());
-            adapter.dataHolders = data;
-            adapter.notifyDataSetChanged();
+            mainActivity.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    if (adapter == null) {
+                        createListView(recyclerView, data);
+                    } else {
+                        adapter.dataHolders = data;
+                        adapter.notifyDataSetChanged();
+                    }
+                    if (waiting) {
+                        waiting = false;
+                        recyclerView.setVisibility(View.VISIBLE);
+                        progressBar.setVisibility(View.GONE);
+                    }
+                }
+            });
+
         }
 
         private void createListView(final RecyclerView recyclerView, final List<DataHolder> data) {
@@ -275,121 +393,6 @@ public class SearchFragment extends Fragment {
 
                 }
             });
-
-//        ListAdapter listAdapter = new ListAdapter() {
-//
-//            @Override
-//            public boolean areAllItemsEnabled() {
-//                return true;
-//            }
-//
-//            @Override
-//            public boolean isEnabled(int position) {
-//                return true;
-//            }
-//
-//            @Override
-//            public void registerDataSetObserver(DataSetObserver observer) {
-//
-//            }
-//
-//            @Override
-//            public void unregisterDataSetObserver(DataSetObserver observer) {
-//
-//            }
-//
-//            @Override
-//            public int getCount() {
-//                return data.size();
-//            }
-//
-//            @Override
-//            public DataHolder getItem(int position) {
-//                return data.get(position);
-//            }
-//
-//            @Override
-//            public long getItemId(int position) {
-//                return 0;
-//            }
-//
-//            @Override
-//            public boolean hasStableIds() {
-//                return false;
-//            }
-//
-//            @Override
-//            public View getView(int position, View convertView, ViewGroup parent) {
-//                View view;
-//                if (convertView == null) {
-//                    LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-//                    view = inflater.inflate(R.layout.video_layout, parent, false);
-//                    DataHolder dataHolder = data.get(position);
-//                    ViewHolder viewHolder = new ViewHolder();
-//                    viewHolder.imageView = (ImageView) view.findViewById(R.id.imageView);
-//                    viewHolder.titleview = (TextView) view.findViewById(R.id.titleview);
-//                    viewHolder.durationview = (TextView) view.findViewById(R.id.durationview);
-//                    viewHolder.imageView.setImageBitmap(dataHolder.thumbnail);
-//                    viewHolder.titleview.setText(dataHolder.title);
-//                    viewHolder.durationview.setText(dataHolder.videolength);
-//                    view.setTag(viewHolder);
-//
-//
-//                } else {
-//                    view = convertView;
-//                    DataHolder dataHolder = data.get(position);
-//                    ViewHolder viewHolder = (ViewHolder) view.getTag();
-//                    viewHolder.imageView.setImageBitmap(dataHolder.thumbnail);
-//                    viewHolder.titleview.setText(dataHolder.title);
-//                    viewHolder.durationview.setText(dataHolder.videolength);
-//
-//                }
-//
-//                return view;
-//            }
-//
-//            @Override
-//            public int getItemViewType(int position) {
-//                return 0;
-//            }
-//
-//            @Override
-//            public int getViewTypeCount() {
-//                return 1;
-//            }
-//
-//            @Override
-//            public boolean isEmpty() {
-//                return false;
-//            }
-//        };
-//        listView.setAdapter(listAdapter);
-//
-//        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-//            @Override
-//            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-//                System.out.println("clicked" + position);
-//                Toast toast = Toast.makeText(context, "Decrypting...", Toast.LENGTH_SHORT);
-//                toast.show();
-//                final DataHolder dataHolder = data.get(position);
-//                videoRetriver.startExtracting("https://www.youtube" +
-//                        ".com/watch?v=" + dataHolder.videoID, new VideoRetriver.YouTubeExtractorListener() {
-//                    @Override
-//                    public void onSuccess(HashMap<Integer, String> result) {
-//                        dataHolder.videoUris = result;
-//                        mListener.onreturnVideo(dataHolder, WorkHandler);
-//                        //Log.d("search", ))
-//                    }
-//
-//                    @Override
-//                    public void onFailure(Error error) {
-//                        Log.d("search", "error extracting");
-//
-//                    }
-//                });
-//
-//            }
-//        });
 
         }
     }
