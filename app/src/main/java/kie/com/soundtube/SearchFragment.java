@@ -111,6 +111,7 @@ public class SearchFragment extends Fragment {
                 Log.d("viewpager", Integer.toString(index));
                 if (index > previndex) {
                     searcher.nextPage();
+                    pages.get(2).loading();
                     searcher.getResults(new Searcher.YoutubeSearchResult() {
                         @Override
                         public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
@@ -145,8 +146,9 @@ public class SearchFragment extends Fragment {
 
                         }
                     });
-                } else if (index < previndex && index < 1) {
+                } else if (index < previndex) {
                     searcher.prevPage();
+                    pages.get(0).loading();
                     searcher.getResults(new Searcher.YoutubeSearchResult() {
                         @Override
                         public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
