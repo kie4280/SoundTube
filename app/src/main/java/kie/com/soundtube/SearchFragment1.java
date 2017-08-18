@@ -13,21 +13,23 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.support.v4.app.Fragment;
 import android.support.v4.view.ViewPager;
+import android.support.v4.view.ViewPager.OnPageChangeListener;
 import android.support.v7.widget.DefaultItemAnimator;
-import android.support.v4.view.ViewPager.*;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.*;
+import android.widget.ProgressBar;
+import android.widget.RelativeLayout;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-public class SearchFragment extends Fragment {
+public class SearchFragment1 extends Fragment {
 
     private OnFragmentInteractionListener mListener;
     private View fragmentView = null;
@@ -43,7 +45,7 @@ public class SearchFragment extends Fragment {
     ArrayList<View> pageviews = new ArrayList<>(3);
     ArrayList<Page> pages = new ArrayList<>(3);
 
-    public SearchFragment() {
+    public SearchFragment1() {
         // Required empty public constructor
     }
 
