@@ -145,7 +145,7 @@ public class VideoFragment extends Fragment {
 
             @Override
             public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-                System.out.println("width " + width + " height " + height);
+//                System.out.println("width " + width + " height " + height);
             }
 
             @Override

@@ -12,7 +12,7 @@ import java.util.ArrayList;
 /**
  * Created by kieChang on 2017/7/14.
  */
-public class CustomPagerAdapter extends PagerAdapter {
+public class CustomPagerAdapterold extends PagerAdapter {
 
     ArrayList<Integer> showview = new ArrayList<>(3);
     ArrayList<View> pageviews = new ArrayList<>(3);
@@ -20,19 +20,20 @@ public class CustomPagerAdapter extends PagerAdapter {
     Handler ui;
 
 
-    public CustomPagerAdapter(ArrayList<View> pageviews) {
+    public CustomPagerAdapterold(ArrayList<View> pageviews) {
         this.pageviews = pageviews;
         ui = new Handler(Looper.getMainLooper());
         showview.add(1);
+
 
     }
 
     @Override
     public Object instantiateItem(ViewGroup container, int position) {
         View view = pageviews.get(showview.get(position));
-//        View view = pageviews.get(position);
         Log.d("pageradapter", "initiate" + Integer.toString(position));
         container.addView(view);
+
         return view;
     }
 
@@ -40,7 +41,7 @@ public class CustomPagerAdapter extends PagerAdapter {
     public int getItemPosition(Object object) {
 
         int index = pageviews.indexOf(object);
-//        Log.d("pageradapter", "viewindex" + Integer.toString(index));
+        Log.d("pageradapter", "viewindex" + Integer.toString(index));
         if (showview.contains(index)) {
             return showview.indexOf(index);
         } else {
@@ -50,13 +51,12 @@ public class CustomPagerAdapter extends PagerAdapter {
 
     @Override
     public void destroyItem(ViewGroup container, int position, Object object) {
-//        Log.d("pageradapter", "destroyitem");
+        Log.d("pageradapter", "destroyitem");
         container.removeView((View) object);
     }
 
     @Override
     public int getCount() {
-//        Log.d("pagecount", Integer.toString(showview.size()));
         return showview.size();
     }
 
@@ -90,5 +90,4 @@ public class CustomPagerAdapter extends PagerAdapter {
 
 
     }
-
 }

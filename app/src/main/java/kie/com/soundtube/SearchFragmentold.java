@@ -13,21 +13,23 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.support.v4.app.Fragment;
 import android.support.v4.view.ViewPager;
+import android.support.v4.view.ViewPager.OnPageChangeListener;
 import android.support.v7.widget.DefaultItemAnimator;
-import android.support.v4.view.ViewPager.*;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.*;
+import android.widget.ProgressBar;
+import android.widget.RelativeLayout;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-public class SearchFragment extends Fragment {
+public class SearchFragmentold extends Fragment {
 
     private OnFragmentInteractionListener mListener;
     private View fragmentView = null;
@@ -39,11 +41,11 @@ public class SearchFragment extends Fragment {
 
     MainActivity mainActivity;
     Searcher searcher;
-    CustomPagerAdapter pagerAdapter;
+    CustomPagerAdapterold pagerAdapter;
     ArrayList<View> pageviews = new ArrayList<>(3);
     ArrayList<Page> pages = new ArrayList<>(3);
 
-    public SearchFragment() {
+    public SearchFragmentold() {
         // Required empty public constructor
     }
 
@@ -71,7 +73,7 @@ public class SearchFragment extends Fragment {
         pages.add(new Page(pageviews.get(2)));
 
         viewPager = (ViewPager) fragmentView.findViewById(R.id.searchViewPager);
-        pagerAdapter = new CustomPagerAdapter(pageviews);
+        pagerAdapter = new CustomPagerAdapterold(pageviews);
         viewPager.setAdapter(pagerAdapter);
         viewPager.addOnPageChangeListener(onPageChangeListener);
 
@@ -107,86 +109,56 @@ public class SearchFragment extends Fragment {
         public void onPageScrollStateChanged(int state) {
 
             if (state == ViewPager.SCROLL_STATE_SETTLING) {
-                final int index = viewPager.getCurrentItem();
-                Log.d("viewpager", Integer.toString(index));
+                int index = viewPager.getCurrentItem();
+
                 if (index > previndex) {
+                    Log.d("viewpager", "nextpage");
                     searcher.nextPage();
+                    viewPager.setCurrentItem(1, false);
+                    pages.get(0).updateListView(pages.get(1).adapter.dataHolders);
+                    pages.get(0).recyclerView.scrollToPosition(1);
+                    if (pages.get(2).adapter != null) {
+                        pages.get(1).updateListView(pages.get(2).adapter.dataHolders);
+                    }
+                    pages.get(2).loading();
+
                     searcher.getResults(new Searcher.YoutubeSearchResult() {
                         @Override
                         public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
                             pagerAdapter.changeSate(hasnext, hasprev);
-                            pages.get(0).updateListView(pages.get(1).adapter.dataHolders);
-                            pages.get(1).updateListView(data);
-                            if (hasnext) {
-                                mainActivity.runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        viewPager.setCurrentItem(1, false);
-                                    }
-                                });
-                                searcher.nextPage();
-                                searcher.getResults(new Searcher.YoutubeSearchResult() {
-                                    @Override
-                                    public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
-                                        pages.get(2).updateListView(data);
-                                    }
-
-                                    @Override
-                                    public void noData() {
-
-                                    }
-                                });
-                                searcher.prevPage();
-                            }
+                            pages.get(2).updateListView(data);
                         }
 
                         @Override
                         public void noData() {
-
+                            Toast toast = Toast.makeText(context, "No next page", Toast.LENGTH_SHORT);
+                            toast.show();
                         }
                     });
+
                 } else if (index < previndex) {
+                    Log.d("viewpager", "prevpage");
                     searcher.prevPage();
+                    viewPager.setCurrentItem(1, false);
+                    pages.get(2).updateListView(pages.get(1).adapter.dataHolders);
+                    pages.get(2).recyclerView.scrollToPosition(1);
+                    if (pages.get(0).adapter != null) {
+                        pages.get(1).updateListView(pages.get(0).adapter.dataHolders);
+                    }
                     searcher.getResults(new Searcher.YoutubeSearchResult() {
                         @Override
                         public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
                             pagerAdapter.changeSate(hasnext, hasprev);
-                            pages.get(2).updateListView(pages.get(1).adapter.dataHolders);
-                            pages.get(1).updateListView(data);
-                            if (hasprev) {
-                                mainActivity.runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        viewPager.setCurrentItem(1, false);
-                                    }
-                                });
-                                searcher.prevPage();
-                                searcher.getResults(new Searcher.YoutubeSearchResult() {
-                                    @Override
-                                    public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
-                                        pages.get(0).updateListView(data);
-                                    }
-
-                                    @Override
-                                    public void noData() {
-
-                                    }
-                                });
-                                searcher.nextPage();
-                            }
-
+                            pages.get(0).updateListView(data);
                         }
 
                         @Override
                         public void noData() {
-
+                            Toast toast = Toast.makeText(context, "No previous page", Toast.LENGTH_SHORT);
+                            toast.show();
                         }
                     });
                 }
-
-
-            } else if (state == ViewPager.SCROLL_STATE_DRAGGING) {
-
             }
         }
     };
@@ -198,28 +170,10 @@ public class SearchFragment extends Fragment {
         searcher.getResults(new Searcher.YoutubeSearchResult() {
             @Override
             public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
-
                 pagerAdapter.changeSate(hasnext, hasprev);
+//                viewPager.setCurrentItem(0, false);
                 pages.get(1).updateListView(data);
-
                 Log.d("searchFragment", "found");
-
-                if (hasnext) {
-                    pages.get(2).loading();
-                    searcher.nextPage();
-                    searcher.getResults(new Searcher.YoutubeSearchResult() {
-                        @Override
-                        public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
-                            pages.get(2).updateListView(data);
-                        }
-
-                        @Override
-                        public void noData() {
-
-                        }
-                    });
-                }
-
             }
 
             @Override
@@ -227,7 +181,6 @@ public class SearchFragment extends Fragment {
 
             }
         });
-
     }
 
     public void onButtonPressed(Uri uri) {
@@ -279,7 +232,7 @@ public class SearchFragment extends Fragment {
             paint.setFakeBoldText(true);
             paint.setShadowLayer(6f, 0, 0, Color.BLACK);
             paint.setStyle(Paint.Style.FILL);
-            paint.setTextAlign(Paint.Align.CENTER);
+            paint.setTextAlign(Paint.Align.LEFT);
         }
 
         @Override
@@ -321,17 +274,11 @@ public class SearchFragment extends Fragment {
         }
 
         public void loading() {
-            mainActivity.runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    if (!waiting) {
-                        waiting = true;
-                        recyclerView.setVisibility(View.GONE);
-                        progressBar.setVisibility(View.VISIBLE);
-                    }
-                }
-            });
-
+            if (!waiting) {
+                waiting = true;
+                recyclerView.setVisibility(View.GONE);
+                progressBar.setVisibility(View.VISIBLE);
+            }
         }
 
         public void updateListView(final List<DataHolder> data) {

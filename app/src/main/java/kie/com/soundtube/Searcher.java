@@ -239,6 +239,8 @@ public class Searcher {
                             e.printStackTrace();
                         }
                     }
+                } else {
+                    result.noData();
                 }
             }
         });
