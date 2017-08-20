@@ -38,6 +38,7 @@ public class Searcher {
     String prevPageToken = null;
 
     private static final long NUMBER_OF_VIDEOS_RETURNED = 25;
+    private static final int MAX_LOAD_PAGES = 20;
     private static final String APIKey = "AIzaSyANfhXgNlxpmkWKl7JNWdyRQZx4uS2vYuo";
     private static final String Order = "relevance";
     private YouTube youtube;
@@ -168,6 +169,9 @@ public class Searcher {
                             prevPageToken = tokenseachResponse.getPrevPageToken();
                             if (nextPageToken != null) {
                                 tokens.add(nextPageToken);
+                                if (pages.size() > MAX_LOAD_PAGES) {
+                                    pages.remove(tokens.get(0));
+                                }
                             }
 
                         } catch (IOException e) {
@@ -201,6 +205,9 @@ public class Searcher {
                             index = 0;
                             if (prevPageToken != null) {
                                 tokens.add(0, prevPageToken);
+                                if (pages.size() > MAX_LOAD_PAGES) {
+                                    pages.remove(tokens.get(tokens.size() - 1));
+                                }
                             }
 
                         } catch (IOException e) {

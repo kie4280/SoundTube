@@ -123,20 +123,6 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
             }
         });
 
-        nextButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                searchFragment.searcher.nextPage();
-            }
-        });
-
-        prevButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                searchFragment.searcher.prevPage();
-            }
-        });
-
         telephonyManager.listen(phoneStateListener, PhoneStateListener.LISTEN_CALL_STATE);
 
     }

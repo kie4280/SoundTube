@@ -1,6 +1,7 @@
 package kie.com.soundtube;
 
 import android.app.Notification;
+import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
@@ -17,6 +18,7 @@ import android.widget.Toast;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
 
 public class MediaPlayerService extends Service {
     public int mposition = 0;
@@ -26,14 +28,17 @@ public class MediaPlayerService extends Service {
     HandlerThread thread;
     boolean prepared = false;
     boolean updateSeekBar = true;
-    Runnable task;
+    Queue<Runnable> preparetasks;
+
     DataHolder currentData = null;
     VideoFragment videoFragment;
     PowerManager.WakeLock wakeLock;
     WifiManager.WifiLock wifiLock;
     WifiManager wifiManager;
+    NotificationManager notificationManager;
     List<DataHolder> playList;
     Context context;
+    Notification.Builder notbuilder;
 
     MediaPlayer.OnPreparedListener preparedListener = new MediaPlayer.OnPreparedListener() {
         @Override
@@ -45,9 +50,10 @@ public class MediaPlayerService extends Service {
                     mp.setVideoScalingMode(MediaPlayer.VIDEO_SCALING_MODE_SCALE_TO_FIT_WITH_CROPPING);
 
                     prepared = true;
-                    if (task != null) {
+                    Runnable task = preparetasks.poll();
+                    while (task != null) {
                         playHandler.post(task);
-                        task = null;
+                        task = preparetasks.poll();
                     }
 
                     if (videoFragment != null) {
@@ -144,24 +150,23 @@ public class MediaPlayerService extends Service {
         PowerManager powerManager = (PowerManager) getSystemService(Service.POWER_SERVICE);
         wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "serviceWakeLock");
         wakeLock.setReferenceCounted(false);
-        wifiManager = (WifiManager) getApplicationContext().getSystemService(Service.WIFI_SERVICE);
+        wifiManager = (WifiManager) context.getSystemService(Service.WIFI_SERVICE);
         wifiLock = wifiManager.createWifiLock(WifiManager.WIFI_MODE_FULL, "ServiceWifilock");
         wifiLock.setReferenceCounted(false);
-
+        notificationManager = (NotificationManager) getSystemService(Service.NOTIFICATION_SERVICE);
         Intent app = new Intent(getApplicationContext(), MainActivity.class);
         app.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        PendingIntent pendingIntent = PendingIntent.getActivity(MediaPlayerService.this,
+        PendingIntent pendingaddIntent = PendingIntent.getActivity(MediaPlayerService.this,
                 0, app, PendingIntent.FLAG_UPDATE_CURRENT);
-
-        Notification.Builder builder = new Notification.Builder(MediaPlayerService.this);
-        builder.setContentIntent(pendingIntent)
+//        PendingIntent pendingdelIntent = PendingIntent.getActivity(MediaPlayerService.this, 0, )
+        notbuilder = new Notification.Builder(MediaPlayerService.this);
+        notbuilder.setContentIntent(pendingaddIntent)
                 .setSmallIcon(R.drawable.icon)
-                .setOngoing(true)
+                .setOngoing(false)
                 .setContentTitle("SoundTube");
 
-
-        Notification not = builder.build();
-        startForeground(1, not);
+        notificationManager.notify(1, notbuilder.build());
+//        startForeground(1, not);
         Log.d("service", "created");
     }
 
@@ -174,35 +179,29 @@ public class MediaPlayerService extends Service {
         thread.quit();
         updateSeekBar = false;
         Log.d("service", "onDestroy");
-        stopForeground(true);
+        notificationManager.cancel(1);
+//        stopForeground(true);
     }
 
     public void play() {
-        if (prepared) {
-            playHandler.post(new Runnable() {
-                @Override
-                public void run() {
-                    mediaPlayer.start();
-                    updateSeekBar = true;
-                    updateSeekBar();
-                    wifiLock.acquire();
-                    wakeLock.acquire();
+        Runnable r = new Runnable() {
+            @Override
+            public void run() {
+                mediaPlayer.start();
+                updateSeekBar = true;
+                updateSeekBar();
+                wifiLock.acquire();
+                wakeLock.acquire();
+                notbuilder.setOngoing(true);
+                notificationManager.notify(1, notbuilder.build());
 
-                }
-            });
+            }
+        };
+        if (prepared) {
+            playHandler.post(r);
 
         } else {
-            task = new Runnable() {
-                @Override
-                public void run() {
-                    mediaPlayer.start();
-                    updateSeekBar = true;
-                    updateSeekBar();
-                    wifiLock.acquire();
-                    wakeLock.acquire();
-
-                }
-            };
+            preparetasks.offer(r);
         }
     }
 
@@ -215,6 +214,8 @@ public class MediaPlayerService extends Service {
                     wifiLock.release();
                     wakeLock.release();
                     updateSeekBar = false;
+                    notbuilder.setOngoing(false);
+                    notificationManager.notify(1, notbuilder.build());
                 }
 
             }

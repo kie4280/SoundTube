@@ -176,7 +176,6 @@ public class SearchFragment extends Fragment {
                                 });
                                 searcher.nextPage();
                             }
-
                         }
 
                         @Override
@@ -203,25 +202,7 @@ public class SearchFragment extends Fragment {
 
                 pagerAdapter.changeSate(hasnext, hasprev);
                 pages.get(1).updateListView(data);
-
                 Log.d("searchFragment", "found");
-
-//                if (hasnext) {
-//                    pages.get(2).loading();
-//                    searcher.nextPage();
-//                    searcher.getResults(new Searcher.YoutubeSearchResult() {
-//                        @Override
-//                        public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
-//                            pages.get(2).updateListView(data);
-//                        }
-//
-//                        @Override
-//                        public void noData() {
-//
-//                        }
-//                    });
-//                }
-
             }
 
             @Override
