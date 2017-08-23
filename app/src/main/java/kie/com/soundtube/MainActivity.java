@@ -42,6 +42,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     public Toolbar toolbar;
     public SlidingUpPanelLayout slidePanel;
     public static boolean netConncted = false;
+
     //    public CustomViewPager viewPager;
     VideoFragment videoFragment;
     SearchFragment searchFragment;
@@ -181,34 +182,37 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
             MusicBinder musicBinder = (MusicBinder) service;
             mediaService = musicBinder.getService();
             servicebound = true;
-            connect();
+            mediaService.videoFragment = videoFragment;
+            videoFragment.mediaService = mediaService;
             Log.d("activity", "service bind");
         }
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
             servicebound = false;
+            mediaService.videoFragment = null;
+            videoFragment.mediaService = null;
             mediaService = null;
-            disconnect();
             Log.d("activity", "service unbind");
         }
     };
 
     public void connect() {
-        mediaService.videoFragment = videoFragment;
-        videoFragment.mediaService = mediaService;
-    }
+        if (!MediaPlayerService.serviceStarted) {
+            startService(serviceIntent);
+            bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE);
+        } else if (mediaService == null || !servicebound) {
+            bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE);
+        }
 
-    public void disconnect() {
-        mediaService.videoFragment = null;
-        videoFragment.mediaService = null;
     }
 
     @Override
     protected void onStart() {
         super.onStart();
-        startService(serviceIntent);
+        connect();
         Log.d("activity", "onStart");
+
     }
 
     @Override
@@ -222,10 +226,6 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
             Toast toast = Toast.makeText(getApplicationContext(), getString(R.string.needNetwork), Toast.LENGTH_SHORT);
             toast.show();
             netConncted = false;
-        }
-        if (!servicebound) {
-            startService(serviceIntent);
-            bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE);
         }
 
 
@@ -251,8 +251,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     @Override
     protected void onDestroy() {
         Log.d("activity", "onDestroy");
-
-        mediaService = null;
+//        mediaService = null;
         super.onDestroy();
     }
 

@@ -25,6 +25,7 @@ import java.util.Queue;
 
 public class MediaPlayerService extends Service {
     public int mposition = 0;
+    public static boolean serviceStarted = false;
     private static final String NOTIFICATION_REMOVED = "NOTIFICATION_REMOVED";
     private static final String NOTIFICATION_PLAY = "NOTIFICATION_PLAY";
     private static final String NOTIFICATION_NEXT = "NOTIFICATION_NEXT";
@@ -192,8 +193,10 @@ public class MediaPlayerService extends Service {
 //        not.flags |= Notification.FLAG_NO_CLEAR;
 
         notificationManager.notify(1, not);
-//        startForeground(1, not);
+
         Log.d("service", "created");
+        serviceStarted = true;
+
     }
 
     private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
@@ -217,7 +220,7 @@ public class MediaPlayerService extends Service {
             } else if (action.equals(NOTIFICATION_PREV)) {
 
             } else if (action.equals(NOTIFICATION_REMOVED)) {
-//                stopSelf();
+                stopSelf();
                 Log.d("service", "notification remove");
             }
         }
@@ -234,6 +237,8 @@ public class MediaPlayerService extends Service {
         Log.d("service", "onDestroy");
         notificationManager.cancel(1);
         unregisterReceiver(broadcastReceiver);
+        serviceStarted = false;
+        notificationManager = null;
 //        stopForeground(true);
     }
 
@@ -247,7 +252,8 @@ public class MediaPlayerService extends Service {
                 wifiLock.acquire();
                 wakeLock.acquire();
                 notbuilder.setOngoing(true);
-                notificationManager.notify(1, notbuilder.build());
+//                notificationManager.notify(1, notbuilder.build());
+                startForeground(1, notbuilder.build());
 
             }
         };
@@ -269,7 +275,9 @@ public class MediaPlayerService extends Service {
                     wakeLock.release();
                     updateSeekBar = false;
                     notbuilder.setOngoing(false);
+                    stopForeground(false);
                     notificationManager.notify(1, notbuilder.build());
+
                 }
 
             }

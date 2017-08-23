@@ -95,6 +95,7 @@ public class SearchFragment extends Fragment {
 
     private OnPageChangeListener onPageChangeListener = new OnPageChangeListener() {
         int previndex = 0;
+        boolean user = false;
 
         @Override
         public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
@@ -113,7 +114,7 @@ public class SearchFragment extends Fragment {
 
                 final int index = viewPager.getCurrentItem();
                 Log.d("viewpager", Integer.toString(index));
-                if (index > previndex) {
+                if (index > previndex && user) {
                     searcher.nextPage();
                     page.loading();
                     searcher.getResults(new Searcher.YoutubeSearchResult() {
@@ -139,7 +140,7 @@ public class SearchFragment extends Fragment {
 
                         }
                     });
-                } else if (index < previndex) {
+                } else if (index < previndex && user) {
                     searcher.prevPage();
                     page.loading();
                     searcher.getResults(new Searcher.YoutubeSearchResult() {
@@ -164,15 +165,17 @@ public class SearchFragment extends Fragment {
 
                         }
                     });
-                } else if (index == previndex) {
+                } else if (index == previndex && user) {
                     bar1.setVisibility(View.GONE);
                     bar2.setVisibility(View.GONE);
                 }
 
+                user = false;
 
             } else if (state == ViewPager.SCROLL_STATE_DRAGGING) {
                 bar1.setVisibility(View.VISIBLE);
                 bar2.setVisibility(View.VISIBLE);
+                user = true;
 
             }
         }
