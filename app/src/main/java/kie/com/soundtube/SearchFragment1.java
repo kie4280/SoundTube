@@ -178,7 +178,6 @@ public class SearchFragment1 extends Fragment {
                                 });
                                 searcher.nextPage();
                             }
-
                         }
 
                         @Override
@@ -353,7 +352,7 @@ public class SearchFragment1 extends Fragment {
                     System.out.println("clicked" + (position - 1));
                     Toast toast = Toast.makeText(context, "Decrypting...", Toast.LENGTH_SHORT);
                     toast.show();
-                    final DataHolder dataHolder = data.get(position - 1);
+                    final DataHolder dataHolder = adapter.dataHolders.get(position - 1);
                     videoRetriver.startExtracting("https://www.youtube" +
                             ".com/watch?v=" + dataHolder.videoID, new VideoRetriver.YouTubeExtractorListener() {
                         @Override

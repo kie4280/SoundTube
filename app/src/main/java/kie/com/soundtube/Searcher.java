@@ -41,6 +41,7 @@ public class Searcher {
     private static final int MAX_LOAD_PAGES = 20;
     private static final String APIKey = "AIzaSyANfhXgNlxpmkWKl7JNWdyRQZx4uS2vYuo";
     private static final String Order = "relevance";
+    private static final String Type = "video";
     private YouTube youtube;
     private Handler WorkHandler = null;
     private Context context;
@@ -78,7 +79,7 @@ public class Searcher {
                     // Set your developer key from the {{ Google Cloud Console }} for
                     // non-authenticated requests. See:
                     // {{ https://cloud.google.com/console }}
-                    search.setType("video");
+                    search.setType(Type);
                     // To increase efficiency, only retrieve the fields that the
                     // application uses.
                     search.setFields("items(id/kind,id/videoId)");
@@ -92,11 +93,13 @@ public class Searcher {
                     tokensearch.setMaxResults(NUMBER_OF_VIDEOS_RETURNED);
                     tokensearch.setQ(queryTerm);
                     tokensearch.setOrder(Order);
+                    tokensearch.setType(Type);
                     tokenseachResponse = tokensearch.execute();
                     nextPageToken = tokenseachResponse.getNextPageToken();
 
                     prevPageToken = tokenseachResponse.getPrevPageToken();
                     tokens.clear();
+                    pages.clear();
                     index = 0;
                     if (nextPageToken != null) {
                         String head = tokensearch.setPageToken(nextPageToken).execute().getPrevPageToken();
@@ -105,12 +108,13 @@ public class Searcher {
 
 
                 } catch (IOException e) {
-                    System.err.println("There was an IO error: " + e.getCause() + " : " + e.getMessage());
+                    Log.w("Searcher", "There was an IO error: " + e.getCause() + " : " + e.getMessage());
                 } catch (Throwable t) {
                     t.printStackTrace();
                 }
             }
         });
+        Log.d("searcher", "newsearch");
 
     }
 
@@ -121,7 +125,7 @@ public class Searcher {
                 try {
                     search = youtube.search().list("snippet");
                     search.setRelatedToVideoId(id);
-                    search.setType("video");
+                    search.setType(Type);
                     search.setFields("items(id/kind,id/videoId)");
                     search.setKey(APIKey);
                     search.setMaxResults(NUMBER_OF_VIDEOS_RETURNED);
@@ -131,11 +135,12 @@ public class Searcher {
                     tokensearch.setFields("nextPageToken,prevPageToken,pageInfo/totalResults");
                     tokensearch.setMaxResults(NUMBER_OF_VIDEOS_RETURNED);
 //                    tokensearch.setOrder(Order);
-                    tokensearch.setType("video");
+                    tokensearch.setType(Type);
                     tokenseachResponse = tokensearch.execute();
                     nextPageToken = tokenseachResponse.getNextPageToken();
                     prevPageToken = tokenseachResponse.getPrevPageToken();
                     tokens.clear();
+                    pages.clear();
                     index = 0;
                     if (nextPageToken != null) {
                         String head = tokensearch.setPageToken(nextPageToken).execute().getPrevPageToken();

@@ -4,8 +4,10 @@ import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
@@ -13,6 +15,7 @@ import android.net.wifi.WifiManager;
 import android.os.*;
 import android.util.Log;
 import android.view.SurfaceHolder;
+import android.widget.RemoteViews;
 import android.widget.Toast;
 
 import java.io.IOException;
@@ -22,13 +25,17 @@ import java.util.Queue;
 
 public class MediaPlayerService extends Service {
     public int mposition = 0;
+    private static final String NOTIFICATION_REMOVED = "NOTIFICATION_REMOVED";
+    private static final String NOTIFICATION_PLAY = "NOTIFICATION_PLAY";
+    private static final String NOTIFICATION_NEXT = "NOTIFICATION_NEXT";
+    private static final String NOTIFICATION_PREV = "NOTIFICATION_PREV";
     public MediaPlayer mediaPlayer;
     private MusicBinder musicBinder;
     Handler playHandler;
     HandlerThread thread;
     boolean prepared = false;
     boolean updateSeekBar = true;
-    Queue<Runnable> preparetasks;
+    Queue<Runnable> preparetasks = new LinkedList<>();
 
     DataHolder currentData = null;
     VideoFragment videoFragment;
@@ -36,8 +43,7 @@ public class MediaPlayerService extends Service {
     WifiManager.WifiLock wifiLock;
     WifiManager wifiManager;
     NotificationManager notificationManager;
-    List<DataHolder> playList;
-    Context context;
+    List<DataHolder> playList = new LinkedList<>();
     Notification.Builder notbuilder;
 
     MediaPlayer.OnPreparedListener preparedListener = new MediaPlayer.OnPreparedListener() {
@@ -47,8 +53,8 @@ public class MediaPlayerService extends Service {
             playHandler.post(new Runnable() {
                 @Override
                 public void run() {
-                    mp.setVideoScalingMode(MediaPlayer.VIDEO_SCALING_MODE_SCALE_TO_FIT_WITH_CROPPING);
 
+                    mp.setVideoScalingMode(MediaPlayer.VIDEO_SCALING_MODE_SCALE_TO_FIT_WITH_CROPPING);
                     prepared = true;
                     Runnable task = preparetasks.poll();
                     while (task != null) {
@@ -136,8 +142,6 @@ public class MediaPlayerService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        context = getApplicationContext();
-        playList = new LinkedList<>();
         mediaPlayer = new MediaPlayer();
         mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
         mediaPlayer.setOnPreparedListener(preparedListener);
@@ -150,25 +154,74 @@ public class MediaPlayerService extends Service {
         PowerManager powerManager = (PowerManager) getSystemService(Service.POWER_SERVICE);
         wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "serviceWakeLock");
         wakeLock.setReferenceCounted(false);
-        wifiManager = (WifiManager) context.getSystemService(Service.WIFI_SERVICE);
+        wifiManager = (WifiManager) getApplicationContext().getSystemService(Service.WIFI_SERVICE);
         wifiLock = wifiManager.createWifiLock(WifiManager.WIFI_MODE_FULL, "ServiceWifilock");
         wifiLock.setReferenceCounted(false);
         notificationManager = (NotificationManager) getSystemService(Service.NOTIFICATION_SERVICE);
         Intent app = new Intent(getApplicationContext(), MainActivity.class);
         app.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        PendingIntent pendingaddIntent = PendingIntent.getActivity(MediaPlayerService.this,
-                0, app, PendingIntent.FLAG_UPDATE_CURRENT);
-//        PendingIntent pendingdelIntent = PendingIntent.getActivity(MediaPlayerService.this, 0, )
+        Intent destroy = new Intent(NOTIFICATION_REMOVED);
+        Intent play = new Intent(NOTIFICATION_PLAY);
+        Intent next = new Intent(NOTIFICATION_NEXT);
+        Intent prev = new Intent(NOTIFICATION_PREV);
+        PendingIntent notAddIntent = PendingIntent.getActivity(MediaPlayerService.this, 0, app,
+                PendingIntent.FLAG_UPDATE_CURRENT);
+        PendingIntent notRemoveIntent = PendingIntent.getBroadcast(getApplicationContext(), 0, destroy,
+                PendingIntent.FLAG_UPDATE_CURRENT);
+        PendingIntent playIntent = PendingIntent.getBroadcast(getApplicationContext(), 0, play,
+                PendingIntent.FLAG_UPDATE_CURRENT);
+        PendingIntent nextIntent = PendingIntent.getBroadcast(getApplicationContext(), 0, next,
+                PendingIntent.FLAG_UPDATE_CURRENT);
+        PendingIntent prevIntent = PendingIntent.getBroadcast(getApplicationContext(), 0, prev,
+                PendingIntent.FLAG_UPDATE_CURRENT);
+        registerReceiver(broadcastReceiver, new IntentFilter(NOTIFICATION_REMOVED));
+        registerReceiver(broadcastReceiver, new IntentFilter(NOTIFICATION_NEXT));
+        registerReceiver(broadcastReceiver, new IntentFilter(NOTIFICATION_PREV));
+        registerReceiver(broadcastReceiver, new IntentFilter(NOTIFICATION_PLAY));
+        RemoteViews contentView = new RemoteViews(getPackageName(), R.layout.notification_layout);
+        contentView.setOnClickPendingIntent(R.id.ppButton, playIntent);
+        contentView.setOnClickPendingIntent(R.id.next, nextIntent);
+        contentView.setOnClickPendingIntent(R.id.prev, prevIntent);
         notbuilder = new Notification.Builder(MediaPlayerService.this);
-        notbuilder.setContentIntent(pendingaddIntent)
+        notbuilder.setContentIntent(notAddIntent)
                 .setSmallIcon(R.drawable.icon)
                 .setOngoing(false)
-                .setContentTitle("SoundTube");
+                .setContentTitle("SoundTube")
+                .setDeleteIntent(notRemoveIntent).setContent(contentView);
+        Notification not = notbuilder.build();
+//        not.flags |= Notification.FLAG_NO_CLEAR;
 
-        notificationManager.notify(1, notbuilder.build());
+        notificationManager.notify(1, not);
 //        startForeground(1, not);
         Log.d("service", "created");
     }
+
+    private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+            if (action.equals(NOTIFICATION_PLAY)) {
+                if (mediaPlayer.isPlaying()) {
+                    pause();
+                    if (videoFragment != null) {
+                        videoFragment.setButtonPlay(true);
+                    }
+                } else {
+                    play();
+                    if (videoFragment != null) {
+                        videoFragment.setButtonPlay(false);
+                    }
+                }
+            } else if (action.equals(NOTIFICATION_NEXT)) {
+
+            } else if (action.equals(NOTIFICATION_PREV)) {
+
+            } else if (action.equals(NOTIFICATION_REMOVED)) {
+//                stopSelf();
+                Log.d("service", "notification remove");
+            }
+        }
+    };
 
     @Override
     public void onDestroy() {
@@ -180,6 +233,7 @@ public class MediaPlayerService extends Service {
         updateSeekBar = false;
         Log.d("service", "onDestroy");
         notificationManager.cancel(1);
+        unregisterReceiver(broadcastReceiver);
 //        stopForeground(true);
     }
 
@@ -267,7 +321,7 @@ public class MediaPlayerService extends Service {
                     int quality = VideoRetriver.mPreferredVideoQualities.get(a);
                     if (dataHolder.videoUris.containsKey(quality)) {
                         try {
-                            mediaPlayer.setDataSource(context,
+                            mediaPlayer.setDataSource(getApplicationContext(),
                                     Uri.parse(dataHolder.videoUris.get(quality)));
                             mediaPlayer.prepareAsync();
 //                    mediaPlayer.setOnBufferingUpdateListener(onBufferingUpdateListener);
@@ -277,7 +331,7 @@ public class MediaPlayerService extends Service {
                         }
                         break;
                     } else if (a == VideoRetriver.mPreferredVideoQualities.size() - 1) {
-                        Toast toast = Toast.makeText(context, "No video resolution", Toast.LENGTH_LONG);
+                        Toast toast = Toast.makeText(getApplicationContext(), "No video resolution", Toast.LENGTH_LONG);
                         toast.show();
                     }
                 }

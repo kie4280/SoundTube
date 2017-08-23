@@ -2,7 +2,6 @@ package kie.com.soundtube;
 
 import android.content.res.Configuration;
 import android.support.v4.app.FragmentTransaction;
-import android.app.Service;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -15,11 +14,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
-import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentPagerAdapter;
-import android.support.v4.view.ViewPager;
-import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.telephony.PhoneStateListener;
@@ -42,11 +37,9 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     public static Handler UiHandler = null;
 
     private boolean servicebound = false;
-    private Intent playIntent;
+    private Intent serviceIntent;
     private SearchView searchView;
     public Toolbar toolbar;
-    private Button prevButton;
-    private Button nextButton;
     public SlidingUpPanelLayout slidePanel;
     public static boolean netConncted = false;
     //    public CustomViewPager viewPager;
@@ -62,6 +55,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        serviceIntent = new Intent(this, MediaPlayerService.class);
         connectmgr = (ConnectivityManager) getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
         telephonyManager = (TelephonyManager) getApplicationContext().getSystemService(Context.TELEPHONY_SERVICE);
         context = getApplicationContext();
@@ -72,8 +66,6 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
         searchFragment.setActivity(this);
 //        viewPager = (CustomViewPager) findViewById(R.id.viewpager);
         toolbar = (Toolbar) findViewById(R.id.toolbar);
-        nextButton = (Button) findViewById(R.id.nextButton);
-        prevButton = (Button) findViewById(R.id.prevButton);
         slidePanel = (SlidingUpPanelLayout) findViewById(R.id.slidePanel);
 
         setSupportActionBar(toolbar);
@@ -190,24 +182,15 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
             mediaService = musicBinder.getService();
             servicebound = true;
             connect();
-//            if(mediaService.mediaPlayer.isPlaying()) {
-////                viewPager.setCurrentItem(1, true);
-//            }
-//            if(mediaService.currentData != null) {
-//                videoFragment.resume();
-//            } else {
-//
-//            }
-            Log.d("activity", "service connected");
-
+            Log.d("activity", "service bind");
         }
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
             servicebound = false;
+            mediaService = null;
             disconnect();
             Log.d("activity", "service unbind");
-
         }
     };
 
@@ -223,15 +206,8 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
 
     @Override
     protected void onStart() {
-
         super.onStart();
-
-        if (playIntent == null) {
-            playIntent = new Intent(this, MediaPlayerService.class);
-            startService(playIntent);
-        }
-
-        bindService(playIntent, serviceConnection, Context.BIND_AUTO_CREATE);
+        startService(serviceIntent);
         Log.d("activity", "onStart");
     }
 
@@ -247,6 +223,12 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
             toast.show();
             netConncted = false;
         }
+        if (!servicebound) {
+            startService(serviceIntent);
+            bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE);
+        }
+
+
         Log.d("activity", "onResume");
 
     }
@@ -257,7 +239,6 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
         if (servicebound) {
             unbindService(serviceConnection);
         }
-
         Log.d("activity", "onStop");
     }
 
@@ -270,7 +251,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     @Override
     protected void onDestroy() {
         Log.d("activity", "onDestroy");
-        stopService(playIntent);
+
         mediaService = null;
         super.onDestroy();
     }

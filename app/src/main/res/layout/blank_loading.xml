@@ -1,19 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/pageRL"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <android.support.v7.widget.RecyclerView
-        android:id="@+id/searchrecyclerView"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentEnd="true"
-        android:visibility="visible" />
-
     <ProgressBar
-        android:id="@+id/pageprogressBar"
+        android:id="@+id/pageLoadingBar"
         style="@android:style/Widget.DeviceDefault.Light.ProgressBar"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
