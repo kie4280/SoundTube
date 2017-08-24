@@ -36,7 +36,8 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
 
     public static Handler UiHandler = null;
 
-    private boolean servicebound = false;
+    public static boolean servicebound = false;
+    public static boolean activityRunning = false;
     private Intent serviceIntent;
     private SearchView searchView;
     public Toolbar toolbar;
@@ -117,6 +118,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
         });
 
         telephonyManager.listen(phoneStateListener, PhoneStateListener.LISTEN_CALL_STATE);
+        activityRunning = true;
 
     }
 
@@ -184,6 +186,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
             servicebound = true;
             mediaService.videoFragment = videoFragment;
             videoFragment.mediaService = mediaService;
+            videoFragment.serviceConnected();
             Log.d("activity", "service bind");
         }
 
@@ -193,7 +196,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
             mediaService.videoFragment = null;
             videoFragment.mediaService = null;
             mediaService = null;
-            Log.d("activity", "service unbind");
+            Log.w("activity", "service unbind due to error");
         }
     };
 
@@ -210,7 +213,6 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     @Override
     protected void onStart() {
         super.onStart();
-        connect();
         Log.d("activity", "onStart");
 
     }
@@ -228,7 +230,6 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
             netConncted = false;
         }
 
-
         Log.d("activity", "onResume");
 
     }
@@ -243,15 +244,10 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     }
 
     @Override
-    protected void onPause() {
-        super.onPause();
-        Log.d("activity", "onPause");
-    }
-
-    @Override
     protected void onDestroy() {
         Log.d("activity", "onDestroy");
 //        mediaService = null;
+        activityRunning = false;
         super.onDestroy();
     }
 
@@ -271,7 +267,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     @Override
     public void onBackPressed() {
         System.out.println("activity back");
-        moveTaskToBack(true);
+//        moveTaskToBack(true);
     }
 
     @Override

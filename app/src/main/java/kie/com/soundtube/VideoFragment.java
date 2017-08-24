@@ -30,7 +30,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-
 public class VideoFragment extends Fragment {
 
     private OnFragmentInteractionListener mListener;
@@ -53,7 +52,7 @@ public class VideoFragment extends Fragment {
     private ProgressBar progressBar;
     private TextView currentTime;
     private TextView totalTime;
-
+    private ScaleGestureDetector scaleGestureDetector;
     private DisplayMetrics displayMetrics;
     private Context context;
     private RelativeLayout.LayoutParams portraitlayout;
@@ -73,7 +72,6 @@ public class VideoFragment extends Fragment {
     MainActivity mainActivity;
     Page page;
     Searcher searcher = null;
-
     ArrayList<View> pageviews = new ArrayList<>(3);
 
     public VideoFragment() {
@@ -91,6 +89,26 @@ public class VideoFragment extends Fragment {
         thread.start();
         seekHandler = new Handler(thread.getLooper());
         videoRetriver = new VideoRetriver(thread);
+        scaleGestureDetector = new ScaleGestureDetector(getContext(),
+                new ScaleGestureDetector.OnScaleGestureListener() {
+                    @Override
+                    public boolean onScale(ScaleGestureDetector detector) {
+                        Log.d("scale", Float.toString(scaleFactor));
+                        scaleFactor *= detector.getScaleFactor();
+                        scaleFactor = Math.max(0.1f, Math.min(scaleFactor, 5.0f));
+                        return true;
+                    }
+
+                    @Override
+                    public boolean onScaleBegin(ScaleGestureDetector detector) {
+                        return true;
+                    }
+
+                    @Override
+                    public void onScaleEnd(ScaleGestureDetector detector) {
+
+                    }
+                });
 
     }
 
@@ -149,8 +167,8 @@ public class VideoFragment extends Fragment {
             @Override
             public void surfaceCreated(SurfaceHolder holder) {
                 prepared = true;
-                if (getMediaService() != null) {
-                    getMediaService().setDisplay(holder);
+                if (mediaService != null) {
+                    mediaService.setDisplay(holder);
                 }
 
                 Log.d("video", "surfaceCreated");
@@ -165,8 +183,8 @@ public class VideoFragment extends Fragment {
             public void surfaceDestroyed(SurfaceHolder holder) {
                 prepared = false;
                 Log.d("video", "surfaceDestroyed");
-                if (getMediaService() != null) {
-                    getMediaService().setDisplay(null);
+                if (mediaService != null) {
+                    mediaService.setDisplay(null);
                 }
 
             }
@@ -188,14 +206,14 @@ public class VideoFragment extends Fragment {
                     prevY = event.getY();
                 } else if (action == MotionEvent.ACTION_UP) {
                     if (Math.abs(event.getX() - prevX) <= thresholdX &&
-                            Math.abs(event.getY() - prevY) <= thresholdY && getMediaService() != null) {
+                            Math.abs(event.getY() - prevY) <= thresholdY && mediaService != null) {
 
-                        if (getMediaService().mediaPlayer.isPlaying()) {
-                            getMediaService().pause();
+                        if (mediaService.mediaPlayer.isPlaying()) {
+                            mediaService.pause();
                             setButtonPlay(true);
 
                         } else {
-                            getMediaService().play();
+                            mediaService.play();
                             setButtonPlay(false);
                         }
 //                    mainActivity.viewPager.setSwipingEnabled(true);
@@ -209,8 +227,8 @@ public class VideoFragment extends Fragment {
         seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, final int progress, boolean fromUser) {
-                if (getMediaService().prepared && fromUser) {
-                    getMediaService().seekTo(progress);
+                if (mediaService != null && mediaService.prepared && fromUser) {
+                    mediaService.seekTo(progress);
                 }
 
             }
@@ -234,27 +252,6 @@ public class VideoFragment extends Fragment {
 
         return videoFragmentView;
     }
-
-    private ScaleGestureDetector scaleGestureDetector = new ScaleGestureDetector(vrelativeLayout.getContext(),
-            new ScaleGestureDetector.OnScaleGestureListener() {
-                @Override
-                public boolean onScale(ScaleGestureDetector detector) {
-                    Log.d("scale", Float.toString(scaleFactor));
-                    scaleFactor *= detector.getScaleFactor();
-                    scaleFactor = Math.max(0.1f, Math.min(scaleFactor, 5.0f));
-                    return true;
-                }
-
-                @Override
-                public boolean onScaleBegin(ScaleGestureDetector detector) {
-                    return true;
-                }
-
-                @Override
-                public void onScaleEnd(ScaleGestureDetector detector) {
-
-                }
-            });
 
     private View.OnTouchListener touchListener = new View.OnTouchListener() {
         float prevX = 0;
@@ -425,9 +422,7 @@ public class VideoFragment extends Fragment {
     @Override
     public void onStart() {
         super.onStart();
-//        if (getMediaService().updateSeekBar) {
-//            updateSeekBar();
-//        }
+        mainActivity.connect();
     }
 
     @Override
@@ -452,11 +447,11 @@ public class VideoFragment extends Fragment {
         NetworkInfo info = connectmgr.getActiveNetworkInfo();
         if (info.isAvailable() && info.isConnected()) {
 
-            if (getMediaService() != null) {
-                getMediaService().reset();
-                getMediaService().prepare(dataHolder);
-                getMediaService().setDisplay(surfaceHolder);
-                getMediaService().play();
+            if (mediaService != null) {
+                mediaService.reset();
+                mediaService.prepare(dataHolder);
+                mediaService.setDisplay(surfaceHolder);
+                mediaService.play();
                 playbutton.setBackgroundResource(R.drawable.pause);
                 page.setTitle(dataHolder.title);
 
@@ -498,38 +493,42 @@ public class VideoFragment extends Fragment {
     }
 
     public void buffering(final boolean buff) {
-        activity.runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                if (buff) {
-                    progressBar.setVisibility(View.VISIBLE);
-                } else {
-                    progressBar.setVisibility(View.GONE);
-                }
+        if (MainActivity.activityRunning) {
+            activity.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    if (buff) {
+                        progressBar.setVisibility(View.VISIBLE);
+                    } else {
+                        progressBar.setVisibility(View.GONE);
+                    }
 
-            }
-        });
+                }
+            });
+        }
 
     }
 
     public void setSeekBarMax(final int max) {
-        activity.runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                seekBar.setMax(max);
+        if (MainActivity.activityRunning) {
+            activity.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    seekBar.setMax(max);
 //                totalTime.setText(max);
-            }
-        });
+                }
+            });
+        }
     }
 
     public void updateSeekBar() {
-        if (activity != null && !seekbarUpdating) {
+        if (activity != null && !seekbarUpdating && MainActivity.activityRunning) {
             seekbarUpdating = true;
             activity.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    if (getMediaService().updateSeekBar) {
-                        int pos = getMediaService().mediaPlayer.getCurrentPosition();
+                    if (mediaService != null && mediaService.updateSeekBar && MainActivity.activityRunning) {
+                        int pos = mediaService.mediaPlayer.getCurrentPosition();
                         seekBar.setProgress(pos);
 //                        currentTime.setText(pos);
                         seekHandler.postDelayed(this, 1000);
@@ -542,20 +541,23 @@ public class VideoFragment extends Fragment {
     }
 
     public void onComplete() {
-        seekHandler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                activity.runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        playbutton.setBackgroundResource(R.drawable.play);
-                        showcontrols(true);
-                        seekBar.setProgress(0);
 
-                    }
-                });
-            }
-        }, 200);
+        if (MainActivity.activityRunning) {
+            seekHandler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    activity.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            playbutton.setBackgroundResource(R.drawable.play);
+                            showcontrols(true);
+                            seekBar.setProgress(0);
+
+                        }
+                    });
+                }
+            }, 200);
+        }
 
     }
 
@@ -619,9 +621,12 @@ public class VideoFragment extends Fragment {
         }
     }
 
-    public MediaPlayerService getMediaService() {
-        mainActivity.connect();
-        return mediaService;
+    public void serviceConnected() {
+
+    }
+
+    public void serviceDisconnected() {
+        mediaService = null;
     }
 
     public void setButtonPlay(final boolean play) {

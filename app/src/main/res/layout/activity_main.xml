@@ -33,39 +33,19 @@
                 app:layout_scrollFlags="scroll|enterAlways">
 
                 <RelativeLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content">
-
-                    <Button
-                        android:id="@+id/nextButton"
-                        style="@style/Widget.AppCompat.Button.Small"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_alignParentEnd="true"
-                        android:layout_alignParentTop="true"
-                        android:background="?android:attr/homeAsUpIndicator"
-                        android:rotation="180"
-                        android:textAllCaps="false" />
-
-                    <Button
-                        android:id="@+id/prevButton"
-                        style="@style/Widget.AppCompat.Button.Small"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_alignParentTop="true"
-                        android:layout_toStartOf="@+id/nextButton"
-                        android:background="?android:attr/homeAsUpIndicator"
-                        android:textAllCaps="false" />
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_alignParentStart="true">
 
                     <SearchView
                         android:id="@+id/searchView"
                         android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_alignParentStart="true"
-                        android:layout_alignParentTop="true"
-                        android:layout_toStartOf="@+id/prevButton" />
+                        android:layout_height="match_parent"
+                        android:layout_alignParentEnd="true"
+                        android:layout_alignParentTop="true" />
                 </RelativeLayout>
             </android.support.v7.widget.Toolbar>
+
         </RelativeLayout>
 
         <RelativeLayout
