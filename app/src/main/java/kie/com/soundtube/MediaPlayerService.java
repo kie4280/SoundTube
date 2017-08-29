@@ -12,23 +12,26 @@ import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.net.wifi.WifiManager;
-import android.os.*;
+import android.os.Binder;
+import android.os.Handler;
+import android.os.HandlerThread;
+import android.os.IBinder;
+import android.os.PowerManager;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.widget.RemoteViews;
 import android.widget.Toast;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.ListIterator;
 import java.util.Queue;
 
 public class MediaPlayerService extends Service {
     public int mposition = 0;
-    public String nowplaying = null;
+    public DataHolder currentData = null;
     public boolean autoplay = true;
+
     public static boolean serviceStarted = false;
     private static final String NOTIFICATION_REMOVED = "NOTIFICATION_REMOVED";
     private static final String NOTIFICATION_PLAY = "NOTIFICATION_PLAY";
@@ -41,8 +44,6 @@ public class MediaPlayerService extends Service {
     boolean prepared = false;
     boolean updateSeekBar = true;
     Queue<Runnable> preparetasks = new LinkedList<>();
-
-    DataHolder currentData = null;
     VideoFragment videoFragment;
     PowerManager.WakeLock wakeLock;
     WifiManager.WifiLock wifiLock;
@@ -125,12 +126,18 @@ public class MediaPlayerService extends Service {
     };
 
     @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        return START_NOT_STICKY;
+    }
+
+    @Override
     public IBinder onBind(Intent intent) {
         musicBinder = new MusicBinder();
         Log.d("service", "onBind");
         if (videoFragment != null && videoFragment.prepared) {
             setDisplay(videoFragment.surfaceHolder);
         }
+        startForeground(1, not);
         return musicBinder;
     }
 
@@ -138,16 +145,21 @@ public class MediaPlayerService extends Service {
     public void onRebind(Intent intent) {
         super.onRebind(intent);
         Log.d("service", "onRebind");
-        if (videoFragment != null && videoFragment.prepared) {
-            setDisplay(videoFragment.surfaceHolder);
+        if (videoFragment != null) {
+            videoFragment.currentdata = currentData;
+            if (videoFragment.prepared) {
+                setDisplay(videoFragment.surfaceHolder);
+            }
+            if (mediaPlayer.isPlaying()) {
+                updateSeekBar = true;
+                videoFragment.setSeekBarMax(mediaPlayer.getDuration());
+                videoFragment.updateSeekBar();
+                videoFragment.setButtonPlay(false);
+            }
         }
 
-        if (videoFragment != null && mediaPlayer.isPlaying()) {
-            updateSeekBar = true;
-            videoFragment.setSeekBarMax(mediaPlayer.getDuration());
-            videoFragment.updateSeekBar();
-            videoFragment.setButtonPlay(false);
-        }
+
+        startForeground(1, not);
     }
 
     @Override
@@ -156,9 +168,14 @@ public class MediaPlayerService extends Service {
         updateSeekBar = false;
         MainActivity.servicebound = false;
         videoFragment.serviceDisconnected();
-        setDisplay(null);
         videoFragment = null;
         Log.d("service", "onUnbind");
+        if (!mediaPlayer.isPlaying()) {
+            stopForeground(false);
+        }
+
+
+//        notificationManager.notify(1, not);
 
         return true;
     }
@@ -173,6 +190,7 @@ public class MediaPlayerService extends Service {
         mediaPlayer.setOnCompletionListener(completionListener);
         mediaPlayer.setOnInfoListener(infoListener);
         thread = new HandlerThread("playerhandler");
+        thread.setPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND);
         thread.start();
         playHandler = new Handler(thread.getLooper());
         PowerManager powerManager = (PowerManager) getSystemService(Service.POWER_SERVICE);
@@ -186,6 +204,7 @@ public class MediaPlayerService extends Service {
         app.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         Intent destroy = new Intent(NOTIFICATION_REMOVED);
         Intent play = new Intent(NOTIFICATION_PLAY);
+
         Intent next = new Intent(NOTIFICATION_NEXT);
         Intent prev = new Intent(NOTIFICATION_PREV);
         PendingIntent notAddIntent = PendingIntent.getActivity(MediaPlayerService.this, 0, app,
@@ -215,8 +234,6 @@ public class MediaPlayerService extends Service {
                 .setContent(contentView);
         not = notbuilder.build();
 //        not.flags |= Notification.FLAG_NO_CLEAR;
-        startForeground(1, not);
-
         Log.d("service", "created");
         serviceStarted = true;
 
@@ -259,11 +276,10 @@ public class MediaPlayerService extends Service {
         thread.quit();
         updateSeekBar = false;
         Log.d("service", "onDestroy");
-        notificationManager.cancel(1);
+        stopForeground(true);
         unregisterReceiver(broadcastReceiver);
         serviceStarted = false;
         notificationManager = null;
-//        stopForeground(true);
 
     }
 
@@ -274,6 +290,7 @@ public class MediaPlayerService extends Service {
                 mediaPlayer.start();
                 updateSeekBar = true;
                 if (videoFragment != null) {
+                    videoFragment.currentdata = currentData;
                     videoFragment.updateSeekBar();
                 }
                 wifiLock.acquire();
@@ -300,11 +317,11 @@ public class MediaPlayerService extends Service {
                     wifiLock.release();
                     wakeLock.release();
                     updateSeekBar = false;
-                    if (!MainActivity.activityRunning) {
+                    if (videoFragment == null) {
                         stopForeground(false);
-                        notificationManager.notify(1, not);
                     }
                 }
+
 
             }
         });
@@ -351,7 +368,7 @@ public class MediaPlayerService extends Service {
         playHandler.post(new Runnable() {
             @Override
             public void run() {
-                nowplaying = dataHolder.videoID;
+
                 for (int a = 0; a < VideoRetriver.mPreferredVideoQualities.size(); a++) {
                     int quality = VideoRetriver.mPreferredVideoQualities.get(a);
                     if (dataHolder.videoUris.containsKey(quality)) {

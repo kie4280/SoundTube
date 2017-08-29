@@ -41,15 +41,15 @@ public class VideoRetriver {
     public static final int YOUTUBE_VIDEO_QUALITY_4K = 38;
     public static final int YOUTUBE_VIDEO_QUALITY_AUTO = -1;
 
-    Handler youtubeExtractorHandler, listenerHandler;
+    Handler youtubeExtractorHandler;
     public static List<Integer> mPreferredVideoQualities = asList(YOUTUBE_VIDEO_QUALITY_4K, YOUTUBE_VIDEO_QUALITY_HD_1080, YOUTUBE_VIDEO_QUALITY_HD_720, YOUTUBE_VIDEO_QUALITY_MEDIUM_360, YOUTUBE_VIDEO_QUALITY_SMALL_240);
     JsonObject jsonObj = null;
     String decipherfunc = null;
     String basejsurl = null;
 
-    public VideoRetriver(HandlerThread thread) {
-        youtubeExtractorHandler = new Handler(thread.getLooper());
-        listenerHandler = new Handler(Looper.getMainLooper());
+    public VideoRetriver(Handler handler) {
+        youtubeExtractorHandler = handler;
+
     }
 
     public String downloadWeb(String url) {
@@ -305,7 +305,7 @@ public class VideoRetriver {
             @Override
             public void run() {
                 final HashMap<Integer, String> result = getVideo(url);
-                listenerHandler.post(new Runnable() {
+                youtubeExtractorHandler.post(new Runnable() {
                     @Override
                     public void run() {
                         if (listener != null) {

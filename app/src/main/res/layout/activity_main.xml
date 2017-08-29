@@ -1,19 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<android.support.v4.widget.DrawerLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/drawerLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/r1">
+    android:fitsSystemWindows="true"
+    tools:openDrawer="start">
 
     <view
         android:id="@+id/slidePanel"
         class="com.sothree.slidinguppanel.SlidingUpPanelLayout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:layout_alignParentTop="true"
         android:layout_centerHorizontal="true"
         android:gravity="bottom"
-        app:elevation="0dp"
-        android:layout_alignParentTop="true">
+        app:elevation="0dp">
 
         <RelativeLayout
             android:id="@+id/searchPanel"
@@ -24,8 +27,8 @@
                 android:id="@+id/toolbar"
                 android:layout_width="match_parent"
                 android:layout_height="?attr/actionBarSize"
-                android:layout_alignParentStart="true"
-                android:layout_alignParentTop="true"
+                android:layout_alignParentStart="false"
+                android:layout_alignParentTop="false"
                 android:background="@android:color/holo_blue_light"
                 android:elevation="1dp"
                 android:minHeight="?attr/actionBarSize"
@@ -35,6 +38,7 @@
                 <RelativeLayout
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
+                    android:layout_alignParentEnd="true"
                     android:layout_alignParentStart="true">
 
                     <SearchView
@@ -42,8 +46,10 @@
                         android:layout_width="wrap_content"
                         android:layout_height="match_parent"
                         android:layout_alignParentEnd="true"
-                        android:layout_alignParentTop="true" />
+                        android:layout_alignParentTop="true"
+                        android:layout_marginEnd="40dp" />
                 </RelativeLayout>
+
             </android.support.v7.widget.Toolbar>
 
         </RelativeLayout>
@@ -56,5 +62,13 @@
         </RelativeLayout>
     </view>
 
+    <android.support.design.widget.NavigationView
+        android:layout_width="120dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="left"
+        app:menu="@menu/options_menu">
 
-</RelativeLayout>
+    </android.support.design.widget.NavigationView>
+
+
+</android.support.v4.widget.DrawerLayout>

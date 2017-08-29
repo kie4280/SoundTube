@@ -1,6 +1,9 @@
 package kie.com.soundtube;
 
 import android.content.res.Configuration;
+import android.os.Debug;
+import android.os.HandlerThread;
+import android.os.Process;
 import android.support.v4.app.FragmentTransaction;
 import android.content.ComponentName;
 import android.content.Context;
@@ -15,14 +18,19 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.support.v4.app.FragmentManager;
+import android.support.v4.view.GravityCompat;
+import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.ActionBar;
+import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
-import android.widget.Button;
 import android.widget.SearchView;
 import android.widget.Toast;
 
@@ -35,12 +43,14 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
         VideoFragment.OnFragmentInteractionListener {
 
     public static Handler UiHandler = null;
-
+    private Handler workHandler;
+    private HandlerThread workThread;
     public static boolean servicebound = false;
     public static boolean activityRunning = false;
     private Intent serviceIntent;
-    private SearchView searchView;
+    public SearchView searchView;
     public Toolbar toolbar;
+    public DrawerLayout drawerLayout;
     public SlidingUpPanelLayout slidePanel;
     public static boolean netConncted = false;
 
@@ -62,17 +72,21 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
         telephonyManager = (TelephonyManager) getApplicationContext().getSystemService(Context.TELEPHONY_SERVICE);
         context = getApplicationContext();
         UiHandler = new Handler(Looper.getMainLooper());
+        workThread = new HandlerThread("WorkThread");
+        workThread.setPriority(Process.THREAD_PRIORITY_BACKGROUND);
+        workThread.start();
+        workHandler = new Handler(workThread.getLooper());
         videoFragment = new VideoFragment();
         videoFragment.setActivity(this);
+        videoFragment.setSearchWorker(workHandler);
         searchFragment = new SearchFragment();
         searchFragment.setActivity(this);
-//        viewPager = (CustomViewPager) findViewById(R.id.viewpager);
+        searchFragment.setSearchWorker(workHandler);
         toolbar = (Toolbar) findViewById(R.id.toolbar);
         slidePanel = (SlidingUpPanelLayout) findViewById(R.id.slidePanel);
-
         setSupportActionBar(toolbar);
-        getSupportActionBar().setTitle("");
-//        viewPager.setAdapter(fragmentPagerAdapter);
+        ActionBar actionbar = getSupportActionBar();
+        actionbar.setTitle("");
 
         FragmentManager manager = getSupportFragmentManager();
         FragmentTransaction transaction = manager.beginTransaction();
@@ -81,10 +95,38 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
                 .add(R.id.searchPanel, searchFragment)
                 .commit();
         slidePanel.addPanelSlideListener(panelSlideListener);
+        drawerLayout = (DrawerLayout) findViewById(R.id.drawerLayout);
+//        drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
+
+        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
+                this, drawerLayout, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close) {
+            @Override
+            public void onDrawerOpened(View drawerView) {
+                super.onDrawerOpened(drawerView);
+                drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED);
+            }
+
+            @Override
+            public void onDrawerClosed(View drawerView) {
+                super.onDrawerClosed(drawerView);
+                drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
+            }
+        };
+        toolbar.setNavigationOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+
+                drawerLayout.openDrawer(GravityCompat.START);
+            }
+        });
+        drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
+        drawerLayout.addDrawerListener(toggle);
+        toggle.syncState();
+
         searchView = (SearchView) findViewById(R.id.searchView);
         searchView.setIconifiedByDefault(true);
+//        "http://suggestqueries.google.com/complete/search?client=youtube&ds=yt&client=firefox&q=Query";
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-
             @Override
             public boolean onQueryTextSubmit(String query) {
 
@@ -150,6 +192,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
         public void onPanelSlide(View panel, float slideOffset) {
 //            Log.d("panel", Float.toString(slideOffset));
             videoFragment.setHeaderPos(slideOffset);
+
         }
 
         @Override
@@ -157,6 +200,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
 
             if (newState == PanelState.EXPANDED) {
                 videoFragment.setHeaderVisible(false);
+                videoFragment.setHeaderPos(1);
                 setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR);
 //                if (getSupportActionBar() != null) {
 //                    getSupportActionBar().hide();
@@ -165,6 +209,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
                 Log.d("Panel", "expanded");
             } else if (newState == PanelState.COLLAPSED) {
                 setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+                videoFragment.setHeaderPos(0);
 //                if (getSupportActionBar() != null) {
 //                    getSupportActionBar().show();
 //                }
@@ -177,6 +222,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
 
         }
     };
+
 
     private ServiceConnection serviceConnection = new ServiceConnection() {
         @Override
@@ -201,10 +247,8 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     };
 
     public void connect() {
-        if (!MediaPlayerService.serviceStarted) {
-            startService(serviceIntent);
-            bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE);
-        } else if (mediaService == null || !servicebound) {
+        startService(serviceIntent);
+        if (mediaService == null || !servicebound) {
             bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE);
         }
 
@@ -248,6 +292,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
         Log.d("activity", "onDestroy");
 //        mediaService = null;
         activityRunning = false;
+        workThread.quit();
         super.onDestroy();
     }
 
@@ -257,9 +302,8 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     }
 
     @Override
-    public void onreturnVideo(DataHolder dataHolder, Handler handler) {
+    public void onreturnVideo(DataHolder dataHolder) {
 //        viewPager.setCurrentItem(1, true);
-        videoFragment.setSearchWorker(handler);
         slidePanel.setPanelState(PanelState.EXPANDED);
         videoFragment.start(dataHolder);
     }
@@ -285,6 +329,17 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
             default:
                 break;
         }
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.options_menu, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        return super.onOptionsItemSelected(item);
     }
 
     public void setToolbar(int dy) {

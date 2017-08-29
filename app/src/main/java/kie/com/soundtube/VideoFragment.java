@@ -15,6 +15,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.provider.ContactsContract;
 import android.support.v4.app.Fragment;
 import android.support.v4.view.MotionEventCompat;
 import android.support.v4.view.ViewPager;
@@ -25,6 +26,8 @@ import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.*;
 import android.widget.*;
+
+import com.sothree.slidinguppanel.SlidingUpPanelLayout;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -40,7 +43,7 @@ public class VideoFragment extends Fragment {
     private float headersize = 0;
     public boolean prepared = false;
     boolean connected = false;
-    boolean controlshow = true;
+    boolean controlshow = false;
     boolean seekbarUpdating = false;
     private Button playbutton;
     private SurfaceView surfaceView;
@@ -64,6 +67,7 @@ public class VideoFragment extends Fragment {
     private ViewPager viewPager;
     public VideoRetriver videoRetriver;
     public SurfaceHolder surfaceHolder;
+    public DataHolder currentdata;
     private CustomPagerAdapter pagerAdapter;
     private ProgressBar bar1;
     private ProgressBar bar2;
@@ -88,7 +92,6 @@ public class VideoFragment extends Fragment {
         thread = new HandlerThread("seek");
         thread.start();
         seekHandler = new Handler(thread.getLooper());
-        videoRetriver = new VideoRetriver(thread);
         scaleGestureDetector = new ScaleGestureDetector(getContext(),
                 new ScaleGestureDetector.OnScaleGestureListener() {
                     @Override
@@ -134,7 +137,7 @@ public class VideoFragment extends Fragment {
         bar2 = (ProgressBar) r2.findViewById(R.id.pageLoadingBar);
         View pageview = inflater.inflate(R.layout.searchpage, null);
         recyclerView = (RecyclerView) pageview.findViewById(R.id.searchrecyclerView);
-        mainActivity.slidePanel.setScrollableView(recyclerView);
+//        mainActivity.slidePanel.setScrollableView(recyclerView);
         pageviews.add(r1);
         pageviews.add(pageview);
         pageviews.add(r2);
@@ -452,7 +455,7 @@ public class VideoFragment extends Fragment {
                 mediaService.prepare(dataHolder);
                 mediaService.setDisplay(surfaceHolder);
                 mediaService.play();
-                playbutton.setBackgroundResource(R.drawable.pause);
+                setButtonPlay(false);
                 page.setTitle(dataHolder.title);
 
                 if (searcher != null) {
@@ -562,8 +565,9 @@ public class VideoFragment extends Fragment {
     }
 
     public void setSearchWorker(Handler handler) {
-        this.workHandler = handler;
+        workHandler = handler;
         searcher = new Searcher(context, workHandler);
+        videoRetriver = new VideoRetriver(handler);
     }
 
     public void changeToPortrait() {
@@ -603,9 +607,8 @@ public class VideoFragment extends Fragment {
     }
 
     public void setHeaderPos(float alpha) {
-        header.setAlpha(1 - alpha);
+//        header.animate().alpha(1 - alpha).withLayer();
         float offset = headersize * (1 - alpha);
-//        header.setTranslationY(offset);
         vrelativeLayout.setTranslationY(offset);
         drelativeLayout.setTranslationY(offset);
     }
@@ -622,6 +625,16 @@ public class VideoFragment extends Fragment {
     }
 
     public void serviceConnected() {
+        currentdata = mediaService.currentData;
+        if (currentdata != null) {
+            if (!mediaService.prepared) {
+                mainActivity.slidePanel.setPanelState(SlidingUpPanelLayout.PanelState.EXPANDED);
+                start(currentdata);
+            } else if (mediaService.mediaPlayer.isPlaying()) {
+                mainActivity.slidePanel.setPanelState(SlidingUpPanelLayout.PanelState.EXPANDED);
+            }
+        }
+
 
     }
 
@@ -778,6 +791,7 @@ public class VideoFragment extends Fragment {
 
                 }
             });
+            listener.setSlidePanel(mainActivity.slidePanel);
             recyclerView.addOnItemTouchListener(listener);
 
 

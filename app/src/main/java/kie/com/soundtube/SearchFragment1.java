@@ -57,7 +57,7 @@ public class SearchFragment1 extends Fragment {
         WorkerThread.start();
         WorkHandler = new Handler(WorkerThread.getLooper());
         searcher = new Searcher(context, WorkHandler);
-        videoRetriver = new VideoRetriver(WorkerThread);
+        videoRetriver = new VideoRetriver(WorkHandler);
     }
 
     @Override

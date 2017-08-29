@@ -31,8 +31,7 @@ public class SearchFragment extends Fragment {
 
     private OnFragmentInteractionListener mListener;
     private View fragmentView = null;
-    private HandlerThread WorkerThread = null;
-    private static Handler WorkHandler = null;
+    private Handler workHandler = null;
     private Context context;
     public VideoRetriver videoRetriver;
     private ViewPager viewPager;
@@ -53,11 +52,7 @@ public class SearchFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         context = getContext();
-        WorkerThread = new HandlerThread("WorkThread");
-        WorkerThread.start();
-        WorkHandler = new Handler(WorkerThread.getLooper());
-        searcher = new Searcher(context, WorkHandler);
-        videoRetriver = new VideoRetriver(WorkerThread);
+
     }
 
     @Override
@@ -90,7 +85,7 @@ public class SearchFragment extends Fragment {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        WorkerThread.quit();
+
     }
 
     private OnPageChangeListener onPageChangeListener = new OnPageChangeListener() {
@@ -202,6 +197,12 @@ public class SearchFragment extends Fragment {
 
     }
 
+    public void setSearchWorker(Handler handler) {
+        workHandler = handler;
+        searcher = new Searcher(context, workHandler);
+        videoRetriver = new VideoRetriver(workHandler);
+    }
+
     public void onButtonPressed(Uri uri) {
         if (mListener != null) {
             mListener.onFragmentInteraction(uri);
@@ -229,7 +230,7 @@ public class SearchFragment extends Fragment {
 
         void onFragmentInteraction(Uri uri);
 
-        void onreturnVideo(DataHolder dataHolder, Handler handler);
+        void onreturnVideo(DataHolder dataHolder);
     }
 
     public void setActivity(MainActivity activity) {
@@ -345,7 +346,7 @@ public class SearchFragment extends Fragment {
                         @Override
                         public void onSuccess(HashMap<Integer, String> result) {
                             dataHolder.videoUris = result;
-                            mListener.onreturnVideo(dataHolder, WorkHandler);
+                            mListener.onreturnVideo(dataHolder);
                             //Log.d("search", ))
                         }
 

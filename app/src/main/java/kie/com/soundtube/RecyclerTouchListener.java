@@ -7,6 +7,8 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.widget.AdapterView;
 
+import com.sothree.slidinguppanel.SlidingUpPanelLayout;
+
 /**
  * Created by kieChang on 2017/7/13.
  */
@@ -21,6 +23,11 @@ public class RecyclerTouchListener implements RecyclerView.OnItemTouchListener {
 
     OnItemClicked clickListener = null;
     GestureDetector gestureDetector = null;
+    SlidingUpPanelLayout panel = null;
+
+    public void setSlidePanel(SlidingUpPanelLayout panel) {
+        this.panel = panel;
+    }
 
     public RecyclerTouchListener(Context context, final RecyclerView recyclerView, final OnItemClicked listener) {
         clickListener = listener;
@@ -35,6 +42,7 @@ public class RecyclerTouchListener implements RecyclerView.OnItemTouchListener {
                 View child = recyclerView.findChildViewUnder(e.getX(), e.getY());
                 if (child != null && clickListener != null && gestureDetector.onTouchEvent(e)) {
                     clickListener.onLongClick(child, recyclerView.getChildAdapterPosition(child));
+
                 }
             }
         });
@@ -42,6 +50,17 @@ public class RecyclerTouchListener implements RecyclerView.OnItemTouchListener {
 
     @Override
     public boolean onInterceptTouchEvent(RecyclerView rv, MotionEvent e) {
+
+        int action = e.getAction();
+        if (action == MotionEvent.ACTION_DOWN) {
+            if (panel != null) {
+                panel.setTouchEnabled(false);
+            }
+        } else if (action == MotionEvent.ACTION_UP) {
+            if (panel != null) {
+                panel.setTouchEnabled(true);
+            }
+        }
         View child = rv.findChildViewUnder(e.getX(), e.getY());
         if (child != null && clickListener != null && gestureDetector.onTouchEvent(e)) {
             clickListener.onClick(child, rv.getChildAdapterPosition(child));
@@ -51,6 +70,7 @@ public class RecyclerTouchListener implements RecyclerView.OnItemTouchListener {
 
     @Override
     public void onTouchEvent(RecyclerView rv, MotionEvent e) {
+
 
     }
 
