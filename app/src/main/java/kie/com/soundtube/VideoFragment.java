@@ -446,47 +446,52 @@ public class VideoFragment extends Fragment {
 
     public void start(final DataHolder dataHolder) {
 
-        ConnectivityManager connectmgr = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo info = connectmgr.getActiveNetworkInfo();
-        if (info.isAvailable() && info.isConnected()) {
+        seekHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                ConnectivityManager connectmgr = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+                NetworkInfo info = connectmgr.getActiveNetworkInfo();
+                if (info.isAvailable() && info.isConnected()) {
 
-            if (mediaService != null) {
-                mediaService.reset();
-                mediaService.prepare(dataHolder);
-                mediaService.setDisplay(surfaceHolder);
-                mediaService.play();
-                setButtonPlay(false);
-                page.setTitle(dataHolder.title);
+                    if (mediaService != null) {
+                        mediaService.reset();
+                        mediaService.prepare(dataHolder);
+                        mediaService.setDisplay(surfaceHolder);
+                        mediaService.play();
+                        setButtonPlay(false);
+                        page.setTitle(dataHolder.title);
 
-                if (searcher != null) {
-                    searcher.loadRelatedVideos(dataHolder.videoID);
-                    page.loading();
-                    searcher.getResults(new Searcher.YoutubeSearchResult() {
-                        @Override
-                        public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
-                            pagerAdapter.changeSate(hasnext, hasprev);
-                            page.updateListView(data);
+                        if (searcher != null) {
+                            searcher.loadRelatedVideos(dataHolder.videoID);
+                            page.loading();
+                            searcher.getResults(new Searcher.YoutubeSearchResult() {
+                                @Override
+                                public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
+                                    pagerAdapter.changeSate(hasnext, hasprev);
+                                    page.updateListView(data);
+                                }
+
+                                @Override
+                                public void noData() {
+
+                                }
+                            });
+
                         }
 
-                        @Override
-                        public void noData() {
 
-                        }
-                    });
+                    } else {
+                        Toast toast = Toast.makeText(context, "No service error!!!", Toast.LENGTH_LONG);
+                        toast.show();
+                    }
 
+
+                } else {
+                    Toast toast = Toast.makeText(context, getString(R.string.needNetwork), Toast.LENGTH_SHORT);
+                    toast.show();
                 }
-
-
-            } else {
-                Toast toast = Toast.makeText(context, "No service error!!!", Toast.LENGTH_LONG);
-                toast.show();
             }
-
-
-        } else {
-            Toast toast = Toast.makeText(context, getString(R.string.needNetwork), Toast.LENGTH_SHORT);
-            toast.show();
-        }
+        });
 
     }
 
@@ -582,7 +587,8 @@ public class VideoFragment extends Fragment {
         if (vrelativeLayout != null && drelativeLayout != null && activity != null) {
             vrelativeLayout.setLayoutParams(landscapelayout);
             drelativeLayout.setVisibility(View.GONE);
-            activity.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN |
+            activity.getWindow().getDecorView().setSystemUiVisibility(
+                    View.SYSTEM_UI_FLAG_FULLSCREEN |
                     View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
                     View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
         }
@@ -625,7 +631,9 @@ public class VideoFragment extends Fragment {
     }
 
     public void serviceConnected() {
-        currentdata = mediaService.currentData;
+        if (mediaService.currentData != null) {
+            currentdata = mediaService.currentData;
+        }
         if (currentdata != null) {
             if (!mediaService.prepared) {
                 mainActivity.slidePanel.setPanelState(SlidingUpPanelLayout.PanelState.EXPANDED);

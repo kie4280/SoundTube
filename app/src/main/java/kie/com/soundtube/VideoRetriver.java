@@ -25,8 +25,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import static android.os.Process.THREAD_PRIORITY_BACKGROUND;
 import static java.util.Arrays.asList;
 
 /**
@@ -42,7 +40,9 @@ public class VideoRetriver {
     public static final int YOUTUBE_VIDEO_QUALITY_AUTO = -1;
 
     Handler youtubeExtractorHandler;
-    public static List<Integer> mPreferredVideoQualities = asList(YOUTUBE_VIDEO_QUALITY_4K, YOUTUBE_VIDEO_QUALITY_HD_1080, YOUTUBE_VIDEO_QUALITY_HD_720, YOUTUBE_VIDEO_QUALITY_MEDIUM_360, YOUTUBE_VIDEO_QUALITY_SMALL_240);
+    public static List<Integer> mPreferredVideoQualities = asList(YOUTUBE_VIDEO_QUALITY_4K,
+            YOUTUBE_VIDEO_QUALITY_HD_1080, YOUTUBE_VIDEO_QUALITY_HD_720,
+            YOUTUBE_VIDEO_QUALITY_MEDIUM_360, YOUTUBE_VIDEO_QUALITY_SMALL_240);
     JsonObject jsonObj = null;
     String decipherfunc = null;
     String basejsurl = null;
@@ -93,7 +93,9 @@ public class VideoRetriver {
         String videoHTML = downloadWeb(url);
         String videoID = url.substring(url.indexOf("=") + 1);
         String language = "en";
-        String link = String.format("https://www.youtube.com/get_video_info?video_id=%s&el=info&ps=default&eurl=&gl=US&hl=%s", videoID, language); //correct
+        String link = String.format(
+                "https://www.youtube.com/get_video_info?video_id=%s&el=info&ps=default&eurl=&gl=US&hl=%s"
+                , videoID, language); //correct
 
 
         HashMap<Integer, String> links = new HashMap<>();
@@ -168,23 +170,23 @@ public class VideoRetriver {
             }
         }
 
-        String getvideoinfo = downloadWeb(link);
-        String[] infos = getvideoinfo.split("&");
-        HashMap<String, String> videoinfomap = new HashMap<>();
-        for (String info : infos) {
-            String[] pair = info.split("=");
-            if (pair.length == 2) {
-                String key = pair[0];
-                String value = decode(pair[1]);
-                videoinfomap.put(key, value);
-            }
-        }
-        if (videoinfomap.containsKey("url_encoded_fmt_stream_map")) {
-            String url_encoded_fmt = videoinfomap.get(("url_encoded_fmt_stream_map"));
-            String adaptive_fmt = videoinfomap.get(("adaptive_fmts"));
-            List<String> videos = new LinkedList<>(asList(url_encoded_fmt.split(",")));
-//            videos.addAll(asList(adaptive_fmt.split(",")));
-        }
+//        String getvideoinfo = downloadWeb(link);
+//        String[] infos = getvideoinfo.split("&");
+//        HashMap<String, String> videoinfomap = new HashMap<>();
+//        for (String info : infos) {
+//            String[] pair = info.split("=");
+//            if (pair.length == 2) {
+//                String key = pair[0];
+//                String value = decode(pair[1]);
+//                videoinfomap.put(key, value);
+//            }
+//        }
+//        if (videoinfomap.containsKey("url_encoded_fmt_stream_map")) {
+//            String url_encoded_fmt = videoinfomap.get(("url_encoded_fmt_stream_map"));
+//            String adaptive_fmt = videoinfomap.get(("adaptive_fmts"));
+//            List<String> videos = new LinkedList<>(asList(url_encoded_fmt.split(",")));
+////            videos.addAll(asList(adaptive_fmt.split(",")));
+//        }
 
         return links;
     }

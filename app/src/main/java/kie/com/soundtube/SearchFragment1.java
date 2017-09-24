@@ -83,7 +83,7 @@ public class SearchFragment1 extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        mainActivity.toolbar.setTranslationY(0);
+        mainActivity.playerToolbar.setTranslationY(0);
     }
 
     @Override
@@ -387,7 +387,7 @@ public class SearchFragment1 extends Fragment {
                 @Override
                 public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
 //                Log.d("recyclerView dx", Integer.toString(dx));
-                    mainActivity.setToolbar(dy);
+                    mainActivity.setPlayerToolbar(dy);
 
                 }
             });

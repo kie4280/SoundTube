@@ -5,68 +5,20 @@
     android:id="@+id/drawerLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fitsSystemWindows="true"
     tools:openDrawer="start">
 
-    <view
-        android:id="@+id/slidePanel"
-        class="com.sothree.slidinguppanel.SlidingUpPanelLayout"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_alignParentTop="true"
-        android:layout_centerHorizontal="true"
-        android:gravity="bottom"
-        app:elevation="0dp">
 
-        <RelativeLayout
-            android:id="@+id/searchPanel"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
-
-            <android.support.v7.widget.Toolbar
-                android:id="@+id/toolbar"
-                android:layout_width="match_parent"
-                android:layout_height="?attr/actionBarSize"
-                android:layout_alignParentStart="false"
-                android:layout_alignParentTop="false"
-                android:background="@android:color/holo_blue_light"
-                android:elevation="1dp"
-                android:minHeight="?attr/actionBarSize"
-                android:theme="?attr/actionBarTheme"
-                app:layout_scrollFlags="scroll|enterAlways">
-
-                <RelativeLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:layout_alignParentEnd="true"
-                    android:layout_alignParentStart="true">
-
-                    <SearchView
-                        android:id="@+id/searchView"
-                        android:layout_width="wrap_content"
-                        android:layout_height="match_parent"
-                        android:layout_alignParentEnd="true"
-                        android:layout_alignParentTop="true"
-                        android:layout_marginEnd="40dp" />
-                </RelativeLayout>
-
-            </android.support.v7.widget.Toolbar>
-
-        </RelativeLayout>
-
-        <RelativeLayout
-            android:id="@+id/videoPanel"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
-
-        </RelativeLayout>
-    </view>
+    <include
+        layout="@layout/slide_layout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
 
     <android.support.design.widget.NavigationView
+        android:id="@+id/navigationView"
         android:layout_width="120dp"
         android:layout_height="match_parent"
         android:layout_gravity="left"
-        app:menu="@menu/options_menu">
+        app:menu="@menu/functions_menu">
 
     </android.support.design.widget.NavigationView>
 

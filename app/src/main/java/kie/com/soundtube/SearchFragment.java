@@ -10,19 +10,24 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.HandlerThread;
 import android.support.v4.app.Fragment;
 import android.support.v4.view.ViewPager;
+import android.support.v4.view.ViewPager.OnPageChangeListener;
 import android.support.v7.widget.DefaultItemAnimator;
-import android.support.v4.view.ViewPager.*;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.*;
+import android.widget.ProgressBar;
+import android.widget.RelativeLayout;
+import android.widget.Toast;
 
+import java.net.HttpURLConnection;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -39,10 +44,11 @@ public class SearchFragment extends Fragment {
 
     MainActivity mainActivity;
     Searcher searcher;
+    HttpURLConnection httpURLConnection;
     CustomPagerAdapter pagerAdapter;
     ArrayList<View> pageviews = new ArrayList<>(3);
-
     Page page;
+    String httpurl = "http://suggestqueries.google.com/complete/search?client=youtube&ds=yt&client=firefox&q=";
 
     public SearchFragment() {
         // Required empty public constructor
@@ -52,6 +58,8 @@ public class SearchFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         context = getContext();
+
+        setHasOptionsMenu(true);
 
     }
 
@@ -79,7 +87,7 @@ public class SearchFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        mainActivity.toolbar.setTranslationY(0);
+        mainActivity.playerToolbar.setTranslationY(0);
     }
 
     @Override
@@ -87,6 +95,114 @@ public class SearchFragment extends Fragment {
         super.onDestroy();
 
     }
+
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        super.onCreateOptionsMenu(menu, inflater);
+        inflater.inflate(R.menu.search_options, menu);
+//        MenuItem item = menu.findItem(R.id.action_search);
+//        MenuItemCompat.setOnActionExpandListener(item, new MenuItemCompat.OnActionExpandListener() {
+//            @Override
+//            public boolean onMenuItemActionExpand(MenuItem menuItem) {
+//                setHasOptionsMenu(false);
+//                return false;
+//            }
+//
+//            @Override
+//            public boolean onMenuItemActionCollapse(MenuItem menuItem) {
+//                setHasOptionsMenu(true);
+//                return false;
+//            }
+//        });
+//        final SearchView searchView = (SearchView) item.getActionView();
+////        TextView textView = (TextView) searchView.findViewById(R.id.search_src_text);
+////        textView.setPadding(2, 0, 0, 0);
+//
+////        "http://suggestqueries.google.com/complete/search?client=youtube&ds=yt&client=firefox&q=Query";
+//        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+//            @Override
+//            public boolean onQueryTextSubmit(String query) {
+//
+//                System.out.println("submit");
+//                if (query != null) {
+//                    if (MainActivity.netConncted) {
+//                        search(query);
+//                    } else {
+//                        Toast toast = Toast.makeText(context, getString(R.string.needNetwork), Toast.LENGTH_SHORT);
+//                        toast.show();
+//                    }
+//                    searchView.clearFocus();
+//                }
+//                return true;
+//            }
+//
+//            @Override
+//            public boolean onQueryTextChange(final String newText) {
+//                workHandler.post(new Runnable() {
+//                    @Override
+//                    public void run() {
+//                        if (MainActivity.netConncted && newText.length() != 0) {
+//                            StringBuilder response = new StringBuilder();
+//                            try {
+//                                URL url = new URL(httpurl + newText);
+//                                httpURLConnection = (HttpURLConnection) url.openConnection();
+//                                httpURLConnection.setRequestMethod("GET");
+//                                BufferedReader in = new BufferedReader(
+//                                        new InputStreamReader(httpURLConnection.getInputStream()));
+//                                String inputLine;
+//
+//                                while ((inputLine = in.readLine()) != null) {
+//                                    response.append(inputLine);
+//                                }
+//                                in.close();
+//                                httpURLConnection.disconnect();
+//                                JsonArray jsonArray = new JsonParser().parse(response.toString()).getAsJsonArray();
+//                                jsonArray = jsonArray.get(1).getAsJsonArray();
+//                                JsonElement element;
+//                                ArrayList<String> suggests = new ArrayList<>();
+//                                MatrixCursor matrixCursor = new MatrixCursor(new String[] {"results"});
+//                                for (int a = 0; a < jsonArray.size(); a++) {
+//                                    element = jsonArray.get(a);
+//                                    suggests.add(element.getAsString());
+//                                    matrixCursor.addRow(new Object[]{element.getAsString()});
+//                                    Log.d("searchview", element.getAsString());
+//                                }
+//
+////                                SimpleCursorAdapter simpleCursorAdapter = new SimpleCursorAdapter(context, );
+////                                searchView.setSuggestionsAdapter(simpleCursorAdapter);
+//
+//                            } catch (IOException e) {
+//                                e.printStackTrace();
+//                            }
+//                        }
+//
+//                    }
+//                });
+////                SearchView.SearchAutoComplete searchAutoComplete = new SearchView.SearchAutoComplete(context);
+//
+//                return true;
+//            }
+//        });
+//        searchView.setOnQueryTextFocusChangeListener(new View.OnFocusChangeListener() {
+//            @Override
+//            public void onFocusChange(View v, boolean hasFocus) {
+////                InputMethodManager imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
+////                imm.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), InputMethodManager.RESULT_UNCHANGED_SHOWN);
+//                if (!hasFocus) {
+//                    getActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
+//                }
+//            }
+//        });
+
+    }
+
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+
+        return super.onOptionsItemSelected(item);
+    }
+
 
     private OnPageChangeListener onPageChangeListener = new OnPageChangeListener() {
         int previndex = 0;
@@ -375,7 +491,7 @@ public class SearchFragment extends Fragment {
                 @Override
                 public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
 //                Log.d("recyclerView dx", Integer.toString(dx));
-                    mainActivity.setToolbar(dy);
+                    mainActivity.setPlayerToolbar(dy);
 
                 }
             });

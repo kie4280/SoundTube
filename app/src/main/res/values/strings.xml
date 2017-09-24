@@ -6,4 +6,8 @@
     <string name="needNetwork">need network connection</string>
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
+    <string name="player">player</string>
+    <string name="playlists">playlists</string>
+    <string name="settings">settings</string>
+    <string name="search_settings">search settings</string>
 </resources>

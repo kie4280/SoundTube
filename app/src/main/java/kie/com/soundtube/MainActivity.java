@@ -1,9 +1,12 @@
 package kie.com.soundtube;
 
 import android.content.res.Configuration;
-import android.os.Debug;
+import android.database.MatrixCursor;
+import android.graphics.Color;
 import android.os.HandlerThread;
 import android.os.Process;
+import android.support.annotation.NonNull;
+import android.support.design.widget.NavigationView;
 import android.support.v4.app.FragmentTransaction;
 import android.content.ComponentName;
 import android.content.Context;
@@ -27,15 +30,30 @@ import android.support.v7.widget.Toolbar;
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
 import android.util.Log;
-import android.view.Menu;
+import android.view.Gravity;
+import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.SearchView;
 import android.widget.Toast;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 import com.sothree.slidinguppanel.SlidingUpPanelLayout;
 import com.sothree.slidinguppanel.SlidingUpPanelLayout.*;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.ArrayList;
 
 import kie.com.soundtube.MediaPlayerService.MusicBinder;
 
@@ -49,7 +67,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     public static boolean activityRunning = false;
     private Intent serviceIntent;
     public SearchView searchView;
-    public Toolbar toolbar;
+    public Toolbar playerToolbar, settingToolbar, playlistToolbar;
     public DrawerLayout drawerLayout;
     public SlidingUpPanelLayout slidePanel;
     public static boolean netConncted = false;
@@ -57,16 +75,19 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     //    public CustomViewPager viewPager;
     VideoFragment videoFragment;
     SearchFragment searchFragment;
+    FragmentManager fragmentManager;
     MediaPlayerService mediaService;
     Context context;
     ConnectivityManager connectmgr;
     TelephonyManager telephonyManager;
-
+    String httpurl = "http://suggestqueries.google.com/complete/search?client=youtube&ds=yt&client=firefox&q=";
+    View playerview = null, settingview = null, playlistview = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
         serviceIntent = new Intent(this, MediaPlayerService.class);
         connectmgr = (ConnectivityManager) getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
         telephonyManager = (TelephonyManager) getApplicationContext().getSystemService(Context.TELEPHONY_SERVICE);
@@ -82,24 +103,32 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
         searchFragment = new SearchFragment();
         searchFragment.setActivity(this);
         searchFragment.setSearchWorker(workHandler);
-        toolbar = (Toolbar) findViewById(R.id.toolbar);
+        playerToolbar = (Toolbar) findViewById(R.id.playerToolbar);
         slidePanel = (SlidingUpPanelLayout) findViewById(R.id.slidePanel);
-        setSupportActionBar(toolbar);
-        ActionBar actionbar = getSupportActionBar();
-        actionbar.setTitle("");
+        playerview = slidePanel;
+        setSupportActionBar(playerToolbar);
+        ActionBar actionBar = getSupportActionBar();
+        actionBar.setTitle(null);
 
-        FragmentManager manager = getSupportFragmentManager();
-        FragmentTransaction transaction = manager.beginTransaction();
+//        actionBar.setDisplayShowCustomEnabled(true);
+
+//        actionBar.setDisplayHomeAsUpEnabled(true);
+//        actionBar.setDisplayShowCustomEnabled(true);
+//        actionBar.setDisplayShowTitleEnabled(false);
+
+
+        fragmentManager = getSupportFragmentManager();
+        FragmentTransaction transaction = fragmentManager.beginTransaction();
         transaction
-                .add(R.id.videoPanel, videoFragment)
-                .add(R.id.searchPanel, searchFragment)
+                .add(R.id.videoPanel, videoFragment, "videoFragment")
+                .add(R.id.searchPanel, searchFragment, "searchFragment")
                 .commit();
         slidePanel.addPanelSlideListener(panelSlideListener);
         drawerLayout = (DrawerLayout) findViewById(R.id.drawerLayout);
 //        drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
 
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
-                this, drawerLayout, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close) {
+                this, drawerLayout, playerToolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close) {
             @Override
             public void onDrawerOpened(View drawerView) {
                 super.onDrawerOpened(drawerView);
@@ -112,52 +141,22 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
                 drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
             }
         };
-        toolbar.setNavigationOnClickListener(new View.OnClickListener() {
+        playerToolbar.setNavigationOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
 
                 drawerLayout.openDrawer(GravityCompat.START);
             }
         });
+
         drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
         drawerLayout.addDrawerListener(toggle);
         toggle.syncState();
+        NavigationView navView = (NavigationView) findViewById(R.id.navigationView);
+        navView.setNavigationItemSelectedListener(navigationItemSelectedListener);
 
-        searchView = (SearchView) findViewById(R.id.searchView);
-        searchView.setIconifiedByDefault(true);
-//        "http://suggestqueries.google.com/complete/search?client=youtube&ds=yt&client=firefox&q=Query";
-        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-            @Override
-            public boolean onQueryTextSubmit(String query) {
+        createSearchView();
 
-                System.out.println("submit");
-                if (query != null) {
-                    if (MainActivity.netConncted) {
-                        searchFragment.search(query);
-                    } else {
-                        Toast toast = Toast.makeText(context, getString(R.string.needNetwork), Toast.LENGTH_SHORT);
-                        toast.show();
-                    }
-                    searchView.clearFocus();
-                }
-                return true;
-            }
-
-            @Override
-            public boolean onQueryTextChange(String newText) {
-                return true;
-            }
-        });
-        searchView.setOnQueryTextFocusChangeListener(new View.OnFocusChangeListener() {
-            @Override
-            public void onFocusChange(View v, boolean hasFocus) {
-//                InputMethodManager imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
-//                imm.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), InputMethodManager.RESULT_UNCHANGED_SHOWN);
-                if (!hasFocus) {
-                    getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
-                }
-            }
-        });
 
         telephonyManager.listen(phoneStateListener, PhoneStateListener.LISTEN_CALL_STATE);
         activityRunning = true;
@@ -223,6 +222,82 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
         }
     };
 
+    private NavigationView.OnNavigationItemSelectedListener navigationItemSelectedListener =
+            new NavigationView.OnNavigationItemSelectedListener() {
+                int previ = R.id.player;
+
+                @Override
+                public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+                    int i = item.getItemId();
+                    i = i == previ ? -1 : i;
+                    switch (i) {
+                        case R.id.player:
+                            drawerLayout.removeViewAt(0);
+                            drawerLayout.addView(playerview, 0);
+                            fragmentManager.beginTransaction()
+                                    .add(R.id.videoPanel, videoFragment, "videoFragment")
+                                    .add(R.id.searchPanel, searchFragment, "searchFragment")
+                                    .commit();
+
+                            break;
+                        case R.id.playlists:
+                            if (playlistview == null) {
+                                LayoutInflater inflater = LayoutInflater.from(context);
+                                playlistview = inflater.inflate(R.layout.playlist_layout, drawerLayout, false);
+                            }
+                            drawerLayout.removeViewAt(0);
+                            drawerLayout.addView(playlistview, 0);
+                            break;
+                        case R.id.settings:
+                            if (settingview == null) {
+                                LayoutInflater inflater = LayoutInflater.from(context);
+                                settingview = inflater.inflate(R.layout.settings_layout, drawerLayout, false);
+                                settingToolbar = (Toolbar) settingview.findViewById(R.id.settingToolbar);
+//                                setSupportActionBar(settingToolbar);
+//                                ActionBar actionBar = getSupportActionBar();
+//                                actionBar.setTitle(null);
+                                ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
+                                        MainActivity.this, drawerLayout, settingToolbar, R.string.navigation_drawer_open,
+                                        R.string.navigation_drawer_close) {
+                                    @Override
+                                    public void onDrawerOpened(View drawerView) {
+                                        super.onDrawerOpened(drawerView);
+                                        drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED);
+                                    }
+
+                                    @Override
+                                    public void onDrawerClosed(View drawerView) {
+                                        super.onDrawerClosed(drawerView);
+                                        drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
+                                    }
+                                };
+                                settingToolbar.setNavigationOnClickListener(new View.OnClickListener() {
+                                    @Override
+                                    public void onClick(View view) {
+
+                                        drawerLayout.openDrawer(GravityCompat.START);
+                                    }
+                                });
+                                drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
+                                drawerLayout.addDrawerListener(toggle);
+                                toggle.syncState();
+
+//                                setSupportActionBar(settingToolbar);
+                            }
+                            drawerLayout.removeViewAt(0);
+                            drawerLayout.addView(settingview, 0);
+                            fragmentManager.beginTransaction().remove(searchFragment).remove(videoFragment).commit();
+
+                            break;
+                        default:
+                            break;
+                    }
+                    previ = i;
+                    drawerLayout.closeDrawer(GravityCompat.START);
+                    return true;
+                }
+            };
+
 
     private ServiceConnection serviceConnection = new ServiceConnection() {
         @Override
@@ -253,6 +328,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
         }
 
     }
+
 
     @Override
     protected void onStart() {
@@ -331,35 +407,178 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
         }
     }
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.options_menu, menu);
-        return super.onCreateOptionsMenu(menu);
-    }
 
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        return super.onOptionsItemSelected(item);
-    }
+    public void setPlayerToolbar(int dy) {
 
-    public void setToolbar(int dy) {
-
-        int toolbaroffset = (int) (dy - toolbar.getTranslationY());
+        int toolbaroffset = (int) (dy - playerToolbar.getTranslationY());
         if (dy > 0) {
-            if (toolbaroffset < toolbar.getHeight()) {
-                toolbar.setTranslationY(-toolbaroffset);
+            if (toolbaroffset < playerToolbar.getHeight()) {
+                playerToolbar.setTranslationY(-toolbaroffset);
             } else {
-                toolbar.setTranslationY(-toolbar.getHeight());
+                playerToolbar.setTranslationY(-playerToolbar.getHeight());
             }
 
         } else {
             if (toolbaroffset < 0) {
-                toolbar.setTranslationY(0);
+                playerToolbar.setTranslationY(0);
             } else {
-                toolbar.setTranslationY(-toolbaroffset);
+                playerToolbar.setTranslationY(-toolbaroffset);
             }
 
         }
+
+    }
+
+    public void createSearchView() {
+        final SearchView searchView = new SearchView(this);
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+
+                System.out.println("submit");
+                if (query != null) {
+                    if (MainActivity.netConncted) {
+                        searchFragment.search(query);
+                    } else {
+                        Toast toast = Toast.makeText(context, getString(R.string.needNetwork), Toast.LENGTH_SHORT);
+                        toast.show();
+                    }
+                    searchView.clearFocus();
+
+
+                }
+                return true;
+            }
+
+            @Override
+            public boolean onQueryTextChange(final String newText) {
+                workHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (MainActivity.netConncted && newText.length() != 0) {
+                            StringBuilder response = new StringBuilder();
+                            try {
+                                URL url = new URL(httpurl + newText);
+                                HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection();
+                                httpURLConnection.setRequestMethod("GET");
+                                BufferedReader in = new BufferedReader(
+                                        new InputStreamReader(httpURLConnection.getInputStream()));
+                                String inputLine;
+
+                                while ((inputLine = in.readLine()) != null) {
+                                    response.append(inputLine);
+                                }
+                                in.close();
+                                httpURLConnection.disconnect();
+                                JsonArray jsonArray = new JsonParser().parse(response.toString()).getAsJsonArray();
+                                jsonArray = jsonArray.get(1).getAsJsonArray();
+                                JsonElement element;
+                                ArrayList<String> suggests = new ArrayList<>();
+                                MatrixCursor matrixCursor = new MatrixCursor(new String[]{"results"});
+                                for (int a = 0; a < jsonArray.size(); a++) {
+                                    element = jsonArray.get(a);
+                                    suggests.add(element.getAsString());
+                                    matrixCursor.addRow(new Object[]{element.getAsString()});
+//                                    Log.d("searchview", element.getAsString());
+                                }
+
+//                                SimpleCursorAdapter simpleCursorAdapter = new SimpleCursorAdapter(context, );
+//                                searchView.setSuggestionsAdapter(simpleCursorAdapter);
+
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
+
+                    }
+                });
+
+
+                return true;
+            }
+        });
+        searchView.setOnQueryTextFocusChangeListener(new View.OnFocusChangeListener() {
+            @Override
+            public void onFocusChange(View v, boolean hasFocus) {
+//                InputMethodManager imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
+//                imm.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), InputMethodManager.RESULT_UNCHANGED_SHOWN);
+                if (getCurrentFocus() != null) {
+                    Log.d("focus", getCurrentFocus().toString());
+                }
+
+                if (!hasFocus) {
+                    getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
+                    searchFragment.setHasOptionsMenu(true);
+
+                } else {
+                    searchFragment.setHasOptionsMenu(false);
+
+                }
+            }
+        });
+        searchView.setOnCloseListener(new SearchView.OnCloseListener() {
+            @Override
+            public boolean onClose() {
+
+                searchView.clearFocus();
+//                playerview.requestFocus();
+                return true;
+            }
+        });
+        searchView.setOnSearchClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                playerToolbar.setBackgroundColor(Color.WHITE);
+
+            }
+        });
+
+
+        searchView.setIconifiedByDefault(true);
+        searchView.setMaxWidth(Integer.MAX_VALUE);
+        searchView.setMinimumHeight(Integer.MAX_VALUE);
+//        searchView.setQueryHint("Search");
+
+        int rightMarginFrame = 0;
+        View frame = searchView.findViewById(getResources().getIdentifier("android:id/search_edit_frame", null, null));
+        if (frame != null) {
+            LinearLayout.LayoutParams frameParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+            rightMarginFrame = ((LinearLayout.LayoutParams) frame.getLayoutParams()).rightMargin;
+            frameParams.setMargins(0, 0, 0, 0);
+            frame.setLayoutParams(frameParams);
+        }
+
+        View plate = searchView.findViewById(getResources().getIdentifier("android:id/search_plate", null, null));
+        if (plate != null) {
+            plate.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+            plate.setPadding(0, 0, rightMarginFrame, 0);
+            plate.setBackgroundColor(Color.TRANSPARENT);
+        }
+
+        int autoCompleteId = getResources().getIdentifier("android:id/search_src_text", null, null);
+        if (searchView.findViewById(autoCompleteId) != null) {
+            EditText autoComplete = (EditText) searchView.findViewById(autoCompleteId);
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, Tools.convertDpToPixel(36, context));
+            params.weight = 1;
+            params.gravity = Gravity.CENTER_VERTICAL;
+            params.leftMargin = rightMarginFrame;
+            autoComplete.setLayoutParams(params);
+            autoComplete.setTextSize(16f);
+        }
+
+        int searchMagId = getResources().getIdentifier("android:id/search_mag_icon", null, null);
+        if (searchView.findViewById(searchMagId) != null) {
+            ImageView v = (ImageView) searchView.findViewById(searchMagId);
+            v.setImageDrawable(null);
+            v.setPadding(0, 0, 0, 0);
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+            params.setMargins(0, 0, 0, 0);
+            v.setLayoutParams(params);
+        }
+
+        playerToolbar.setTitle(null);
+        playerToolbar.setContentInsetsAbsolute(0, 0);
+        playerToolbar.addView(searchView);
 
     }
 }

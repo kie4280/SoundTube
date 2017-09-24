@@ -11,8 +11,10 @@
             android:icon="@mipmap/icon"
             android:label="test"
             android:supportsRtl="true"
-            android:theme="@style/Theme.Design.Light.NoActionBar">
-        <activity android:name=".MainActivity" android:windowSoftInputMode="stateHidden"
+        android:theme="@style/Theme.AppCompat.Light.NoActionBar">
+        <activity
+            android:name=".MainActivity"
+            android:windowSoftInputMode="stateHidden|adjustPan"
                   android:configChanges="orientation|screenSize"
                   android:screenOrientation="portrait"
             android:launchMode="singleTop">
