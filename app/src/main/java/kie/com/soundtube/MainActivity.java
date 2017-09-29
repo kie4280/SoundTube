@@ -39,6 +39,7 @@ import android.view.WindowManager;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 import android.widget.SearchView;
 import android.widget.Toast;
 
@@ -58,7 +59,8 @@ import java.util.ArrayList;
 import kie.com.soundtube.MediaPlayerService.MusicBinder;
 
 public class MainActivity extends AppCompatActivity implements SearchFragment.OnFragmentInteractionListener,
-        VideoFragment.OnFragmentInteractionListener {
+        VideoFragment.OnFragmentInteractionListener, PlaylistFragment.OnFragmentInteractionListener,
+        SettingFragment.OnFragmentInteractionListener {
 
     public static Handler UiHandler = null;
     private Handler workHandler;
@@ -69,19 +71,22 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     public SearchView searchView;
     public Toolbar playerToolbar, settingToolbar, playlistToolbar;
     public DrawerLayout drawerLayout;
+    public RelativeLayout mainRelativeLayout;
     public SlidingUpPanelLayout slidePanel;
     public static boolean netConncted = false;
 
     //    public CustomViewPager viewPager;
     VideoFragment videoFragment;
     SearchFragment searchFragment;
+    SettingFragment settingFragment;
+    PlaylistFragment playlistFragment;
     FragmentManager fragmentManager;
     MediaPlayerService mediaService;
     Context context;
     ConnectivityManager connectmgr;
     TelephonyManager telephonyManager;
     String httpurl = "http://suggestqueries.google.com/complete/search?client=youtube&ds=yt&client=firefox&q=";
-    View playerview = null, settingview = null, playlistview = null;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -103,9 +108,14 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
         searchFragment = new SearchFragment();
         searchFragment.setActivity(this);
         searchFragment.setSearchWorker(workHandler);
+        playlistFragment = new PlaylistFragment();
+        playlistFragment.setActivity(this);
+        settingFragment = new SettingFragment();
+        settingFragment.setActivity(this);
         playerToolbar = (Toolbar) findViewById(R.id.playerToolbar);
         slidePanel = (SlidingUpPanelLayout) findViewById(R.id.slidePanel);
-        playerview = slidePanel;
+        mainRelativeLayout = (RelativeLayout) findViewById(R.id.mainRelativeLayout);
+
         setSupportActionBar(playerToolbar);
         ActionBar actionBar = getSupportActionBar();
         actionBar.setTitle(null);
@@ -229,69 +239,45 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
                 @Override
                 public boolean onNavigationItemSelected(@NonNull MenuItem item) {
                     int i = item.getItemId();
-                    i = i == previ ? -1 : i;
-                    switch (i) {
-                        case R.id.player:
-                            drawerLayout.removeViewAt(0);
-                            drawerLayout.addView(playerview, 0);
-                            fragmentManager.beginTransaction()
-                                    .add(R.id.videoPanel, videoFragment, "videoFragment")
-                                    .add(R.id.searchPanel, searchFragment, "searchFragment")
-                                    .commit();
+                    if (previ != i) {
+                        switch (i) {
+                            case R.id.player:
+                                mainRelativeLayout.removeViewAt(0);
+                                mainRelativeLayout.addView(slidePanel);
+                                fragmentManager.beginTransaction()
+                                        .add(R.id.videoPanel, videoFragment, "videoFragment")
+                                        .add(R.id.searchPanel, searchFragment, "searchFragment")
+                                        .remove(settingFragment)
+                                        .remove(playlistFragment)
+                                        .commit();
 
-                            break;
-                        case R.id.playlists:
-                            if (playlistview == null) {
-                                LayoutInflater inflater = LayoutInflater.from(context);
-                                playlistview = inflater.inflate(R.layout.playlist_layout, drawerLayout, false);
-                            }
-                            drawerLayout.removeViewAt(0);
-                            drawerLayout.addView(playlistview, 0);
-                            break;
-                        case R.id.settings:
-                            if (settingview == null) {
-                                LayoutInflater inflater = LayoutInflater.from(context);
-                                settingview = inflater.inflate(R.layout.settings_layout, drawerLayout, false);
-                                settingToolbar = (Toolbar) settingview.findViewById(R.id.settingToolbar);
-//                                setSupportActionBar(settingToolbar);
-//                                ActionBar actionBar = getSupportActionBar();
-//                                actionBar.setTitle(null);
-                                ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
-                                        MainActivity.this, drawerLayout, settingToolbar, R.string.navigation_drawer_open,
-                                        R.string.navigation_drawer_close) {
-                                    @Override
-                                    public void onDrawerOpened(View drawerView) {
-                                        super.onDrawerOpened(drawerView);
-                                        drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED);
-                                    }
+                                break;
+                            case R.id.playlists:
 
-                                    @Override
-                                    public void onDrawerClosed(View drawerView) {
-                                        super.onDrawerClosed(drawerView);
-                                        drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
-                                    }
-                                };
-                                settingToolbar.setNavigationOnClickListener(new View.OnClickListener() {
-                                    @Override
-                                    public void onClick(View view) {
+                                mainRelativeLayout.removeViewAt(0);
+                                fragmentManager.beginTransaction()
+                                        .remove(searchFragment)
+                                        .remove(videoFragment)
+                                        .remove(settingFragment)
+                                        .add(R.id.mainRelativeLayout, playlistFragment, "playlistFragment")
+                                        .commit();
+                                break;
+                            case R.id.settings:
 
-                                        drawerLayout.openDrawer(GravityCompat.START);
-                                    }
-                                });
-                                drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
-                                drawerLayout.addDrawerListener(toggle);
-                                toggle.syncState();
+                                mainRelativeLayout.removeViewAt(0);
+                                fragmentManager.beginTransaction()
+                                        .remove(searchFragment)
+                                        .remove(videoFragment)
+                                        .remove(playlistFragment)
+                                        .add(R.id.mainRelativeLayout, settingFragment, "settingFragment")
+                                        .commit();
 
-//                                setSupportActionBar(settingToolbar);
-                            }
-                            drawerLayout.removeViewAt(0);
-                            drawerLayout.addView(settingview, 0);
-                            fragmentManager.beginTransaction().remove(searchFragment).remove(videoFragment).commit();
-
-                            break;
-                        default:
-                            break;
+                                break;
+                            default:
+                                break;
+                        }
                     }
+
                     previ = i;
                     drawerLayout.closeDrawer(GravityCompat.START);
                     return true;
@@ -430,7 +416,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     }
 
     public void createSearchView() {
-        final SearchView searchView = new SearchView(this);
+        searchView = new SearchView(this);
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {

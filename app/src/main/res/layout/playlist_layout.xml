@@ -3,4 +3,13 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+    <android.support.v7.widget.Toolbar
+        android:id="@+id/playlistToolbar"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:layout_alignParentStart="false"
+        android:layout_alignParentTop="false"
+        android:background="@android:color/holo_blue_light"
+        android:elevation="1dp"
+        android:minHeight="?android:attr/actionBarSize" />
 </RelativeLayout>
