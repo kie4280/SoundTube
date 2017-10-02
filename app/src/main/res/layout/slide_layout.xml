@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.sothree.slidinguppanel.SlidingUpPanelLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<kie.com.soundtube.CustomSlideUpPanel xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/slidePanel"
     android:layout_width="match_parent"
@@ -9,23 +9,30 @@
     android:gravity="bottom"
     app:elevation="0dp">
 
-    <RelativeLayout
+    <android.support.design.widget.CoordinatorLayout
         android:id="@+id/searchPanel"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <android.support.v7.widget.Toolbar
-            android:id="@+id/playerToolbar"
+        <android.support.design.widget.AppBarLayout
             android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            android:layout_alignParentStart="false"
-            android:layout_alignParentTop="false"
-            android:background="@android:color/holo_blue_light"
-            android:elevation="1dp"
-            android:minHeight="?attr/actionBarSize"
-            android:focusableInTouchMode="false" />
+            android:layout_height="56dp">
 
-    </RelativeLayout>
+            <android.support.v7.widget.Toolbar
+                android:id="@+id/playerToolbar"
+                android:layout_width="match_parent"
+                android:layout_height="?attr/actionBarSize"
+                android:layout_alignParentStart="false"
+                android:layout_alignParentTop="false"
+                android:background="@android:color/holo_blue_light"
+                android:elevation="1dp"
+                android:focusableInTouchMode="false"
+                android:minHeight="?attr/actionBarSize" />
+        </android.support.design.widget.AppBarLayout>
+
+
+    </android.support.design.widget.CoordinatorLayout>
+
 
     <RelativeLayout
         android:id="@+id/videoPanel"
@@ -35,4 +42,4 @@
     </RelativeLayout>
 
 
-</com.sothree.slidinguppanel.SlidingUpPanelLayout>
+</kie.com.soundtube.CustomSlideUpPanel>

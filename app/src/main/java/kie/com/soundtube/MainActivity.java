@@ -72,7 +72,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     public Toolbar playerToolbar, settingToolbar, playlistToolbar;
     public DrawerLayout drawerLayout;
     public RelativeLayout mainRelativeLayout;
-    public SlidingUpPanelLayout slidePanel;
+    public CustomSlideUpPanel slidePanel;
     public static boolean netConncted = false;
 
     //    public CustomViewPager viewPager;
@@ -113,12 +113,14 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
         settingFragment = new SettingFragment();
         settingFragment.setActivity(this);
         playerToolbar = (Toolbar) findViewById(R.id.playerToolbar);
-        slidePanel = (SlidingUpPanelLayout) findViewById(R.id.slidePanel);
+        slidePanel = (CustomSlideUpPanel) findViewById(R.id.slidePanel);
         mainRelativeLayout = (RelativeLayout) findViewById(R.id.mainRelativeLayout);
 
         setSupportActionBar(playerToolbar);
         ActionBar actionBar = getSupportActionBar();
         actionBar.setTitle(null);
+//        slidePanel.setTouchEnabled(false);
+
 
 //        actionBar.setDisplayShowCustomEnabled(true);
 

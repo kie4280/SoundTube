@@ -248,7 +248,8 @@ public class VideoFragment extends Fragment {
         });
 
 
-        vrelativeLayout.setOnTouchListener(touchListener);
+        vrelativeLayout.setOnTouchListener(videotouchListener);
+        header.setOnTouchListener(headerTouchListener);
 
 
         Log.d("video", "createView");
@@ -256,7 +257,7 @@ public class VideoFragment extends Fragment {
         return videoFragmentView;
     }
 
-    private View.OnTouchListener touchListener = new View.OnTouchListener() {
+    private View.OnTouchListener videotouchListener = new View.OnTouchListener() {
         float prevX = 0;
         float prevY = 0;
         float thresholdX = 15f;
@@ -264,15 +265,17 @@ public class VideoFragment extends Fragment {
 
         @Override
         public boolean onTouch(View v, MotionEvent event) {
-            int action = MotionEventCompat.getActionMasked(event);
+            int action = event.getAction();
             int pointerIndex = event.getActionIndex();
             int pointerID = event.getPointerId(pointerIndex);
             switch (action) {
                 case MotionEvent.ACTION_DOWN:
                     prevX = event.getX();
                     prevY = event.getY();
+//                    mainActivity.slidePanel.setTouchEnabled(true);
+                    Log.d("videotouch", "touchdown");
                 case MotionEvent.ACTION_POINTER_DOWN:
-                    Log.d("surface", "touchdown");
+
                 case MotionEvent.ACTION_MOVE:
 //                    mainActivity.viewPager.setSwipingEnabled(false);
 
@@ -280,6 +283,7 @@ public class VideoFragment extends Fragment {
                     scaleGestureDetector.onTouchEvent(event);
                     break;
                 case MotionEvent.ACTION_POINTER_UP:
+                    Log.d("videotouch", "pointer touchup");
                 case MotionEvent.ACTION_UP:
                     if (Math.abs(event.getX() - prevX) <= thresholdX &&
                             Math.abs(event.getY() - prevY) <= thresholdY) {
@@ -291,12 +295,39 @@ public class VideoFragment extends Fragment {
                     }
 
 //                    mainActivity.viewPager.setSwipingEnabled(true);
-                    Log.d("surface", "touchup");
+                    Log.d("videotouch", "touchup");
+//                    mainActivity.slidePanel.setTouchEnabled(false);
                     break;
             }
 
 
             return true;
+        }
+    };
+
+    private View.OnTouchListener headerTouchListener = new View.OnTouchListener() {
+        @Override
+        public boolean onTouch(View view, MotionEvent event) {
+            int action = event.getAction();
+
+            switch (action) {
+                case MotionEvent.ACTION_DOWN:
+//                    mainActivity.slidePanel.setTouchEnabled(true);
+                    Log.d("headertouch", "down");
+                    break;
+                case MotionEvent.ACTION_MOVE:
+                    Log.d("headertouch", "move");
+                    break;
+
+                case MotionEvent.ACTION_UP:
+//                    mainActivity.slidePanel.setTouchEnabled(false);
+                    Log.d("headertouch", "up");
+                    break;
+
+                default:
+                    break;
+            }
+            return false;
         }
     };
 
@@ -589,8 +620,8 @@ public class VideoFragment extends Fragment {
             drelativeLayout.setVisibility(View.GONE);
             activity.getWindow().getDecorView().setSystemUiVisibility(
                     View.SYSTEM_UI_FLAG_FULLSCREEN |
-                    View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
-                    View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+                            View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
+                            View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
         }
 
     }
