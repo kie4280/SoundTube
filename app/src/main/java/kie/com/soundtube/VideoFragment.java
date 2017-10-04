@@ -246,11 +246,7 @@ public class VideoFragment extends Fragment {
 
             }
         });
-
-
         vrelativeLayout.setOnTouchListener(videotouchListener);
-        header.setOnTouchListener(headerTouchListener);
-
 
         Log.d("video", "createView");
 
@@ -302,32 +298,6 @@ public class VideoFragment extends Fragment {
 
 
             return true;
-        }
-    };
-
-    private View.OnTouchListener headerTouchListener = new View.OnTouchListener() {
-        @Override
-        public boolean onTouch(View view, MotionEvent event) {
-            int action = event.getAction();
-
-            switch (action) {
-                case MotionEvent.ACTION_DOWN:
-//                    mainActivity.slidePanel.setTouchEnabled(true);
-                    Log.d("headertouch", "down");
-                    break;
-                case MotionEvent.ACTION_MOVE:
-                    Log.d("headertouch", "move");
-                    break;
-
-                case MotionEvent.ACTION_UP:
-//                    mainActivity.slidePanel.setTouchEnabled(false);
-                    Log.d("headertouch", "up");
-                    break;
-
-                default:
-                    break;
-            }
-            return false;
         }
     };
 

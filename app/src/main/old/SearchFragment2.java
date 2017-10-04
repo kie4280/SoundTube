@@ -29,7 +29,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-public class SearchFragment1 extends Fragment {
+public class SearchFragment2 extends Fragment {
 
     private OnFragmentInteractionListener mListener;
     private View fragmentView = null;
@@ -45,7 +45,7 @@ public class SearchFragment1 extends Fragment {
     ArrayList<View> pageviews = new ArrayList<>(3);
     ArrayList<Page> pages = new ArrayList<>(3);
 
-    public SearchFragment1() {
+    public SearchFragment2() {
         // Required empty public constructor
     }
 

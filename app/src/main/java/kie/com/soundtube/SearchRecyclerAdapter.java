@@ -21,23 +21,23 @@ public class SearchRecyclerAdapter extends RecyclerView.Adapter<SearchRecyclerAd
     @Override
     public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         View view;
-        if (viewType == 0) {
-            RelativeLayout relativeLayout = new RelativeLayout(parent.getContext());
-            relativeLayout.setLayoutParams(new ViewGroup.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT, Tools.convertDpToPixel(56, parent.getContext())));
-            view = relativeLayout;
-        } else {
-            view = LayoutInflater.from(parent.getContext()).inflate(R.layout.video_layout, parent, false);
-        }
-
+//        if (viewType == 0) {
+//            RelativeLayout relativeLayout = new RelativeLayout(parent.getContext());
+//            relativeLayout.setLayoutParams(new ViewGroup.LayoutParams(
+//                    ViewGroup.LayoutParams.MATCH_PARENT, Tools.convertDpToPixel(56, parent.getContext())));
+//            view = relativeLayout;
+//        } else {
+//            view = LayoutInflater.from(parent.getContext()).inflate(R.layout.video_layout, parent, false);
+//        }
+        view = LayoutInflater.from(parent.getContext()).inflate(R.layout.video_layout, parent, false);
         return new ViewHolder(view);
     }
 
     @Override
     public void onBindViewHolder(ViewHolder holder, int position) {
 
-        if (position != 0) {
-            DataHolder dataHolder = dataHolders.get(position - 1);
+        if (true) {
+            DataHolder dataHolder = dataHolders.get(position);
             holder.imageView.setImageBitmap(dataHolder.thumbnail);
             holder.titleview.setText(dataHolder.title);
             holder.durationview.setText(dataHolder.videolength);
@@ -47,12 +47,13 @@ public class SearchRecyclerAdapter extends RecyclerView.Adapter<SearchRecyclerAd
 
     @Override
     public int getItemViewType(int position) {
-        return position == 0 ? 0 : 1;
+//        return position == 0 ? 0 : 1;
+        return 0;
     }
 
     @Override
     public int getItemCount() {
-        return dataHolders.size() + 1;
+        return dataHolders.size();
     }
 
     public class ViewHolder extends RecyclerView.ViewHolder {
