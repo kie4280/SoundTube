@@ -1,60 +1,38 @@
 package kie.com.soundtube;
 
-import android.content.res.Configuration;
-import android.database.MatrixCursor;
-import android.graphics.Color;
-import android.os.HandlerThread;
-import android.os.Process;
-import android.support.annotation.NonNull;
-import android.support.design.widget.NavigationView;
-import android.support.v4.app.FragmentTransaction;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.ActivityInfo;
+import android.content.res.Configuration;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Looper;
-import android.support.v4.app.FragmentManager;
+import android.os.Process;
+import android.support.annotation.NonNull;
+import android.support.design.widget.NavigationView;
+import android.app.FragmentManager;
+import android.app.FragmentTransaction;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
-import android.support.v7.app.ActionBar;
-import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
 import android.util.Log;
-import android.view.Gravity;
-import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
-import android.view.WindowManager;
-import android.widget.EditText;
-import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
-import android.widget.SearchView;
 import android.widget.Toast;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
-import com.sothree.slidinguppanel.SlidingUpPanelLayout;
-import com.sothree.slidinguppanel.SlidingUpPanelLayout.*;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.ArrayList;
+import com.sothree.slidinguppanel.SlidingUpPanelLayout.PanelSlideListener;
+import com.sothree.slidinguppanel.SlidingUpPanelLayout.PanelState;
 
 import kie.com.soundtube.MediaPlayerService.MusicBinder;
 
@@ -66,7 +44,6 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     private Handler workHandler;
     private HandlerThread workThread;
     public static boolean servicebound = false;
-    public static boolean activityRunning = false;
     private Intent serviceIntent;
     public Toolbar playerToolbar;
 
@@ -91,7 +68,22 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_player);
+        Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+            Thread.UncaughtExceptionHandler defualtexception = Thread.getDefaultUncaughtExceptionHandler();
+
+            @Override
+            public void uncaughtException(Thread thread, Throwable throwable) {
+                throwable.printStackTrace();
+                Intent intent = new Intent();
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                intent.setAction("kie.com.soundtube.sendLog");
+//                System.exit(1);//terminate code 1
+//                continue as normal
+                defualtexception.uncaughtException(thread, throwable);
+
+            }
+        });
         playerToolbar = (Toolbar) findViewById(R.id.playerToolbar);
         serviceIntent = new Intent(this, MediaPlayerService.class);
         connectmgr = (ConnectivityManager) getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
@@ -126,7 +118,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
 //        actionBar.setDisplayShowTitleEnabled(false);
 
 
-        fragmentManager = getSupportFragmentManager();
+        fragmentManager = getFragmentManager();
         FragmentTransaction transaction = fragmentManager.beginTransaction();
         transaction
                 .add(R.id.videoPanel, videoFragment, "videoFragment")
@@ -139,7 +131,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
         NavigationView navView = (NavigationView) findViewById(R.id.navigationView);
         navView.setNavigationItemSelectedListener(navigationItemSelectedListener);
         telephonyManager.listen(phoneStateListener, PhoneStateListener.LISTEN_CALL_STATE);
-        activityRunning = true;
+
 
     }
 
@@ -285,6 +277,12 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
 
     }
 
+    public void disconnect() {
+        if (servicebound) {
+            unbindService(serviceConnection);
+        }
+    }
+
 
     @Override
     protected void onStart() {
@@ -313,17 +311,14 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     @Override
     protected void onStop() {
         super.onStop();
-        if (servicebound) {
-            unbindService(serviceConnection);
-        }
+        disconnect();
         Log.d("activity", "onStop");
     }
 
     @Override
     protected void onDestroy() {
         Log.d("activity", "onDestroy");
-//        mediaService = null;
-        activityRunning = false;
+        mediaService = null;
         workThread.quit();
         super.onDestroy();
     }

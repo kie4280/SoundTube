@@ -11,8 +11,7 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
-import android.support.design.widget.NavigationView;
-import android.support.v4.app.Fragment;
+import android.app.Fragment;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v4.view.ViewPager.OnPageChangeListener;
@@ -55,14 +54,14 @@ import java.util.List;
 public class SearchFragment extends Fragment {
 
     private OnFragmentInteractionListener mListener;
-    private View fragmentView = null;
+    private View searchFragmentView = null;
     private Handler workHandler = null;
     private Context context;
     public VideoRetriver videoRetriver;
     private ViewPager viewPager;
     private ProgressBar bar1, bar2;
     public Toolbar playerToolbar;
-    public SearchView searchView;
+    public SearchView searchView = null;
     MainActivity mainActivity;
     DrawerLayout drawerLayout;
     Searcher searcher;
@@ -79,7 +78,7 @@ public class SearchFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        context = getContext();
+        context = getActivity().getApplicationContext();
 
         setHasOptionsMenu(true);
 
@@ -90,55 +89,55 @@ public class SearchFragment extends Fragment {
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         drawerLayout = mainActivity.drawerLayout;
-        fragmentView = inflater.inflate(R.layout.fragment_search, container, false);
-        playerToolbar = mainActivity.playerToolbar;
+        if (searchFragmentView == null) {
 
-        View r1 = inflater.inflate(R.layout.blank_loading, null);
-        View r2 = inflater.inflate(R.layout.blank_loading, null);
-        bar1 = (ProgressBar) r1.findViewById(R.id.pageLoadingBar);
-        bar2 = (ProgressBar) r2.findViewById(R.id.pageLoadingBar);
-        pageviews.add(r1);
-        pageviews.add(inflater.inflate(R.layout.searchpage, null));
-        pageviews.add(r2);
-        page = new Page(pageviews.get(1));
-        viewPager = (ViewPager) fragmentView.findViewById(R.id.searchViewPager);
-        pagerAdapter = new CustomPagerAdapter(pageviews);
-        viewPager.setAdapter(pagerAdapter);
-        viewPager.addOnPageChangeListener(onPageChangeListener);
+            searchFragmentView = inflater.inflate(R.layout.fragment_search, container, false);
+            playerToolbar = mainActivity.playerToolbar;
+            Log.d("searchfragment", "createview");
+            View r1 = inflater.inflate(R.layout.blank_loading, null);
+            View r2 = inflater.inflate(R.layout.blank_loading, null);
+            bar1 = (ProgressBar) r1.findViewById(R.id.pageLoadingBar);
+            bar2 = (ProgressBar) r2.findViewById(R.id.pageLoadingBar);
+            pageviews.add(r1);
+            pageviews.add(inflater.inflate(R.layout.searchpage, null));
+            pageviews.add(r2);
+            page = new Page(pageviews.get(1));
+            viewPager = (ViewPager) searchFragmentView.findViewById(R.id.searchViewPager);
+            pagerAdapter = new CustomPagerAdapter(pageviews);
+            viewPager.setAdapter(pagerAdapter);
+            viewPager.addOnPageChangeListener(onPageChangeListener);
 
-        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
-                getActivity()
-                , drawerLayout, playerToolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close) {
-            @Override
-            public void onDrawerOpened(View drawerView) {
-                super.onDrawerOpened(drawerView);
-                drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED);
-            }
+            ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
+                    getActivity()
+                    , drawerLayout, playerToolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close) {
+                @Override
+                public void onDrawerOpened(View drawerView) {
+                    super.onDrawerOpened(drawerView);
+                    drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED);
+                }
 
-            @Override
-            public void onDrawerClosed(View drawerView) {
-                super.onDrawerClosed(drawerView);
-                drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
-            }
-        };
-        playerToolbar.setNavigationOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
+                @Override
+                public void onDrawerClosed(View drawerView) {
+                    super.onDrawerClosed(drawerView);
+                    drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
+                }
+            };
+            playerToolbar.setNavigationOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
 
-                drawerLayout.openDrawer(GravityCompat.START);
-            }
-        });
+                    drawerLayout.openDrawer(GravityCompat.START);
+                }
+            });
 
-        drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
-        drawerLayout.addDrawerListener(toggle);
-        toggle.syncState();
+            drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
+            drawerLayout.addDrawerListener(toggle);
+            toggle.syncState();
 
+            createSearchView();
+        }
 
-        createSearchView();
-
-
-
-        return fragmentView;
+        return searchFragmentView;
     }
 
     @Override
@@ -411,7 +410,10 @@ public class SearchFragment extends Fragment {
     }
 
     public void createSearchView() {
-        searchView = new SearchView(context);
+        if (searchView == null) {
+            searchView = new SearchView(context);
+        }
+
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
@@ -559,6 +561,7 @@ public class SearchFragment extends Fragment {
 
         playerToolbar.setTitle(null);
         playerToolbar.setContentInsetsAbsolute(0, 0);
+        playerToolbar.removeView(searchView);
         playerToolbar.addView(searchView);
 
     }
@@ -660,13 +663,13 @@ public class SearchFragment extends Fragment {
             recyclerView.setLayoutManager(new LinearLayoutManager(context));
             recyclerView.setItemAnimator(new DefaultItemAnimator());
             recyclerView.setAdapter(adapter);
-            RecyclerTouchListener listener = new RecyclerTouchListener(context, recyclerView, new OnItemClicked() {
+            RecyclerTouchListener listener = new RecyclerTouchListener(context, new OnItemClicked() {
                 @Override
                 public void onClick(View view, int position) {
                     System.out.println("clicked" + (position - 1));
                     Toast toast = Toast.makeText(context, "Decrypting...", Toast.LENGTH_SHORT);
                     toast.show();
-                    final DataHolder dataHolder = adapter.dataHolders.get(position - 1);
+                    final DataHolder dataHolder = adapter.dataHolders.get(position);
                     videoRetriver.startExtracting("https://www.youtube" +
                             ".com/watch?v=" + dataHolder.videoID, new VideoRetriver.YouTubeExtractorListener() {
                         @Override
@@ -690,21 +693,21 @@ public class SearchFragment extends Fragment {
                 }
             });
             recyclerView.addOnItemTouchListener(listener);
-            recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
-
-
-                @Override
-                public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
-
-                }
-
-                @Override
-                public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
-//                Log.d("recyclerView dx", Integer.toString(dx));
-//                    mainActivity.setPlayerToolbar(dy);
-
-                }
-            });
+//            recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+//
+//
+//                @Override
+//                public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
+//
+//                }
+//
+//                @Override
+//                public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+////                Log.d("recyclerView dx", Integer.toString(dx));
+////                    mainActivity.setPlayerToolbar(dy);
+//
+//                }
+//            });
 
         }
     }
