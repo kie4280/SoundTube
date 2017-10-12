@@ -3,7 +3,6 @@ package kie.com.soundtube;
 import android.content.Context;
 import android.net.Uri;
 import android.os.Bundle;
-import android.app.Fragment;
 import android.preference.PreferenceFragment;
 import android.support.annotation.Nullable;
 import android.support.v4.view.GravityCompat;
@@ -13,13 +12,12 @@ import android.support.v7.widget.Toolbar;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
 
 public class SettingFragment extends PreferenceFragment {
 
     DrawerLayout drawerLayout;
     Toolbar settingToolbar;
-    MainActivity mainActivity;
+    PlayerActivity playerActivity;
 
     private OnFragmentInteractionListener mListener;
 
@@ -37,7 +35,7 @@ public class SettingFragment extends PreferenceFragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
 
-        drawerLayout = mainActivity.drawerLayout;
+        drawerLayout = playerActivity.drawerLayout;
         View settingview = inflater.inflate(R.layout.settings_layout, drawerLayout, false);
 
 //                                settingToolbar = new Toolbar(context);
@@ -103,8 +101,8 @@ public class SettingFragment extends PreferenceFragment {
         mListener = null;
     }
 
-    public void setActivity(MainActivity mainActivity) {
-        this.mainActivity = mainActivity;
+    public void setActivity(PlayerActivity playerActivity) {
+        this.playerActivity = playerActivity;
     }
 
 

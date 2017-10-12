@@ -15,7 +15,6 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.provider.ContactsContract;
 import android.app.Fragment;
 import android.support.v4.view.MotionEventCompat;
 import android.support.v4.view.ViewPager;
@@ -74,7 +73,7 @@ public class VideoFragment extends Fragment {
     public boolean started = false;
 
     MediaPlayerService mediaService;
-    MainActivity mainActivity;
+    PlayerActivity playerActivity;
     Page page;
     Searcher searcher = null;
     ArrayList<View> pageviews = new ArrayList<>(3);
@@ -140,7 +139,7 @@ public class VideoFragment extends Fragment {
             bar2 = (ProgressBar) r2.findViewById(R.id.pageLoadingBar);
             View pageview = inflater.inflate(R.layout.searchpage, null);
             recyclerView = (RecyclerView) pageview.findViewById(R.id.searchrecyclerView);
-//        mainActivity.slidePanel.setScrollableView(recyclerView);
+//        playerActivity.slidePanel.setScrollableView(recyclerView);
             pageviews.add(r1);
             pageviews.add(pageview);
             pageviews.add(r2);
@@ -207,7 +206,7 @@ public class VideoFragment extends Fragment {
                 public boolean onTouch(View v, MotionEvent event) {
                     int action = MotionEventCompat.getActionMasked(event);
                     if (action == MotionEvent.ACTION_DOWN) {
-//                    mainActivity.viewPager.setSwipingEnabled(false);
+//                    playerActivity.viewPager.setSwipingEnabled(false);
                         Log.d("playbutton", "down");
                         prevX = event.getX();
                         prevY = event.getY();
@@ -223,7 +222,7 @@ public class VideoFragment extends Fragment {
                                 mediaService.play();
                                 setButtonPlay(false);
                             }
-//                    mainActivity.viewPager.setSwipingEnabled(true);
+//                    playerActivity.viewPager.setSwipingEnabled(true);
                         }
 
                     }
@@ -273,12 +272,12 @@ public class VideoFragment extends Fragment {
                 case MotionEvent.ACTION_DOWN:
                     prevX = event.getX();
                     prevY = event.getY();
-//                    mainActivity.slidePanel.setTouchEnabled(true);
+//                    playerActivity.slidePanel.setTouchEnabled(true);
                     Log.d("videotouch", "touchdown");
                 case MotionEvent.ACTION_POINTER_DOWN:
 
                 case MotionEvent.ACTION_MOVE:
-//                    mainActivity.viewPager.setSwipingEnabled(false);
+//                    playerActivity.viewPager.setSwipingEnabled(false);
 
 //                    Log.d("surface", "move");
                     scaleGestureDetector.onTouchEvent(event);
@@ -295,9 +294,9 @@ public class VideoFragment extends Fragment {
                         }
                     }
 
-//                    mainActivity.viewPager.setSwipingEnabled(true);
+//                    playerActivity.viewPager.setSwipingEnabled(true);
                     Log.d("videotouch", "touchup");
-//                    mainActivity.slidePanel.setTouchEnabled(false);
+//                    playerActivity.slidePanel.setTouchEnabled(false);
                     break;
             }
 
@@ -336,7 +335,7 @@ public class VideoFragment extends Fragment {
                             page.updateListView(data);
 
                             if (hasnext) {
-                                mainActivity.runOnUiThread(new Runnable() {
+                                playerActivity.runOnUiThread(new Runnable() {
                                     @Override
                                     public void run() {
                                         viewPager.setCurrentItem(1, false);
@@ -361,7 +360,7 @@ public class VideoFragment extends Fragment {
                             pagerAdapter.changeSate(hasnext, hasprev);
                             page.updateListView(data);
                             if (hasprev) {
-                                mainActivity.runOnUiThread(new Runnable() {
+                                playerActivity.runOnUiThread(new Runnable() {
                                     @Override
                                     public void run() {
                                         viewPager.setCurrentItem(1, false);
@@ -431,7 +430,7 @@ public class VideoFragment extends Fragment {
     @Override
     public void onStart() {
         super.onStart();
-        mainActivity.connect();
+        playerActivity.connect();
         started = true;
 
     }
@@ -439,7 +438,7 @@ public class VideoFragment extends Fragment {
     @Override
     public void onStop() {
         super.onStop();
-        mainActivity.disconnect();
+        playerActivity.disconnect();
         connected = false;
         started = false;
     }
@@ -450,8 +449,8 @@ public class VideoFragment extends Fragment {
         thread.quit();
     }
 
-    public void setActivity(MainActivity activity) {
-        this.mainActivity = activity;
+    public void setActivity(PlayerActivity activity) {
+        this.playerActivity = activity;
     }
 
     public void start(final DataHolder dataHolder) {
@@ -646,10 +645,10 @@ public class VideoFragment extends Fragment {
         }
         if (currentdata != null) {
             if (!mediaService.prepared) {
-                mainActivity.slidePanel.setPanelState(SlidingUpPanelLayout.PanelState.EXPANDED);
+                playerActivity.slidePanel.setPanelState(SlidingUpPanelLayout.PanelState.EXPANDED);
                 start(currentdata);
             } else if (mediaService.mediaPlayer.isPlaying()) {
-                mainActivity.slidePanel.setPanelState(SlidingUpPanelLayout.PanelState.EXPANDED);
+                playerActivity.slidePanel.setPanelState(SlidingUpPanelLayout.PanelState.EXPANDED);
             }
         }
 
@@ -661,7 +660,7 @@ public class VideoFragment extends Fragment {
     }
 
     public void setButtonPlay(final boolean play) {
-        mainActivity.runOnUiThread(new Runnable() {
+        playerActivity.runOnUiThread(new Runnable() {
             @Override
             public void run() {
 
@@ -738,7 +737,7 @@ public class VideoFragment extends Fragment {
         }
 
         public void loading() {
-            mainActivity.runOnUiThread(new Runnable() {
+            playerActivity.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
                     if (!waiting) {
@@ -752,7 +751,7 @@ public class VideoFragment extends Fragment {
         }
 
         public void updateListView(final List<DataHolder> data) {
-            mainActivity.runOnUiThread(new Runnable() {
+            playerActivity.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
                     if (adapter == null) {
@@ -809,7 +808,7 @@ public class VideoFragment extends Fragment {
 
                 }
             });
-            listener.setSlidePanel(mainActivity.slidePanel);
+            listener.setSlidePanel(playerActivity.slidePanel);
             recyclerView.addOnItemTouchListener(listener);
 
 

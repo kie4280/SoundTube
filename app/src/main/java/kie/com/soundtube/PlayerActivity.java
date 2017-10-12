@@ -26,6 +26,7 @@ import android.support.v7.widget.Toolbar;
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.RelativeLayout;
@@ -36,11 +37,10 @@ import com.sothree.slidinguppanel.SlidingUpPanelLayout.PanelState;
 
 import kie.com.soundtube.MediaPlayerService.MusicBinder;
 
-public class MainActivity extends AppCompatActivity implements SearchFragment.OnFragmentInteractionListener,
-        VideoFragment.OnFragmentInteractionListener, PlaylistFragment.OnFragmentInteractionListener,
-        SettingFragment.OnFragmentInteractionListener {
+public class PlayerActivity extends AppCompatActivity implements SearchFragment.OnFragmentInteractionListener,
+        VideoFragment.OnFragmentInteractionListener {
 
-    public static Handler UiHandler = null;
+
     private Handler workHandler;
     private HandlerThread workThread;
     public static boolean servicebound = false;
@@ -55,8 +55,8 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     //    public CustomViewPager viewPager;
     VideoFragment videoFragment;
     SearchFragment searchFragment;
-    SettingFragment settingFragment;
-    PlaylistFragment playlistFragment;
+    //    SettingFragment settingFragment;
+//    PlaylistFragment playlistFragment;
     FragmentManager fragmentManager;
     MediaPlayerService mediaService;
     Context context;
@@ -68,28 +68,31 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_player);
+        setContentView(R.layout.activity_main);
+        context = getApplicationContext();
         Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
             Thread.UncaughtExceptionHandler defualtexception = Thread.getDefaultUncaughtExceptionHandler();
 
             @Override
             public void uncaughtException(Thread thread, Throwable throwable) {
-                throwable.printStackTrace();
+//                throwable.printStackTrace();
                 Intent intent = new Intent();
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 intent.setAction("kie.com.soundtube.sendLog");
+//                startActivity(intent);
 //                System.exit(1);//terminate code 1
 //                continue as normal
                 defualtexception.uncaughtException(thread, throwable);
 
             }
         });
+        mainRelativeLayout = (RelativeLayout) findViewById(R.id.mainRelativeLayout);
+        View view = LayoutInflater.from(context).inflate(R.layout.slide_layout, mainRelativeLayout);
         playerToolbar = (Toolbar) findViewById(R.id.playerToolbar);
         serviceIntent = new Intent(this, MediaPlayerService.class);
         connectmgr = (ConnectivityManager) getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
         telephonyManager = (TelephonyManager) getApplicationContext().getSystemService(Context.TELEPHONY_SERVICE);
-        context = getApplicationContext();
-        UiHandler = new Handler(Looper.getMainLooper());
+        telephonyManager.listen(phoneStateListener, PhoneStateListener.LISTEN_CALL_STATE);
         workThread = new HandlerThread("WorkThread");
         workThread.setPriority(Process.THREAD_PRIORITY_BACKGROUND);
         workThread.start();
@@ -100,23 +103,16 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
         searchFragment = new SearchFragment();
         searchFragment.setActivity(this);
         searchFragment.setSearchWorker(workHandler);
-        playlistFragment = new PlaylistFragment();
-        playlistFragment.setActivity(this);
-        settingFragment = new SettingFragment();
-        settingFragment.setActivity(this);
-
+//        playlistFragment = new PlaylistFragment();
+//        playlistFragment.setActivity(this);
+//        settingFragment = new SettingFragment();
+//        settingFragment.setActivity(this);
         slidePanel = (CustomSlideUpPanel) findViewById(R.id.slidePanel);
-        mainRelativeLayout = (RelativeLayout) findViewById(R.id.mainRelativeLayout);
-
 //        slidePanel.setTouchEnabled(false);
-
-
 //        actionBar.setDisplayShowCustomEnabled(true);
-
 //        actionBar.setDisplayHomeAsUpEnabled(true);
 //        actionBar.setDisplayShowCustomEnabled(true);
 //        actionBar.setDisplayShowTitleEnabled(false);
-
 
         fragmentManager = getFragmentManager();
         FragmentTransaction transaction = fragmentManager.beginTransaction();
@@ -130,7 +126,6 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
 
         NavigationView navView = (NavigationView) findViewById(R.id.navigationView);
         navView.setNavigationItemSelectedListener(navigationItemSelectedListener);
-        telephonyManager.listen(phoneStateListener, PhoneStateListener.LISTEN_CALL_STATE);
 
 
     }
@@ -196,52 +191,53 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
 
     private NavigationView.OnNavigationItemSelectedListener navigationItemSelectedListener =
             new NavigationView.OnNavigationItemSelectedListener() {
-                int previ = R.id.player;
+
 
                 @Override
                 public boolean onNavigationItemSelected(@NonNull MenuItem item) {
                     int i = item.getItemId();
-                    if (previ != i) {
+                    drawerLayout.closeDrawer(GravityCompat.START);
                         switch (i) {
-                            case R.id.player:
-                                mainRelativeLayout.removeViewAt(0);
-                                mainRelativeLayout.addView(slidePanel);
-                                fragmentManager.beginTransaction()
-                                        .add(R.id.videoPanel, videoFragment, "videoFragment")
-                                        .add(R.id.searchPanel, searchFragment, "searchFragment")
-                                        .remove(settingFragment)
-                                        .remove(playlistFragment)
-                                        .commit();
 
-                                break;
                             case R.id.playlists:
 
-                                mainRelativeLayout.removeViewAt(0);
-                                fragmentManager.beginTransaction()
-                                        .remove(searchFragment)
-                                        .remove(videoFragment)
-                                        .remove(settingFragment)
-                                        .add(R.id.mainRelativeLayout, playlistFragment, "playlistFragment")
-                                        .commit();
+//                                mainRelativeLayout.removeViewAt(0);
+//                                fragmentManager.beginTransaction()
+//                                        .remove(searchFragment)
+//                                        .remove(videoFragment)
+//                                        .remove(settingFragment)
+//                                        .add(R.id.mainRelativeLayout, playlistFragment, "playlistFragment")
+//                                        .commit();
+                                Intent playlistintent = new Intent(context, PlaylistActivity.class);
+                                playlistintent.setFlags(Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT
+                                        | Intent.FLAG_ACTIVITY_CLEAR_TOP
+                                        | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+
+                                startActivity(playlistintent);
+
+
+
                                 break;
                             case R.id.settings:
 
-                                mainRelativeLayout.removeViewAt(0);
-                                fragmentManager.beginTransaction()
-                                        .remove(searchFragment)
-                                        .remove(videoFragment)
-                                        .remove(playlistFragment)
-                                        .add(R.id.mainRelativeLayout, settingFragment, "settingFragment")
-                                        .commit();
+//                                mainRelativeLayout.removeViewAt(0);
+//                                fragmentManager.beginTransaction()
+//                                        .remove(searchFragment)
+//                                        .remove(videoFragment)
+//                                        .remove(playlistFragment)
+//                                        .add(R.id.mainRelativeLayout, settingFragment, "settingFragment")
+//                                        .commit();
+                                Intent settingintent = new Intent(context, SettingsActivity.class);
+                                settingintent.setFlags(Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT
+                                        | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                                startActivity(settingintent);
 
                                 break;
                             default:
                                 break;
                         }
-                    }
 
-                    previ = i;
-                    drawerLayout.closeDrawer(GravityCompat.START);
+
                     return true;
                 }
             };
@@ -280,6 +276,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     public void disconnect() {
         if (servicebound) {
             unbindService(serviceConnection);
+            servicebound = false;
         }
     }
 

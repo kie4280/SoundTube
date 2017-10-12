@@ -166,7 +166,7 @@ public class MediaPlayerService extends Service {
     public boolean onUnbind(Intent intent) {
 
         updateSeekBar = false;
-        MainActivity.servicebound = false;
+        PlayerActivity.servicebound = false;
         videoFragment.serviceDisconnected();
         videoFragment = null;
         Log.d("service", "onUnbind");
@@ -200,7 +200,7 @@ public class MediaPlayerService extends Service {
         wifiLock = wifiManager.createWifiLock(WifiManager.WIFI_MODE_FULL, "ServiceWifilock");
         wifiLock.setReferenceCounted(false);
         notificationManager = (NotificationManager) getSystemService(Service.NOTIFICATION_SERVICE);
-        Intent app = new Intent(getApplicationContext(), MainActivity.class);
+        Intent app = new Intent(getApplicationContext(), PlayerActivity.class);
         app.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         Intent destroy = new Intent(NOTIFICATION_REMOVED);
         Intent play = new Intent(NOTIFICATION_PLAY);
