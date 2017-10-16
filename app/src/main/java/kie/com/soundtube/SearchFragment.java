@@ -1,5 +1,7 @@
 package kie.com.soundtube;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.content.Context;
 import android.database.MatrixCursor;
@@ -10,12 +12,20 @@ import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.app.Fragment;
+import android.support.design.widget.AppBarLayout;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v4.view.ViewPager.OnPageChangeListener;
+import android.view.ViewAnimationUtils;
+import android.view.animation.AlphaAnimation;
+import android.view.animation.Animation;
+import android.view.animation.AnimationSet;
+import android.view.animation.TranslateAnimation;
+import android.widget.Button;
 import android.widget.CursorAdapter;
 import android.support.v4.widget.DrawerLayout;
 import android.widget.SimpleCursorAdapter;
@@ -63,9 +73,12 @@ public class SearchFragment extends Fragment {
     public VideoRetriver videoRetriver;
     private ViewPager viewPager;
     private ProgressBar bar1, bar2;
+    public Button searchButton;
     public Toolbar playerToolbar;
+    public AppBarLayout appBarLayout = null;
     public SearchView searchView = null;
-    public View searchAreaView = null;
+    public LinearLayout searchAreaView = null;
+    ImageView blankspace;
     PlayerActivity playerActivity;
     DrawerLayout drawerLayout;
     Searcher searcher;
@@ -418,7 +431,9 @@ public class SearchFragment extends Fragment {
 
     public void createSearchView() {
         if (searchAreaView == null) {
-            searchAreaView = LayoutInflater.from(context).inflate(R.layout.search_area, playerToolbar, false);
+            searchAreaView = playerActivity.searchArea;
+            appBarLayout = playerActivity.appBarLayout;
+            blankspace = searchAreaView.findViewById(R.id.blankspace);
             searchView = searchAreaView.findViewById(R.id.searchview);
             searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
                 @Override
@@ -434,7 +449,6 @@ public class SearchFragment extends Fragment {
                             toast.show();
                         }
                         searchView.clearFocus();
-                        playerToolbar.setBackgroundColor(getResources().getColor(android.R.color.holo_blue_light));
 
 
                     }
@@ -508,10 +522,7 @@ public class SearchFragment extends Fragment {
 
                     if (!hasFocus) {
                         getActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
-                        setHasOptionsMenu(true);
-
                     } else {
-                        setHasOptionsMenu(false);
 
                     }
                 }
@@ -520,7 +531,9 @@ public class SearchFragment extends Fragment {
                 @Override
                 public boolean onClose() {
 
+
                     searchView.clearFocus();
+                    animateSearchArea(false);
 //                playerview.requestFocus();
                     return true;
                 }
@@ -528,13 +541,24 @@ public class SearchFragment extends Fragment {
             searchView.setOnSearchClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    playerToolbar.setBackgroundColor(Color.WHITE);
+
 
                 }
             });
 
+            searchButton = playerToolbar.findViewById(R.id.searchButton);
 
-            searchView.setIconifiedByDefault(true);
+            searchButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+
+                    searchView.requestFocus();
+                    searchView.setIconified(false);
+                    animateSearchArea(true);
+                }
+            });
+
+//            searchView.setIconifiedByDefault(true);
             searchView.setMaxWidth(Integer.MAX_VALUE);
             searchView.setMinimumHeight(Integer.MAX_VALUE);
 //        searchView.setQueryHint("Search");
@@ -578,9 +602,105 @@ public class SearchFragment extends Fragment {
 
             playerToolbar.setTitle(null);
             playerToolbar.setContentInsetsAbsolute(0, 0);
-            playerToolbar.addView(searchAreaView);
+
         }
 
+    }
+
+    public void animateSearchArea(boolean show) {
+//        playerToolbar.setBackgroundColor(Color.WHITE);
+        if (show) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                int width = searchView.getWidth();
+                Animator createCircularReveal = ViewAnimationUtils.createCircularReveal(searchView,
+                        (int) searchButton.getX() + Tools.convertDpToPixel(12.5f, context), searchView.getHeight() / 2, 0.0f, (float) width);
+                createCircularReveal.setDuration(220);
+                createCircularReveal.addListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        super.onAnimationEnd(animation);
+                        appBarLayout.setVisibility(View.INVISIBLE);
+                        blankspace.setVisibility(View.VISIBLE);
+
+                    }
+                });
+                searchAreaView.setVisibility(View.VISIBLE);
+                searchView.setVisibility(View.VISIBLE);
+
+                createCircularReveal.start();
+            } else {
+                TranslateAnimation translateAnimation = new TranslateAnimation(0.0f, 0.0f, (float) (-appBarLayout.getHeight()), 0.0f);
+                translateAnimation.setDuration(220);
+                translateAnimation.setAnimationListener(new Animation.AnimationListener() {
+                    @Override
+                    public void onAnimationStart(Animation animation) {
+
+                    }
+
+                    @Override
+                    public void onAnimationEnd(Animation animation) {
+                        searchAreaView.setVisibility(View.VISIBLE);
+                    }
+
+                    @Override
+                    public void onAnimationRepeat(Animation animation) {
+
+                    }
+                });
+                appBarLayout.clearAnimation();
+                appBarLayout.setVisibility(View.GONE);
+
+                appBarLayout.startAnimation(translateAnimation);
+            }
+        } else {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                int width = searchView.getWidth();
+
+                Animator createCircularReveal = ViewAnimationUtils.createCircularReveal(searchView,
+                        (int) searchButton.getX() + Tools.convertDpToPixel(12.5f, context), searchView.getHeight() / 2, (float) width, 0.0f);
+
+                createCircularReveal.setDuration(220);
+                createCircularReveal.addListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        super.onAnimationEnd(animation);
+                        searchView.setVisibility(View.INVISIBLE);
+                        blankspace.setVisibility(View.INVISIBLE);
+                    }
+                });
+
+                appBarLayout.setVisibility(View.VISIBLE);
+                createCircularReveal.start();
+            } else {
+                AlphaAnimation alphaAnimation = new AlphaAnimation(1.0f, 0.0f);
+                Animation translateAnimation = new TranslateAnimation(0.0f, 0.0f, 0.0f, (float) (-appBarLayout.getHeight()));
+                AnimationSet animationSet = new AnimationSet(true);
+                animationSet.addAnimation(alphaAnimation);
+                animationSet.addAnimation(translateAnimation);
+                animationSet.setDuration(220);
+                animationSet.setAnimationListener(new Animation.AnimationListener() {
+                    @Override
+                    public void onAnimationStart(Animation animation) {
+
+                    }
+
+                    @Override
+                    public void onAnimationEnd(Animation animation) {
+//                        appBarLayout.setBackgroundColor();
+                        appBarLayout.setBackgroundColor(getResources().getColor(android.R.color.holo_blue_light));
+                    }
+
+                    @Override
+                    public void onAnimationRepeat(Animation animation) {
+
+                    }
+                });
+                searchAreaView.setVisibility(View.GONE);
+                appBarLayout.setVisibility(View.VISIBLE);
+                appBarLayout.startAnimation(animationSet);
+            }
+
+        }
     }
 
     private class TextDrawable extends Drawable {

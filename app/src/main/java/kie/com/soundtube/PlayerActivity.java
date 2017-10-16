@@ -16,6 +16,7 @@ import android.os.IBinder;
 import android.os.Looper;
 import android.os.Process;
 import android.support.annotation.NonNull;
+import android.support.design.widget.AppBarLayout;
 import android.support.design.widget.NavigationView;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
@@ -29,6 +30,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
@@ -46,9 +48,10 @@ public class PlayerActivity extends AppCompatActivity implements SearchFragment.
     public static boolean servicebound = false;
     private Intent serviceIntent;
     public Toolbar playerToolbar;
-
+    public LinearLayout searchArea;
     public DrawerLayout drawerLayout;
     public RelativeLayout mainRelativeLayout;
+    public AppBarLayout appBarLayout;
     public CustomSlideUpPanel slidePanel;
     public static boolean netConncted = false;
 
@@ -89,6 +92,8 @@ public class PlayerActivity extends AppCompatActivity implements SearchFragment.
         mainRelativeLayout = (RelativeLayout) findViewById(R.id.mainRelativeLayout);
         View view = LayoutInflater.from(context).inflate(R.layout.slide_layout, mainRelativeLayout);
         playerToolbar = (Toolbar) findViewById(R.id.playerToolbar);
+        appBarLayout = (AppBarLayout) findViewById(R.id.appBarLayout);
+        searchArea = (LinearLayout) findViewById(R.id.searchArea);
         serviceIntent = new Intent(this, MediaPlayerService.class);
         connectmgr = (ConnectivityManager) getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
         telephonyManager = (TelephonyManager) getApplicationContext().getSystemService(Context.TELEPHONY_SERVICE);
