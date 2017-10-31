@@ -232,7 +232,7 @@ public class PlayerActivity extends AppCompatActivity implements SearchFragment.
 //                                        .remove(playlistFragment)
 //                                        .add(R.id.mainRelativeLayout, settingFragment, "settingFragment")
 //                                        .commit();
-                                Intent settingintent = new Intent(context, SettingsActivity.class);
+                                Intent settingintent = new Intent(context, SettingActivity.class);
                                 settingintent.setFlags(Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT
                                         | Intent.FLAG_ACTIVITY_CLEAR_TOP);
                                 startActivity(settingintent);

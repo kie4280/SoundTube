@@ -34,22 +34,19 @@
                 android:minHeight="?attr/actionBarSize"
                 app:layout_scrollFlags="scroll|enterAlways|snap">
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
+                <Button
+                    android:id="@+id/searchButton"
+                    style="@style/Widget.AppCompat.Button.Small"
+                    android:layout_width="25dp"
+                    android:layout_height="25dp"
+                    android:layout_marginBottom="15dp"
+                    android:layout_marginEnd="0dp"
+                    android:layout_marginTop="15dp"
                     android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <Button
-                        android:id="@+id/searchButton"
-                        style="@style/Widget.AppCompat.Button.Small"
-                        android:layout_width="25dp"
-                        android:layout_height="25dp"
-                        android:layout_weight="1"
-                        android:background="?android:attr/actionModeWebSearchDrawable"
-                        android:elevation="1dp"
-                        android:gravity="end" />
-                </LinearLayout>
+                    android:background="?android:attr/actionModeWebSearchDrawable"
+                    android:elevation="1dp"
+                    android:gravity="right"
+                    android:visibility="visible" />
 
             </android.support.v7.widget.Toolbar>
 
@@ -74,7 +71,6 @@
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
                 android:background="@android:color/white"
-                android:elevation="3dp"
                 android:visibility="visible">
 
             </SearchView>

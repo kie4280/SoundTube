@@ -25,6 +25,7 @@ import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
 import android.view.animation.AnimationSet;
 import android.view.animation.TranslateAnimation;
+import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.CursorAdapter;
 import android.support.v4.widget.DrawerLayout;
@@ -85,6 +86,7 @@ public class SearchFragment extends Fragment {
     HttpURLConnection httpURLConnection;
     CustomPagerAdapter pagerAdapter;
     ArrayList<View> pageviews = new ArrayList<>(3);
+    ArrayList<String> suggests;
     Page page;
     String httpurl = "http://suggestqueries.google.com/complete/search?client=youtube&ds=yt&client=firefox&q=";
 
@@ -426,15 +428,16 @@ public class SearchFragment extends Fragment {
         this.playerActivity = activity;
     }
 
-    private ValueAnimator blueanimator = new ValueAnimator();
-    private ValueAnimator whiteanimator = new ValueAnimator();
-
     public void createSearchView() {
         if (searchAreaView == null) {
             searchAreaView = playerActivity.searchArea;
             appBarLayout = playerActivity.appBarLayout;
             blankspace = searchAreaView.findViewById(R.id.blankspace);
             searchView = searchAreaView.findViewById(R.id.searchview);
+            int autoCompleteTextViewID = getResources().getIdentifier("android:id/search_src_text", null, null);
+            AutoCompleteTextView searchAutoCompleteTextView = (AutoCompleteTextView) searchView.findViewById(autoCompleteTextViewID);
+            searchAutoCompleteTextView.setThreshold(1);
+
             searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
                 @Override
                 public boolean onQueryTextSubmit(String query) {
@@ -443,20 +446,21 @@ public class SearchFragment extends Fragment {
                     if (query != null) {
                         if (PlayerActivity.netConncted) {
                             search(query);
-                            playerToolbar.setTitle(query);
+                            Log.d("search", query);
+
                         } else {
                             Toast toast = Toast.makeText(context, getString(R.string.needNetwork), Toast.LENGTH_SHORT);
                             toast.show();
                         }
-                        searchView.clearFocus();
-
+                        animateSearchArea(false);
 
                     }
-                    return true;
+                    return false;
                 }
 
                 @Override
                 public boolean onQueryTextChange(final String newText) {
+                    Log.d("searchFragment", "text changed");
                     workHandler.post(new Runnable() {
                         @Override
                         public void run() {
@@ -478,7 +482,7 @@ public class SearchFragment extends Fragment {
                                     JsonArray jsonArray = new JsonParser().parse(response.toString()).getAsJsonArray();
                                     jsonArray = jsonArray.get(1).getAsJsonArray();
                                     JsonElement element;
-                                    ArrayList<String> suggests = new ArrayList<>();
+                                    suggests = new ArrayList<>();
                                     MatrixCursor matrixCursor = new MatrixCursor(new String[]{"_ID", "SUGGEST_COLUMN_TEXT_1"});
                                     for (int a = 0; a < jsonArray.size(); a++) {
                                         element = jsonArray.get(a);
@@ -531,20 +535,26 @@ public class SearchFragment extends Fragment {
                 @Override
                 public boolean onClose() {
 
-
                     searchView.clearFocus();
                     animateSearchArea(false);
+                    Log.d("searchView", "close");
 //                playerview.requestFocus();
                     return true;
                 }
             });
-            searchView.setOnSearchClickListener(new View.OnClickListener() {
+            searchView.setOnSuggestionListener(new SearchView.OnSuggestionListener() {
                 @Override
-                public void onClick(View view) {
+                public boolean onSuggestionSelect(int i) {
+                    return false;
+                }
 
-
+                @Override
+                public boolean onSuggestionClick(int i) {
+                    searchView.setQuery(suggests.get(i), true);
+                    return true;
                 }
             });
+
 
             searchButton = playerToolbar.findViewById(R.id.searchButton);
 
@@ -559,49 +569,47 @@ public class SearchFragment extends Fragment {
             });
 
 //            searchView.setIconifiedByDefault(true);
-            searchView.setMaxWidth(Integer.MAX_VALUE);
-            searchView.setMinimumHeight(Integer.MAX_VALUE);
+//            searchView.setMaxWidth(Integer.MAX_VALUE);
+//            searchView.setMinimumHeight(Integer.MAX_VALUE);
 //        searchView.setQueryHint("Search");
 
-            int rightMarginFrame = 0;
-            View frame = searchView.findViewById(getResources().getIdentifier("android:id/search_edit_frame", null, null));
-            if (frame != null) {
-                LinearLayout.LayoutParams frameParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
-                rightMarginFrame = ((LinearLayout.LayoutParams) frame.getLayoutParams()).rightMargin;
-                frameParams.setMargins(0, 0, 0, 0);
-                frame.setLayoutParams(frameParams);
-            }
-
-            View plate = searchView.findViewById(getResources().getIdentifier("android:id/search_plate", null, null));
-            if (plate != null) {
-                plate.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-                plate.setPadding(0, 0, rightMarginFrame, 0);
-                plate.setBackgroundColor(Color.TRANSPARENT);
-            }
-
-            int autoCompleteId = getResources().getIdentifier("android:id/search_src_text", null, null);
-            if (searchView.findViewById(autoCompleteId) != null) {
-                EditText autoComplete = (EditText) searchView.findViewById(autoCompleteId);
-                LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, Tools.convertDpToPixel(36, context));
-                params.weight = 1;
-                params.gravity = Gravity.CENTER_VERTICAL;
-                params.leftMargin = rightMarginFrame;
-                autoComplete.setLayoutParams(params);
-                autoComplete.setTextSize(16f);
-            }
-
-            int searchMagId = getResources().getIdentifier("android:id/search_mag_icon", null, null);
-            if (searchView.findViewById(searchMagId) != null) {
-                ImageView v = (ImageView) searchView.findViewById(searchMagId);
-                v.setImageDrawable(null);
-                v.setPadding(0, 0, 0, 0);
-                LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-                params.setMargins(0, 0, 0, 0);
-                v.setLayoutParams(params);
-            }
-
-            playerToolbar.setTitle(null);
-            playerToolbar.setContentInsetsAbsolute(0, 0);
+//            int rightMarginFrame = 0;
+//            View frame = searchView.findViewById(getResources().getIdentifier("android:id/search_edit_frame", null, null));
+//            if (frame != null) {
+//                LinearLayout.LayoutParams frameParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+//                rightMarginFrame = ((LinearLayout.LayoutParams) frame.getLayoutParams()).rightMargin;
+//                frameParams.setMargins(0, 0, 0, 0);
+//                frame.setLayoutParams(frameParams);
+//            }
+//
+//            View plate = searchView.findViewById(getResources().getIdentifier("android:id/search_plate", null, null));
+//            if (plate != null) {
+//                plate.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+//                plate.setPadding(0, 0, rightMarginFrame, 0);
+//                plate.setBackgroundColor(Color.TRANSPARENT);
+//            }
+//
+//            int autoCompleteId = getResources().getIdentifier("android:id/search_src_text", null, null);
+//            if (searchView.findViewById(autoCompleteId) != null) {
+//                EditText autoComplete = (EditText) searchView.findViewById(autoCompleteId);
+//                LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, Tools.convertDpToPixel(36, context));
+//                params.weight = 1;
+//                params.gravity = Gravity.CENTER_VERTICAL;
+//                params.leftMargin = rightMarginFrame;
+//                autoComplete.setLayoutParams(params);
+//                autoComplete.setTextSize(16f);
+//            }
+//
+//            int searchMagId = getResources().getIdentifier("android:id/search_mag_icon", null, null);
+//            if (searchView.findViewById(searchMagId) != null) {
+//                ImageView v = (ImageView) searchView.findViewById(searchMagId);
+//                v.setImageDrawable(null);
+//                v.setPadding(0, 0, 0, 0);
+//                LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+//                params.setMargins(0, 0, 0, 0);
+//                v.setLayoutParams(params);
+//            }
+//            playerToolbar.setContentInsetsAbsolute(0, 0);
 
         }
 
