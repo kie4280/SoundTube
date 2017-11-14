@@ -1,17 +1,25 @@
 apply plugin: 'com.android.application'
 
 android {
+    signingConfigs {
+        config {
+            keyAlias 'key0'
+            keyPassword 'kie4280'
+            storeFile file('D:/development/MyProjects/IdeaProjects/android/SoundTube/keystore.jks')
+            storePassword 'kie4280'
+        }
+    }
     compileSdkVersion 26
     buildToolsVersion '27.0.0'
     defaultConfig {
-        applicationId "kie.com.soundtube.test"
+        applicationId "kie.com.soundtube"
         minSdkVersion 19
         targetSdkVersion 26
-        versionCode 2
-        versionName "1.0"
+        versionCode 1
+        versionName "v1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
-
         vectorDrawables.useSupportLibrary = true
+
     }
     buildTypes {
         release {
@@ -31,6 +39,7 @@ android {
 }
 
 dependencies {
+
     compile fileTree(include: ['*.jar'], dir: 'libs')
     androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
         exclude group: 'com.android.support', module: 'support-annotations'
@@ -46,6 +55,8 @@ dependencies {
     compile 'com.android.support:support-vector-drawable:26.1.0'
     compile 'com.android.support.constraint:constraint-layout:1.0.2'
     testCompile 'junit:junit:4.12'
+
+
 }
 
 

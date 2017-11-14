@@ -1,5 +1,6 @@
 package kie.com.soundtube;
 
+import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -79,16 +80,21 @@ public class PlayerActivity extends AppCompatActivity implements SearchFragment.
             @Override
             public void uncaughtException(Thread thread, Throwable throwable) {
 //                throwable.printStackTrace();
-                Intent intent = new Intent();
-                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                intent.setAction("kie.com.soundtube.sendLog");
-//                startActivity(intent);
-//                System.exit(1);//terminate code 1
+                Intent intent = new Intent(context, LogActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                        | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT);
+                String stack = Log.getStackTraceString(throwable);
+                intent.putExtra("error message", stack);
+                Log.d("Exception", "caught");
+                startActivity(intent);
 //                continue as normal
                 defualtexception.uncaughtException(thread, throwable);
+//                System.exit(1);
+//                finish();
 
             }
         });
+
         mainRelativeLayout = (RelativeLayout) findViewById(R.id.mainRelativeLayout);
         View view = LayoutInflater.from(context).inflate(R.layout.slide_layout, mainRelativeLayout);
         playerToolbar = (Toolbar) findViewById(R.id.playerToolbar);
@@ -202,9 +208,9 @@ public class PlayerActivity extends AppCompatActivity implements SearchFragment.
                 public boolean onNavigationItemSelected(@NonNull MenuItem item) {
                     int i = item.getItemId();
                     drawerLayout.closeDrawer(GravityCompat.START);
-                        switch (i) {
+                    switch (i) {
 
-                            case R.id.playlists:
+                        case R.id.playlists:
 
 //                                mainRelativeLayout.removeViewAt(0);
 //                                fragmentManager.beginTransaction()
@@ -213,17 +219,16 @@ public class PlayerActivity extends AppCompatActivity implements SearchFragment.
 //                                        .remove(settingFragment)
 //                                        .add(R.id.mainRelativeLayout, playlistFragment, "playlistFragment")
 //                                        .commit();
-                                Intent playlistintent = new Intent(context, PlaylistActivity.class);
-                                playlistintent.setFlags(Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT
-                                        | Intent.FLAG_ACTIVITY_CLEAR_TOP
-                                        | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                            Intent playlistintent = new Intent(context, PlaylistActivity.class);
+                            playlistintent.setFlags(Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT
+                                    | Intent.FLAG_ACTIVITY_CLEAR_TOP
+                                    | Intent.FLAG_ACTIVITY_SINGLE_TOP);
 
-                                startActivity(playlistintent);
+                            startActivity(playlistintent);
 
 
-
-                                break;
-                            case R.id.settings:
+                            break;
+                        case R.id.settings:
 
 //                                mainRelativeLayout.removeViewAt(0);
 //                                fragmentManager.beginTransaction()
@@ -232,15 +237,15 @@ public class PlayerActivity extends AppCompatActivity implements SearchFragment.
 //                                        .remove(playlistFragment)
 //                                        .add(R.id.mainRelativeLayout, settingFragment, "settingFragment")
 //                                        .commit();
-                                Intent settingintent = new Intent(context, SettingActivity.class);
-                                settingintent.setFlags(Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT
-                                        | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                                startActivity(settingintent);
+                            Intent settingintent = new Intent(context, SettingActivity.class);
+                            settingintent.setFlags(Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT
+                                    | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                            startActivity(settingintent);
 
-                                break;
-                            default:
-                                break;
-                        }
+                            break;
+                        default:
+                            break;
+                    }
 
 
                     return true;

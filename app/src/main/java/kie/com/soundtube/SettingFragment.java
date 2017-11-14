@@ -1,23 +1,27 @@
 package kie.com.soundtube;
 
+import android.Manifest;
+import android.app.DownloadManager;
+import android.app.DownloadManager.Request;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
+import android.os.Handler;
+import android.os.HandlerThread;
+import android.preference.Preference;
 import android.preference.PreferenceFragment;
 import android.support.annotation.Nullable;
-import android.support.v4.view.GravityCompat;
-import android.support.v4.widget.DrawerLayout;
-import android.support.v7.app.ActionBarDrawerToggle;
-import android.support.v7.widget.Toolbar;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
+import android.support.v4.app.ActivityCompat;
+import android.util.Log;
+import android.widget.Toast;
 
 public class SettingFragment extends PreferenceFragment {
 
-    DrawerLayout drawerLayout;
-    Toolbar settingToolbar;
-    PlayerActivity playerActivity;
+    Context context;
+    HandlerThread thread;
 
     private OnFragmentInteractionListener mListener;
 
@@ -28,59 +32,85 @@ public class SettingFragment extends PreferenceFragment {
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
+        context = getActivity().getApplicationContext();
+        thread = new HandlerThread("worker");
+        thread.start();
+        addPreferencesFromResource(R.xml.settingpreference);
+        Preference preference = (Preference) findPreference("checkupdate");
+        preference.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+            public boolean onPreferenceClick(Preference preference) {
+                updateSoftware();
+                return true;
+            }
+        });
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public void onDestroy() {
+        super.onDestroy();
+        thread.quit();
+        thread = null;
+    }
 
-        drawerLayout = playerActivity.drawerLayout;
-        View settingview = inflater.inflate(R.layout.settings_layout, drawerLayout, false);
+    public void updateSoftware() {
 
-//                                settingToolbar = new Toolbar(context);
-//                                RelativeLayout relativeLayout = new RelativeLayout(context);
-//                                relativeLayout.addView(settingToolbar);
-//                                settingview = relativeLayout;
-        settingToolbar = (Toolbar) settingview.findViewById(R.id.settingToolbar);
-//                                setSupportActionBar(settingToolbar);
-//                                ActionBar actionBar = getSupportActionBar();
-//                                actionBar.setTitle(null);
-        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
-                getActivity(), drawerLayout, settingToolbar, R.string.navigation_drawer_open,
-                R.string.navigation_drawer_close) {
+        final Handler worker = new Handler(thread.getLooper());
+
+        worker.post(new Runnable() {
             @Override
-            public void onDrawerOpened(View drawerView) {
-                super.onDrawerOpened(drawerView);
-                drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED);
+            public void run() {
+                Github github = new Github();
+                String in = github.getupdate();
+                if (!in.contentEquals("latest")) {
+                    if (isStoragePermissionGranted()) {
+                        Toast toast = Toast.makeText(context, R.string.software_download, Toast.LENGTH_SHORT);
+                        toast.show();
+                        DownloadManager manager = (DownloadManager) context.getSystemService(Context.DOWNLOAD_SERVICE);
+                        Request request = new Request(Uri.parse(in));
+                        request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS,
+                                "SoundTube" + github.versionName + ".apk");
+                        request.setNotificationVisibility(Request.VISIBILITY_VISIBLE);
+                        manager.enqueue(request);
+                    } else {
+                        Toast toast = Toast.makeText(context, R.string.deny_write_permission, Toast.LENGTH_SHORT);
+                        toast.show();
+                    }
+
+                } else {
+                    Toast toast = Toast.makeText(context, R.string.software_latest, Toast.LENGTH_SHORT);
+                    toast.show();
+                }
+
             }
 
-            @Override
-            public void onDrawerClosed(View drawerView) {
-                super.onDrawerClosed(drawerView);
-                drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
-            }
-        };
-        settingToolbar.setNavigationOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-
-                drawerLayout.openDrawer(GravityCompat.START);
-            }
         });
-        drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
-        drawerLayout.addDrawerListener(toggle);
-        toggle.syncState();
 
-//                                setSupportActionBar(settingToolbar);
 
-        return settingview;
     }
 
 
     public void onButtonPressed(Uri uri) {
         if (mListener != null) {
             mListener.onFragmentInteraction(uri);
+        }
+    }
+
+    public boolean isStoragePermissionGranted() {
+        if (Build.VERSION.SDK_INT >= 23) {
+            if (context.checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    == PackageManager.PERMISSION_GRANTED) {
+                Log.v("SettingActivity", "Permission is granted");
+                return true;
+            } else {
+
+                Log.v("SettingActivity", "Permission is revoked");
+                ActivityCompat.requestPermissions(getActivity(),
+                        new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
+                return false;
+            }
+        } else { //permission is automatically granted on sdk<23 upon installation
+            Log.v("SettingActivity", "Permission is granted");
+            return true;
         }
     }
 
@@ -99,10 +129,6 @@ public class SettingFragment extends PreferenceFragment {
     public void onDetach() {
         super.onDetach();
         mListener = null;
-    }
-
-    public void setActivity(PlayerActivity playerActivity) {
-        this.playerActivity = playerActivity;
     }
 
 

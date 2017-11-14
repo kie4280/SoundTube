@@ -86,4 +86,7 @@
     <string name="title_activity_log">LogActivity</string>
     <string name="title_activity_main">MainActivity</string>
     <string name="title_activity_playlist">PlaylistActivity</string>
+    <string name="software_latest">Software is already the latest</string>
+    <string name="software_download">New version downloading</string>
+    <string name="deny_write_permission">Deny external storage permission!</string>
 </resources>
