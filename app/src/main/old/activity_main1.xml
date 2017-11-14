@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" android:id="@+id/r1">
+
+    <view android:layout_width="wrap_content" android:layout_height="wrap_content"
+          class="kie.com.soundtube.CustomViewPager"
+        android:id="@+id/viewpager"
+        android:layout_alignParentStart="true"
+        android:layout_below="@+id/playerToolbar" />
+    <android.support.v7.widget.Toolbar
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="?attr/colorPrimary"
+            android:theme="?attr/actionBarTheme"
+            android:minHeight="?attr/actionBarSize" android:layout_alignParentTop="true"
+        android:id="@+id/playerToolbar"
+        android:layout_alignParentStart="true">
+        <RelativeLayout android:layout_width="wrap_content" android:layout_height="wrap_content">
+            <Button
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" android:id="@+id/nextButton"
+                    android:textAllCaps="false"
+                    android:layout_alignParentTop="true" android:layout_alignParentEnd="true"
+                    android:background="?android:attr/homeAsUpIndicator"
+                    style="@style/Widget.AppCompat.Button.Small" android:rotation="180"/>
+            <Button
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" android:id="@+id/prevButton"
+                    android:textAllCaps="false"
+                    android:layout_alignParentTop="true" android:layout_toStartOf="@+id/nextButton"
+                    android:background="?android:attr/homeAsUpIndicator"
+                    style="@style/Widget.AppCompat.Button.Small"/>
+            <SearchView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" android:id="@+id/searchView"
+                    android:layout_alignParentTop="true" android:layout_alignParentStart="true"
+                    android:layout_toStartOf="@+id/prevButton">
+            </SearchView>
+        </RelativeLayout>
+    </android.support.v7.widget.Toolbar>
+
+</RelativeLayout>

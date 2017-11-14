@@ -1,32 +1,58 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-          package="kie.com.soundtube">
+    package="kie.com.soundtube">
 
-    <uses-permission android:name="android.permission.INTERNET"/>
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
-    <uses-permission android:name="android.permission.WAKE_LOCK"/>
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
     <application
-            android:allowBackup="true"
-            android:icon="@mipmap/icon"
-            android:label="test"
-            android:supportsRtl="true"
+        android:allowBackup="true"
+        android:icon="@mipmap/icon"
+        android:label="SoundTube"
+        android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.Light.NoActionBar">
         <activity
-            android:name=".MainActivity"
-            android:windowSoftInputMode="stateHidden|adjustPan"
-                  android:configChanges="orientation|screenSize"
-                  android:screenOrientation="portrait"
-            android:launchMode="singleTop">
+            android:name=".PlayerActivity"
+            android:configChanges="orientation|screenSize"
+
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="stateHidden|adjustPan">
             <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-                <category android:name="android.intent.category.LAUNCHER"/>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
-        <service android:name=".MediaPlayerService"/>
+        <service android:name=".MediaPlayerService" />
 
+        <activity
+            android:name=".LogActivity"
+            android:label="@string/title_activity_log"
+            android:process=":log_process">
+            <intent-filter>
+                <action android:name="kie.com.soundtube.logException" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".SettingActivity"
+            android:label="@string/title_activity_settings"
+            android:launchMode="singleTop"
+            android:parentActivityName=".PlayerActivity"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".PlaylistActivity"
+            android:label="@string/title_activity_playlist"
+            android:launchMode="singleTop"
+            android:parentActivityName=".PlayerActivity"
+            android:screenOrientation="portrait" />
 
     </application>
 

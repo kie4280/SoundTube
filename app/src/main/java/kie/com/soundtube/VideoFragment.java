@@ -15,8 +15,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.provider.ContactsContract;
-import android.support.v4.app.Fragment;
+import android.app.Fragment;
 import android.support.v4.view.MotionEventCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v7.widget.DefaultItemAnimator;
@@ -50,7 +49,7 @@ public class VideoFragment extends Fragment {
     private RelativeLayout vrelativeLayout;
     private RelativeLayout drelativeLayout;
     private RelativeLayout header;
-    private View videoFragmentView;
+    private View videoFragmentView = null;
     private SeekBar seekBar;
     private ProgressBar progressBar;
     private TextView currentTime;
@@ -71,9 +70,10 @@ public class VideoFragment extends Fragment {
     private CustomPagerAdapter pagerAdapter;
     private ProgressBar bar1;
     private ProgressBar bar2;
+    public boolean started = false;
 
     MediaPlayerService mediaService;
-    MainActivity mainActivity;
+    PlayerActivity playerActivity;
     Page page;
     Searcher searcher = null;
     ArrayList<View> pageviews = new ArrayList<>(3);
@@ -86,13 +86,13 @@ public class VideoFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        context = getContext();
+        context = getActivity().getApplicationContext();
         activity = getActivity();
         displayMetrics = context.getResources().getDisplayMetrics();
         thread = new HandlerThread("seek");
         thread.start();
         seekHandler = new Handler(thread.getLooper());
-        scaleGestureDetector = new ScaleGestureDetector(getContext(),
+        scaleGestureDetector = new ScaleGestureDetector(context,
                 new ScaleGestureDetector.OnScaleGestureListener() {
                     @Override
                     public boolean onScale(ScaleGestureDetector detector) {
@@ -119,134 +119,138 @@ public class VideoFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        videoFragmentView = inflater.inflate(R.layout.fragment_video, container, false);
-        surfaceView = (SurfaceView) videoFragmentView.findViewById(R.id.surfaceView);
-        seekBar = (SeekBar) videoFragmentView.findViewById(R.id.seekBar);
+        if (videoFragmentView == null) {
 
-        currentTime = (TextView) videoFragmentView.findViewById(R.id.currentTime);
-        totalTime = (TextView) videoFragmentView.findViewById(R.id.totalTime);
-        header = (RelativeLayout) videoFragmentView.findViewById(R.id.headerView);
+            videoFragmentView = inflater.inflate(R.layout.fragment_video, container, false);
+            surfaceView = (SurfaceView) videoFragmentView.findViewById(R.id.surfaceView);
+            seekBar = (SeekBar) videoFragmentView.findViewById(R.id.seekBar);
 
-        viewPager = (ViewPager) videoFragmentView.findViewById(R.id.videoViewPager);
-        headersize = Tools.convertDpToPixel(HeaderDP, context);
-        playbutton = (Button) videoFragmentView.findViewById(R.id.playbutton);
-        progressBar = (ProgressBar) videoFragmentView.findViewById(R.id.bufferProgressBar);
-        View r1 = inflater.inflate(R.layout.blank_loading, null);
-        View r2 = inflater.inflate(R.layout.blank_loading, null);
-        bar1 = (ProgressBar) r1.findViewById(R.id.pageLoadingBar);
-        bar2 = (ProgressBar) r2.findViewById(R.id.pageLoadingBar);
-        View pageview = inflater.inflate(R.layout.searchpage, null);
-        recyclerView = (RecyclerView) pageview.findViewById(R.id.searchrecyclerView);
-//        mainActivity.slidePanel.setScrollableView(recyclerView);
-        pageviews.add(r1);
-        pageviews.add(pageview);
-        pageviews.add(r2);
-        page = new Page(pageviews.get(1));
-        pagerAdapter = new CustomPagerAdapter(pageviews);
-        viewPager.setAdapter(pagerAdapter);
-        viewPager.addOnPageChangeListener(onPageChangeListener);
+            currentTime = (TextView) videoFragmentView.findViewById(R.id.currentTime);
+            totalTime = (TextView) videoFragmentView.findViewById(R.id.totalTime);
+            header = (RelativeLayout) videoFragmentView.findViewById(R.id.headerView);
 
-        vrelativeLayout = (RelativeLayout) videoFragmentView.findViewById(R.id.videoRelativeLayout);
-        drelativeLayout = (RelativeLayout) videoFragmentView.findViewById(R.id.descriptionRelativeLayout);
-        RelativeLayout.LayoutParams orig = (RelativeLayout.LayoutParams) vrelativeLayout.getLayoutParams();
-        orig.height = RelativeLayout.LayoutParams.MATCH_PARENT;
-        landscapelayout = new RelativeLayout.LayoutParams(orig);
+            viewPager = (ViewPager) videoFragmentView.findViewById(R.id.videoViewPager);
+            headersize = Tools.convertDpToPixel(HeaderDP, context);
+            playbutton = (Button) videoFragmentView.findViewById(R.id.playbutton);
+            progressBar = (ProgressBar) videoFragmentView.findViewById(R.id.bufferProgressBar);
+            View r1 = inflater.inflate(R.layout.blank_loading, null);
+            View r2 = inflater.inflate(R.layout.blank_loading, null);
+            bar1 = (ProgressBar) r1.findViewById(R.id.pageLoadingBar);
+            bar2 = (ProgressBar) r2.findViewById(R.id.pageLoadingBar);
+            View pageview = inflater.inflate(R.layout.searchpage, null);
+            recyclerView = (RecyclerView) pageview.findViewById(R.id.searchrecyclerView);
+//        playerActivity.slidePanel.setScrollableView(recyclerView);
+            pageviews.add(r1);
+            pageviews.add(pageview);
+            pageviews.add(r2);
+            page = new Page(pageviews.get(1));
+            pagerAdapter = new CustomPagerAdapter(pageviews);
+            viewPager.setAdapter(pagerAdapter);
+            viewPager.addOnPageChangeListener(onPageChangeListener);
 
-        if (context.getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            int w = (int) (displayMetrics.heightPixels / Displayratio);
-            orig.height = w;
-            portraitlayout = new RelativeLayout.LayoutParams(orig);
-            changeToLandscape();
+            vrelativeLayout = (RelativeLayout) videoFragmentView.findViewById(R.id.videoRelativeLayout);
+            drelativeLayout = (RelativeLayout) videoFragmentView.findViewById(R.id.descriptionRelativeLayout);
+            RelativeLayout.LayoutParams orig = (RelativeLayout.LayoutParams) vrelativeLayout.getLayoutParams();
+            orig.height = RelativeLayout.LayoutParams.MATCH_PARENT;
+            landscapelayout = new RelativeLayout.LayoutParams(orig);
 
-        } else {
-            int w = (int) (displayMetrics.widthPixels / Displayratio);
-            orig.height = w;
-            portraitlayout = new RelativeLayout.LayoutParams(orig);
-            changeToPortrait();
-        }
+            if (context.getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
+                int w = (int) (displayMetrics.heightPixels / Displayratio);
+                orig.height = w;
+                portraitlayout = new RelativeLayout.LayoutParams(orig);
+                changeToLandscape();
 
-        surfaceHolder = surfaceView.getHolder();
-        surfaceHolder.addCallback(new SurfaceHolder.Callback() {
-            @Override
-            public void surfaceCreated(SurfaceHolder holder) {
-                prepared = true;
-                if (mediaService != null) {
-                    mediaService.setDisplay(holder);
-                }
-
-                Log.d("video", "surfaceCreated");
+            } else {
+                int w = (int) (displayMetrics.widthPixels / Displayratio);
+                orig.height = w;
+                portraitlayout = new RelativeLayout.LayoutParams(orig);
+                changeToPortrait();
             }
 
-            @Override
-            public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+            surfaceHolder = surfaceView.getHolder();
+            surfaceHolder.addCallback(new SurfaceHolder.Callback() {
+                @Override
+                public void surfaceCreated(SurfaceHolder holder) {
+                    prepared = true;
+                    if (mediaService != null) {
+                        mediaService.setDisplay(holder);
+                        updateSeekBar();
+                    }
+
+                    Log.d("video", "surfaceCreated");
+                }
+
+                @Override
+                public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
 //                System.out.println("width " + width + " height " + height);
-            }
-
-            @Override
-            public void surfaceDestroyed(SurfaceHolder holder) {
-                prepared = false;
-                Log.d("video", "surfaceDestroyed");
-                if (mediaService != null) {
-                    mediaService.setDisplay(null);
                 }
 
-            }
-        });
-
-        playbutton.setOnTouchListener(new View.OnTouchListener() {
-            float prevX = 0;
-            float prevY = 0;
-            float thresholdX = 15f;
-            float thresholdY = 15f;
-
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                int action = MotionEventCompat.getActionMasked(event);
-                if (action == MotionEvent.ACTION_DOWN) {
-//                    mainActivity.viewPager.setSwipingEnabled(false);
-                    Log.d("playbutton", "down");
-                    prevX = event.getX();
-                    prevY = event.getY();
-                } else if (action == MotionEvent.ACTION_UP) {
-                    if (Math.abs(event.getX() - prevX) <= thresholdX &&
-                            Math.abs(event.getY() - prevY) <= thresholdY && mediaService != null) {
-
-                        if (mediaService.mediaPlayer.isPlaying()) {
-                            mediaService.pause();
-                            setButtonPlay(true);
-
-                        } else {
-                            mediaService.play();
-                            setButtonPlay(false);
-                        }
-//                    mainActivity.viewPager.setSwipingEnabled(true);
+                @Override
+                public void surfaceDestroyed(SurfaceHolder holder) {
+                    prepared = false;
+                    Log.d("video", "surfaceDestroyed");
+                    if (mediaService != null) {
+                        mediaService.setDisplay(null);
                     }
 
                 }
-                return false;
-            }
-        });
+            });
 
-        seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, final int progress, boolean fromUser) {
-                if (mediaService != null && mediaService.prepared && fromUser) {
-                    mediaService.seekTo(progress);
+            playbutton.setOnTouchListener(new View.OnTouchListener() {
+                float prevX = 0;
+                float prevY = 0;
+                float thresholdX = 15f;
+                float thresholdY = 15f;
+
+                @Override
+                public boolean onTouch(View v, MotionEvent event) {
+                    int action = MotionEventCompat.getActionMasked(event);
+                    if (action == MotionEvent.ACTION_DOWN) {
+//                    playerActivity.viewPager.setSwipingEnabled(false);
+                        Log.d("playbutton", "down");
+                        prevX = event.getX();
+                        prevY = event.getY();
+                    } else if (action == MotionEvent.ACTION_UP) {
+                        if (Math.abs(event.getX() - prevX) <= thresholdX &&
+                                Math.abs(event.getY() - prevY) <= thresholdY && mediaService != null) {
+
+                            if (mediaService.mediaPlayer.isPlaying()) {
+                                mediaService.pause();
+                                setButtonPlay(true);
+
+                            } else {
+                                mediaService.play();
+                                setButtonPlay(false);
+                            }
+//                    playerActivity.viewPager.setSwipingEnabled(true);
+                        }
+
+                    }
+                    return false;
+                }
+            });
+
+            seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+                @Override
+                public void onProgressChanged(SeekBar seekBar, final int progress, boolean fromUser) {
+                    if (mediaService != null && mediaService.prepared && fromUser) {
+                        mediaService.seekTo(progress);
+                    }
+
                 }
 
-            }
+                @Override
+                public void onStartTrackingTouch(SeekBar seekBar) {
 
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
+                }
 
-            }
+                @Override
+                public void onStopTrackingTouch(SeekBar seekBar) {
 
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
-
-            }
-        });
-        vrelativeLayout.setOnTouchListener(videotouchListener);
+                }
+            });
+            vrelativeLayout.setOnTouchListener(videotouchListener);
+        }
 
         Log.d("video", "createView");
 
@@ -268,12 +272,12 @@ public class VideoFragment extends Fragment {
                 case MotionEvent.ACTION_DOWN:
                     prevX = event.getX();
                     prevY = event.getY();
-//                    mainActivity.slidePanel.setTouchEnabled(true);
+//                    playerActivity.slidePanel.setTouchEnabled(true);
                     Log.d("videotouch", "touchdown");
                 case MotionEvent.ACTION_POINTER_DOWN:
 
                 case MotionEvent.ACTION_MOVE:
-//                    mainActivity.viewPager.setSwipingEnabled(false);
+//                    playerActivity.viewPager.setSwipingEnabled(false);
 
 //                    Log.d("surface", "move");
                     scaleGestureDetector.onTouchEvent(event);
@@ -290,9 +294,9 @@ public class VideoFragment extends Fragment {
                         }
                     }
 
-//                    mainActivity.viewPager.setSwipingEnabled(true);
+//                    playerActivity.viewPager.setSwipingEnabled(true);
                     Log.d("videotouch", "touchup");
-//                    mainActivity.slidePanel.setTouchEnabled(false);
+//                    playerActivity.slidePanel.setTouchEnabled(false);
                     break;
             }
 
@@ -331,7 +335,7 @@ public class VideoFragment extends Fragment {
                             page.updateListView(data);
 
                             if (hasnext) {
-                                mainActivity.runOnUiThread(new Runnable() {
+                                playerActivity.runOnUiThread(new Runnable() {
                                     @Override
                                     public void run() {
                                         viewPager.setCurrentItem(1, false);
@@ -356,7 +360,7 @@ public class VideoFragment extends Fragment {
                             pagerAdapter.changeSate(hasnext, hasprev);
                             page.updateListView(data);
                             if (hasprev) {
-                                mainActivity.runOnUiThread(new Runnable() {
+                                playerActivity.runOnUiThread(new Runnable() {
                                     @Override
                                     public void run() {
                                         viewPager.setCurrentItem(1, false);
@@ -426,13 +430,17 @@ public class VideoFragment extends Fragment {
     @Override
     public void onStart() {
         super.onStart();
-        mainActivity.connect();
+        playerActivity.connect();
+        started = true;
+
     }
 
     @Override
     public void onStop() {
         super.onStop();
+        playerActivity.disconnect();
         connected = false;
+        started = false;
     }
 
     @Override
@@ -441,8 +449,8 @@ public class VideoFragment extends Fragment {
         thread.quit();
     }
 
-    public void setActivity(MainActivity activity) {
-        this.mainActivity = activity;
+    public void setActivity(PlayerActivity activity) {
+        this.playerActivity = activity;
     }
 
     public void start(final DataHolder dataHolder) {
@@ -502,7 +510,7 @@ public class VideoFragment extends Fragment {
     }
 
     public void buffering(final boolean buff) {
-        if (MainActivity.activityRunning) {
+        if (started) {
             activity.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
@@ -519,7 +527,7 @@ public class VideoFragment extends Fragment {
     }
 
     public void setSeekBarMax(final int max) {
-        if (MainActivity.activityRunning) {
+        if (started) {
             activity.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
@@ -531,12 +539,12 @@ public class VideoFragment extends Fragment {
     }
 
     public void updateSeekBar() {
-        if (activity != null && !seekbarUpdating && MainActivity.activityRunning) {
+        if (activity != null && !seekbarUpdating && started) {
             seekbarUpdating = true;
             activity.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    if (mediaService != null && mediaService.updateSeekBar && MainActivity.activityRunning) {
+                    if (mediaService != null && mediaService.updateSeekBar && started) {
                         int pos = mediaService.mediaPlayer.getCurrentPosition();
                         seekBar.setProgress(pos);
 //                        currentTime.setText(pos);
@@ -551,7 +559,7 @@ public class VideoFragment extends Fragment {
 
     public void onComplete() {
 
-        if (MainActivity.activityRunning) {
+        if (started) {
             seekHandler.postDelayed(new Runnable() {
                 @Override
                 public void run() {
@@ -637,10 +645,10 @@ public class VideoFragment extends Fragment {
         }
         if (currentdata != null) {
             if (!mediaService.prepared) {
-                mainActivity.slidePanel.setPanelState(SlidingUpPanelLayout.PanelState.EXPANDED);
+                playerActivity.slidePanel.setPanelState(SlidingUpPanelLayout.PanelState.EXPANDED);
                 start(currentdata);
             } else if (mediaService.mediaPlayer.isPlaying()) {
-                mainActivity.slidePanel.setPanelState(SlidingUpPanelLayout.PanelState.EXPANDED);
+                playerActivity.slidePanel.setPanelState(SlidingUpPanelLayout.PanelState.EXPANDED);
             }
         }
 
@@ -652,7 +660,7 @@ public class VideoFragment extends Fragment {
     }
 
     public void setButtonPlay(final boolean play) {
-        mainActivity.runOnUiThread(new Runnable() {
+        playerActivity.runOnUiThread(new Runnable() {
             @Override
             public void run() {
 
@@ -729,7 +737,7 @@ public class VideoFragment extends Fragment {
         }
 
         public void loading() {
-            mainActivity.runOnUiThread(new Runnable() {
+            playerActivity.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
                     if (!waiting) {
@@ -743,7 +751,7 @@ public class VideoFragment extends Fragment {
         }
 
         public void updateListView(final List<DataHolder> data) {
-            mainActivity.runOnUiThread(new Runnable() {
+            playerActivity.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
                     if (adapter == null) {
@@ -771,7 +779,7 @@ public class VideoFragment extends Fragment {
             recyclerView.setLayoutManager(new LinearLayoutManager(context));
             recyclerView.setItemAnimator(new DefaultItemAnimator());
             recyclerView.setAdapter(adapter);
-            RecyclerTouchListener listener = new RecyclerTouchListener(context, recyclerView, new OnItemClicked() {
+            RecyclerTouchListener listener = new RecyclerTouchListener(context, new OnItemClicked() {
                 @Override
                 public void onClick(View view, int position) {
                     System.out.println("clicked" + (position - 1));
@@ -800,7 +808,7 @@ public class VideoFragment extends Fragment {
 
                 }
             });
-            listener.setSlidePanel(mainActivity.slidePanel);
+            listener.setSlidePanel(playerActivity.slidePanel);
             recyclerView.addOnItemTouchListener(listener);
 
 

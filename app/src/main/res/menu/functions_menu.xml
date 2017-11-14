@@ -2,9 +2,6 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
 
     <item
-        android:id="@+id/player"
-        android:title="@string/player" />
-    <item
         android:id="@+id/playlists"
         android:title="@string/playlists" />
     <item

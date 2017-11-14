@@ -11,11 +11,15 @@
 
     <android.support.design.widget.CoordinatorLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:theme="@style/Theme.AppCompat.Light.NoActionBar">
 
         <android.support.design.widget.AppBarLayout
+            android:id="@+id/appBarLayout"
             android:layout_width="match_parent"
-            android:layout_height="56dp">
+            android:layout_height="56dp"
+            app:elevation="0dp">
+
 
             <android.support.v7.widget.Toolbar
                 android:id="@+id/playerToolbar"
@@ -23,11 +27,32 @@
                 android:layout_height="?attr/actionBarSize"
                 android:layout_alignParentStart="false"
                 android:layout_alignParentTop="false"
+                android:layout_weight="1"
                 android:background="@android:color/holo_blue_light"
                 android:elevation="1dp"
                 android:focusableInTouchMode="false"
                 android:minHeight="?attr/actionBarSize"
-                app:layout_scrollFlags="scroll|enterAlways|snap" />
+                app:layout_scrollFlags="scroll|enterAlways|snap">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <Button
+                        android:id="@+id/searchButton"
+                        style="@style/Widget.AppCompat.Button.Small"
+                        android:layout_width="25dp"
+                        android:layout_height="25dp"
+                        android:layout_weight="1"
+                        android:background="?android:attr/actionModeWebSearchDrawable"
+                        android:elevation="1dp"
+                        android:gravity="end" />
+                </LinearLayout>
+
+            </android.support.v7.widget.Toolbar>
+
 
         </android.support.design.widget.AppBarLayout>
 
@@ -36,6 +61,34 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             app:layout_behavior="@string/appbar_scrolling_view_behavior" />
+
+        <LinearLayout
+            android:id="@+id/searchArea"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:visibility="invisible">
+
+            <SearchView
+                android:id="@+id/searchview"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:background="@android:color/white"
+                android:elevation="3dp"
+                android:visibility="visible">
+
+            </SearchView>
+
+            <ImageView
+                android:id="@+id/blankspace"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:alpha="0.7"
+                android:background="@android:color/black"
+                android:elevation="3dp"
+                android:visibility="invisible" />
+
+        </LinearLayout>
 
     </android.support.design.widget.CoordinatorLayout>
 
