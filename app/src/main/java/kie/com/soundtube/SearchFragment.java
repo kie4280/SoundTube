@@ -2,7 +2,6 @@ package kie.com.soundtube;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
-import android.animation.ValueAnimator;
 import android.content.Context;
 import android.database.MatrixCursor;
 import android.graphics.Canvas;
@@ -17,7 +16,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.app.Fragment;
 import android.support.design.widget.AppBarLayout;
-import android.support.v4.view.GravityCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v4.view.ViewPager.OnPageChangeListener;
 import android.view.ViewAnimationUtils;
@@ -28,15 +26,12 @@ import android.view.animation.TranslateAnimation;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.CursorAdapter;
-import android.support.v4.widget.DrawerLayout;
 import android.widget.SimpleCursorAdapter;
-import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
-import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -44,7 +39,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
-import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
@@ -81,14 +75,12 @@ public class SearchFragment extends Fragment {
     public LinearLayout searchAreaView = null;
     ImageView blankspace;
     PlayerActivity playerActivity;
-    DrawerLayout drawerLayout;
     Searcher searcher;
-    HttpURLConnection httpURLConnection;
     CustomPagerAdapter pagerAdapter;
     ArrayList<View> pageviews = new ArrayList<>(3);
     ArrayList<String> suggests;
     Page page;
-    String httpurl = "http://suggestqueries.google.com/complete/search?client=youtube&ds=yt&client=firefox&q=";
+    String queryUrl = "http://suggestqueries.google.com/complete/search?client=youtube&ds=yt&client=firefox&q=";
 
     public SearchFragment() {
         // Required empty public constructor
@@ -107,7 +99,7 @@ public class SearchFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        drawerLayout = playerActivity.drawerLayout;
+
         if (searchFragmentView == null) {
 
             searchFragmentView = inflater.inflate(R.layout.fragment_search, container, false);
@@ -125,34 +117,6 @@ public class SearchFragment extends Fragment {
             pagerAdapter = new CustomPagerAdapter(pageviews);
             viewPager.setAdapter(pagerAdapter);
             viewPager.addOnPageChangeListener(onPageChangeListener);
-
-            ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
-                    getActivity()
-                    , drawerLayout, playerToolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close) {
-                @Override
-                public void onDrawerOpened(View drawerView) {
-                    super.onDrawerOpened(drawerView);
-                    drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED);
-                }
-
-                @Override
-                public void onDrawerClosed(View drawerView) {
-                    super.onDrawerClosed(drawerView);
-                    drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
-                }
-            };
-            playerToolbar.setNavigationOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-
-                    drawerLayout.openDrawer(GravityCompat.START);
-                }
-            });
-
-            drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
-            drawerLayout.addDrawerListener(toggle);
-            toggle.syncState();
-
             createSearchView();
         }
 
@@ -219,7 +183,7 @@ public class SearchFragment extends Fragment {
 //                        if (PlayerActivity.netConncted && newText.length() != 0) {
 //                            StringBuilder response = new StringBuilder();
 //                            try {
-//                                URL url = new URL(httpurl + newText);
+//                                URL url = new URL(queryUrl + newText);
 //                                httpURLConnection = (HttpURLConnection) url.openConnection();
 //                                httpURLConnection.setRequestMethod("GET");
 //                                BufferedReader in = new BufferedReader(
@@ -467,7 +431,7 @@ public class SearchFragment extends Fragment {
                             if (PlayerActivity.netConncted && newText.length() != 0) {
                                 StringBuilder response = new StringBuilder();
                                 try {
-                                    URL url = new URL(httpurl + newText);
+                                    URL url = new URL(queryUrl + newText);
                                     HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection();
                                     httpURLConnection.setRequestMethod("GET");
                                     BufferedReader in = new BufferedReader(

@@ -22,6 +22,12 @@ public class SettingFragment extends PreferenceFragment {
 
     Context context;
     HandlerThread thread;
+    Handler worker;
+    boolean checkedLatest = false;
+    boolean downloaded = false;
+    Toast toast = null;
+
+    Github github = new Github();
 
     private OnFragmentInteractionListener mListener;
 
@@ -35,6 +41,7 @@ public class SettingFragment extends PreferenceFragment {
         context = getActivity().getApplicationContext();
         thread = new HandlerThread("worker");
         thread.start();
+        worker = new Handler(thread.getLooper());
         addPreferencesFromResource(R.xml.settingpreference);
         Preference preference = (Preference) findPreference("checkupdate");
         preference.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
@@ -46,48 +53,83 @@ public class SettingFragment extends PreferenceFragment {
     }
 
     @Override
+    public void onStop() {
+        if (toast != null) {
+            toast.cancel();
+        }
+
+        Log.d("Setting", "onStop");
+        super.onStop();
+    }
+
+    @Override
     public void onDestroy() {
         super.onDestroy();
+        if (toast != null) {
+            toast.cancel();
+        }
         thread.quit();
         thread = null;
     }
 
     public void updateSoftware() {
 
-        final Handler worker = new Handler(thread.getLooper());
+        if (!checkedLatest) {
+            checkedLatest = true;
+            worker.post(new Runnable() {
+                @Override
+                public void run() {
 
-        worker.post(new Runnable() {
-            @Override
-            public void run() {
-                Github github = new Github();
-                String in = github.getupdate();
-                if (!in.contentEquals("latest")) {
-                    if (isStoragePermissionGranted()) {
-                        Toast toast = Toast.makeText(context, R.string.software_download, Toast.LENGTH_SHORT);
-                        toast.show();
-                        DownloadManager manager = (DownloadManager) context.getSystemService(Context.DOWNLOAD_SERVICE);
-                        Request request = new Request(Uri.parse(in));
-                        request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS,
-                                "SoundTube" + github.versionName + ".apk");
-                        request.setNotificationVisibility(Request.VISIBILITY_VISIBLE);
-                        manager.enqueue(request);
+                    String in = github.getupdate();
+                    if (!in.contentEquals("latest")) {
+                        if (isStoragePermissionGranted()) {
+                            if (!downloaded) {
+                                showText(R.string.software_download);
+                                DownloadManager manager = (DownloadManager) context.getSystemService(Context.DOWNLOAD_SERVICE);
+                                Request request = new Request(Uri.parse(in));
+                                request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS,
+                                        "SoundTube" + github.versionName + ".apk");
+                                request.setNotificationVisibility(Request.VISIBILITY_VISIBLE);
+
+                                manager.enqueue(request);
+
+                                downloaded = true;
+                            } else {
+                                showText(R.string.already_download);
+                                Log.d("Setting", getString(R.string.already_download));
+                            }
+
+                        } else {
+                            showText(R.string.deny_write_permission);
+                            Log.d("Setting", getString(R.string.deny_write_permission));
+                        }
+
                     } else {
-                        Toast toast = Toast.makeText(context, R.string.deny_write_permission, Toast.LENGTH_SHORT);
-                        toast.show();
+                        showText(R.string.software_latest);
+
+                        Log.d("Setting", getString(R.string.software_latest));
                     }
 
-                } else {
-                    Toast toast = Toast.makeText(context, R.string.software_latest, Toast.LENGTH_SHORT);
-                    toast.show();
                 }
 
-            }
+            });
 
-        });
-
+        }
 
     }
 
+    private void showText(final int id) {
+        if (toast == null) {
+            getActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    toast = Toast.makeText(context, id, Toast.LENGTH_SHORT);
+                    toast.show();
+                }
+            });
+
+        }
+    }
 
     public void onButtonPressed(Uri uri) {
         if (mListener != null) {

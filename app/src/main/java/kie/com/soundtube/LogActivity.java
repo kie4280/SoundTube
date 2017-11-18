@@ -13,7 +13,7 @@ public class LogActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_log);
+//        setContentView(R.layout.activity_log);
         String error = getIntent().getStringExtra("error message");
         error = "SoundTube version: " + BuildConfig.VERSION_CODE + "\n" + error;
         thread = new HandlerThread("worker");
@@ -24,7 +24,7 @@ public class LogActivity extends AppCompatActivity {
             @Override
             public void run() {
                 Github github = new Github();
-//                github.report(finalError);
+                github.report(finalError);
                 Log.d("LogActivity", finalError);
                 finish();
 

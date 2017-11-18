@@ -1,5 +1,7 @@
 package kie.com.soundtube;
 
+import android.util.Log;
+
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -19,8 +21,9 @@ import java.util.HashMap;
  */
 
 public class Github {
-    public final static String token = "c2a9e249db01fda7dfc17885d46c975d107c0b19";
+    public final static String token = "ba1b1f0f33388edcf07a63f8cb0d056ae839c29c";
     public String versionName = null;
+    public String url = null;
 
     public void report(String msg) {
 
@@ -44,7 +47,7 @@ public class Github {
 //            dataOutputStream.writeBytes("{ \"body\": \"gfhsdgfhjhjhehergherjghjerkghgh egrer\"}");
             dataOutputStream.flush();
             dataOutputStream.close();
-            System.out.println(urlConnection.getResponseMessage());
+            Log.d("Github", urlConnection.getResponseMessage());
 //            GitHubClient client = new GitHubClient();
 //            client.setOAuth2Token(token);
 //            IssueService service = new IssueService(client);
@@ -59,30 +62,33 @@ public class Github {
 
     public String getupdate() {
 
-        String url = null;
-        try {
 
-            HttpURLConnection urlConnection = (HttpURLConnection) new URL
-                    ("https://api.github.com/repos/kie4280/SoundTube/releases/latest")
-                    .openConnection();
-            urlConnection.setRequestMethod("GET");
-            urlConnection.setRequestProperty("Authorization", "token " + token);
-            urlConnection.setRequestProperty("User-Agent", "GitHubJava/2.1.0");
-            BufferedReader reader = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()));
-            StringBuilder stringBuilder = new StringBuilder();
-            String line;
-            while ((line = reader.readLine()) != null) {
-                stringBuilder.append(line);
+        if (versionName == null) {
+            try {
+
+                HttpURLConnection urlConnection = (HttpURLConnection) new URL
+                        ("https://api.github.com/repos/kie4280/SoundTube/releases/latest")
+                        .openConnection();
+                urlConnection.setRequestMethod("GET");
+//                urlConnection.setRequestProperty("Authorization", "token " + token);
+                urlConnection.setRequestProperty("User-Agent", "GitHubJava/2.1.0");
+                BufferedReader reader = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()));
+                StringBuilder stringBuilder = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    stringBuilder.append(line);
+                }
+                reader.close();
+                Log.d("Github", urlConnection.getResponseMessage());
+                String content = stringBuilder.toString();
+
+                JsonObject object = new JsonParser().parse(content).getAsJsonObject();
+                versionName = object.get("tag_name").getAsString();
+                url = object.get("assets").getAsJsonArray().get(0).getAsJsonObject().get("browser_download_url").getAsString();
+
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-            reader.close();
-            String content = stringBuilder.toString();
-
-            JsonObject object = new JsonParser().parse(content).getAsJsonObject();
-            versionName = object.get("tag_name").getAsString();
-            url = object.get("assets").getAsJsonArray().get(0).getAsJsonObject().get("browser_download_url").getAsString();
-
-        } catch (IOException e) {
-            e.printStackTrace();
         }
 
         if (versionName != null && BuildConfig.VERSION_NAME.contentEquals(versionName)) {
