@@ -9,11 +9,13 @@ import com.google.gson.JsonParser;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.util.HashMap;
+import java.util.Properties;
 
 
 /**
@@ -21,9 +23,28 @@ import java.util.HashMap;
  */
 
 public class Github {
-    public final static String token = "ba1b1f0f33388edcf07a63f8cb0d056ae839c29c";
+
     public String versionName = null;
     public String url = null;
+
+    public String getToken() {
+        InputStream in = Github.class.getClassLoader().getResourceAsStream("config.properties");
+        Properties properties = new Properties();
+        try {
+            properties.load(in);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        String t = properties.getProperty("github_access_token");
+        t = t.replaceAll("#813", "");
+        if (t != null) {
+            return t;
+        } else {
+            return "Cannot read config file";
+        }
+
+
+    }
 
     public void report(String msg) {
 
@@ -37,7 +58,7 @@ public class Github {
             urlConnection.setDoOutput(true);
 
             urlConnection.setRequestMethod("POST");
-            urlConnection.setRequestProperty("Authorization", "token " + token);
+            urlConnection.setRequestProperty("Authorization", "token " + getToken());
             urlConnection.setRequestProperty("User-Agent", "GitHubJava/2.1.0");
             urlConnection.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
             DataOutputStream dataOutputStream = new DataOutputStream(urlConnection.getOutputStream());
