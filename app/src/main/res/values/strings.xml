@@ -90,4 +90,7 @@
     <string name="software_download">New version downloading</string>
     <string name="deny_write_permission">Deny external storage permission!</string>
     <string name="already_download">Software already downloaded</string>
+    <string name="submit_report">Submit report</string>
+    <string name="submit_button">Submit</string>
+    <string name="cancel_button">Cancel</string>
 </resources>

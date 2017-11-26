@@ -27,7 +27,7 @@ public class SettingFragment extends PreferenceFragment {
     boolean downloaded = false;
     Toast toast = null;
 
-    Github github = new Github();
+    Github github;
 
     private OnFragmentInteractionListener mListener;
 
@@ -39,6 +39,7 @@ public class SettingFragment extends PreferenceFragment {
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         context = getActivity().getApplicationContext();
+        github = new Github(context);
         thread = new HandlerThread("worker");
         thread.start();
         worker = new Handler(thread.getLooper());

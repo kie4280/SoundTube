@@ -105,7 +105,7 @@ public class PlayerActivity extends AppCompatActivity implements SearchFragment.
         connectmgr = (ConnectivityManager) getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
         telephonyManager = (TelephonyManager) getApplicationContext().getSystemService(Context.TELEPHONY_SERVICE);
         telephonyManager.listen(phoneStateListener, PhoneStateListener.LISTEN_CALL_STATE);
-        workThread = new HandlerThread("WorkThread");
+//        workThread = new HandlerThread("WorkThread");
         workThread.setPriority(Process.THREAD_PRIORITY_BACKGROUND);
         workThread.start();
         workHandler = new Handler(workThread.getLooper());

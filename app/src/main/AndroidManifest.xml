@@ -32,7 +32,8 @@
         <activity
             android:name=".LogActivity"
             android:label="@string/title_activity_log"
-            android:process=":log_process">
+            android:process=":log_process"
+            android:theme="@style/Theme.AppCompat.Light.Dialog.Alert">
             <intent-filter>
                 <action android:name="kie.com.soundtube.logException" />
 
