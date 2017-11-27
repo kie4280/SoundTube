@@ -1,6 +1,5 @@
 package kie.com.soundtube;
 
-import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -14,7 +13,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
-import android.os.Looper;
 import android.os.Process;
 import android.support.annotation.NonNull;
 import android.support.design.widget.AppBarLayout;
@@ -38,6 +36,8 @@ import android.widget.Toast;
 
 import com.sothree.slidinguppanel.SlidingUpPanelLayout.PanelSlideListener;
 import com.sothree.slidinguppanel.SlidingUpPanelLayout.PanelState;
+
+import java.util.LinkedList;
 
 import kie.com.soundtube.MediaPlayerService.MusicBinder;
 
@@ -67,7 +67,7 @@ public class PlayerActivity extends AppCompatActivity implements SearchFragment.
     Context context;
     ConnectivityManager connectmgr;
     TelephonyManager telephonyManager;
-    String httpurl = "http://suggestqueries.google.com/complete/search?client=youtube&ds=yt&client=firefox&q=";
+    LinkedList<DataHolder> watchedQueue = new LinkedList<>();
 
 
     @Override
@@ -105,7 +105,7 @@ public class PlayerActivity extends AppCompatActivity implements SearchFragment.
         connectmgr = (ConnectivityManager) getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
         telephonyManager = (TelephonyManager) getApplicationContext().getSystemService(Context.TELEPHONY_SERVICE);
         telephonyManager.listen(phoneStateListener, PhoneStateListener.LISTEN_CALL_STATE);
-//        workThread = new HandlerThread("WorkThread");
+        workThread = new HandlerThread("WorkThread");
         workThread.setPriority(Process.THREAD_PRIORITY_BACKGROUND);
         workThread.start();
         workHandler = new Handler(workThread.getLooper());
@@ -321,7 +321,7 @@ public class PlayerActivity extends AppCompatActivity implements SearchFragment.
     @Override
     protected void onStart() {
         super.onStart();
-        Log.d("activity", "onStart");
+        Log.d("activity", "onStartVideo");
 
     }
 
@@ -358,27 +358,23 @@ public class PlayerActivity extends AppCompatActivity implements SearchFragment.
     }
 
     @Override
-    public void onFragmentInteraction(Uri uri) {
+    public void onReturnSearchVideo(DataHolder dataHolder) {
 
-    }
-
-    @Override
-    public void onreturnVideo(DataHolder dataHolder) {
-//        viewPager.setCurrentItem(1, true);
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 slidePanel.setPanelState(PanelState.EXPANDED);
             }
         });
-
         videoFragment.start(dataHolder);
     }
 
     @Override
     public void onBackPressed() {
-        System.out.println("activity back");
+        Log.d("PlayerActivity", "activity back");
+
 //        moveTaskToBack(true);
+
     }
 
     @Override
@@ -396,6 +392,11 @@ public class PlayerActivity extends AppCompatActivity implements SearchFragment.
             default:
                 break;
         }
+    }
+
+    @Override
+    public void onStartVideo(DataHolder dataHolder) {
+        watchedQueue.offer(dataHolder);
     }
 
 

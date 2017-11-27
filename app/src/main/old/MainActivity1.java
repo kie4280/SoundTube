@@ -208,7 +208,7 @@ public class MainActivity1 extends AppCompatActivity implements SearchFragment1.
         }
 
         bindService(playIntent, serviceConnection, Context.BIND_AUTO_CREATE);
-        Log.d("activity", "onStart");
+        Log.d("activity", "onStartVideo");
     }
 
     @Override

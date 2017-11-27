@@ -18,6 +18,7 @@ import android.app.Fragment;
 import android.support.design.widget.AppBarLayout;
 import android.support.v4.view.ViewPager;
 import android.support.v4.view.ViewPager.OnPageChangeListener;
+import android.view.MotionEvent;
 import android.view.ViewAnimationUtils;
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
@@ -90,7 +91,6 @@ public class SearchFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         context = getActivity().getApplicationContext();
-
         setHasOptionsMenu(true);
 
     }
@@ -358,12 +358,6 @@ public class SearchFragment extends Fragment {
         videoRetriver = new VideoRetriver(workHandler);
     }
 
-    public void onButtonPressed(Uri uri) {
-        if (mListener != null) {
-            mListener.onFragmentInteraction(uri);
-        }
-    }
-
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
@@ -383,9 +377,7 @@ public class SearchFragment extends Fragment {
 
     public interface OnFragmentInteractionListener {
 
-        void onFragmentInteraction(Uri uri);
-
-        void onreturnVideo(DataHolder dataHolder);
+        void onReturnSearchVideo(DataHolder dataHolder);
     }
 
     public void setActivity(PlayerActivity activity) {
@@ -401,6 +393,16 @@ public class SearchFragment extends Fragment {
             int autoCompleteTextViewID = getResources().getIdentifier("android:id/search_src_text", null, null);
             AutoCompleteTextView searchAutoCompleteTextView = (AutoCompleteTextView) searchView.findViewById(autoCompleteTextViewID);
             searchAutoCompleteTextView.setThreshold(1);
+            blankspace.setOnTouchListener(new View.OnTouchListener() {
+
+                @Override
+                public boolean onTouch(View view, MotionEvent motionEvent) {
+                    if (motionEvent.getAction() == MotionEvent.ACTION_UP) {
+                        animateSearchArea(false);
+                    }
+                    return true;
+                }
+            });
 
             searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
                 @Override
@@ -784,7 +786,7 @@ public class SearchFragment extends Fragment {
                         @Override
                         public void onSuccess(HashMap<Integer, String> result) {
                             dataHolder.videoUris = result;
-                            mListener.onreturnVideo(dataHolder);
+                            mListener.onReturnSearchVideo(dataHolder);
                             //Log.d("search", ))
                         }
 

@@ -11,12 +11,10 @@ import android.graphics.PixelFormat;
 import android.graphics.drawable.Drawable;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.app.Fragment;
-import android.support.v4.view.MotionEventCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
@@ -204,7 +202,7 @@ public class VideoFragment extends Fragment {
 
                 @Override
                 public boolean onTouch(View v, MotionEvent event) {
-                    int action = MotionEventCompat.getActionMasked(event);
+                    int action = event.getAction();
                     if (action == MotionEvent.ACTION_DOWN) {
 //                    playerActivity.viewPager.setSwipingEnabled(false);
                         Log.d("playbutton", "down");
@@ -226,9 +224,13 @@ public class VideoFragment extends Fragment {
                         }
 
                     }
+
                     return false;
                 }
+
+
             });
+
 
             seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
                 @Override
@@ -390,14 +392,6 @@ public class VideoFragment extends Fragment {
         }
     };
 
-
-    public void onButtonPressed(Uri uri) {
-        if (mListener != null) {
-            mListener.onFragmentInteraction(uri);
-        }
-        System.out.println("fragment back");
-    }
-
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
@@ -455,6 +449,9 @@ public class VideoFragment extends Fragment {
 
     public void start(final DataHolder dataHolder) {
 
+        if (mListener != null) {
+            mListener.onStartVideo(dataHolder);
+        }
         seekHandler.post(new Runnable() {
             @Override
             public void run() {
@@ -676,7 +673,7 @@ public class VideoFragment extends Fragment {
 
     public interface OnFragmentInteractionListener {
 
-        void onFragmentInteraction(Uri uri);
+        void onStartVideo(DataHolder dataHolder);
     }
 
     private class TextDrawable extends Drawable {
