@@ -5,9 +5,6 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Handler;
 import android.util.Log;
-import android.widget.Toast;
-
-import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.api.client.http.HttpRequest;
 import com.google.api.client.http.HttpRequestInitializer;
 import com.google.api.client.http.javanet.NetHttpTransport;
@@ -18,7 +15,6 @@ import com.google.api.services.youtube.model.SearchListResponse;
 import com.google.api.services.youtube.model.SearchResult;
 import com.google.api.services.youtube.model.Video;
 import com.google.api.services.youtube.model.VideoListResponse;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -27,7 +23,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.ListIterator;
 
 
 public class Searcher {
@@ -55,10 +50,10 @@ public class Searcher {
     public Searcher(Context context, Handler handler) {
         this.context = context;
         this.WorkHandler = handler;
-        youtube = new YouTube.Builder(new NetHttpTransport(), new JacksonFactory(), new HttpRequestInitializer() {
+        youtube = new YouTube.Builder(new NetHttpTransport(), JacksonFactory.getDefaultInstance(), new HttpRequestInitializer() {
             public void initialize(HttpRequest request) throws IOException {
             }
-        }).setApplicationName("power saver").build();
+        }).setApplicationName("SoundTube").build();
 
     }
 
@@ -68,20 +63,9 @@ public class Searcher {
             @Override
             public void run() {
                 try {
-                    // This object is used to make YouTube Data API requests. The last
-                    // argument is required, but since we don't need anything
-                    // initialized when the HttpRequest is initialized, we override
-                    // the interface and provide a no-op function.
-
                     search = youtube.search().list("snippet");
-                    // Define the API request for retrieving search results.
                     search.setKey(APIKey);
-                    // Set your developer key from the {{ Google Cloud Console }} for
-                    // non-authenticated requests. See:
-                    // {{ https://cloud.google.com/console }}
                     search.setType(Type);
-                    // To increase efficiency, only retrieve the fields that the
-                    // application uses.
                     search.setFields("items(id/kind,id/videoId)");
                     search.setMaxResults(NUMBER_OF_VIDEOS_RETURNED);
                     search.setQ(queryTerm);
@@ -95,8 +79,8 @@ public class Searcher {
                     tokensearch.setOrder(Order);
                     tokensearch.setType(Type);
                     tokenseachResponse = tokensearch.execute();
-                    nextPageToken = tokenseachResponse.getNextPageToken();
 
+                    nextPageToken = tokenseachResponse.getNextPageToken();
                     prevPageToken = tokenseachResponse.getPrevPageToken();
                     tokens.clear();
                     pages.clear();
@@ -129,6 +113,7 @@ public class Searcher {
                     search.setFields("items(id/kind,id/videoId)");
                     search.setKey(APIKey);
                     search.setMaxResults(NUMBER_OF_VIDEOS_RETURNED);
+
                     tokensearch = youtube.search().list("snippet");
                     tokensearch.setRelatedToVideoId(id);
                     tokensearch.setKey(APIKey);
@@ -256,6 +241,11 @@ public class Searcher {
                 }
             }
         });
+    }
+
+    public void cancel() {
+        WorkHandler.removeCallbacks(null);
+
     }
 
 

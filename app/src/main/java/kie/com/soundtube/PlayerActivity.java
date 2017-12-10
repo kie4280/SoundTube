@@ -8,7 +8,6 @@ import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -33,11 +32,10 @@ import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
-
 import com.sothree.slidinguppanel.SlidingUpPanelLayout.PanelSlideListener;
 import com.sothree.slidinguppanel.SlidingUpPanelLayout.PanelState;
 
-import java.util.LinkedList;
+
 
 import kie.com.soundtube.MediaPlayerService.MusicBinder;
 
@@ -67,7 +65,7 @@ public class PlayerActivity extends AppCompatActivity implements SearchFragment.
     Context context;
     ConnectivityManager connectmgr;
     TelephonyManager telephonyManager;
-    LinkedList<DataHolder> watchedQueue = new LinkedList<>();
+
 
 
     @Override
@@ -115,17 +113,7 @@ public class PlayerActivity extends AppCompatActivity implements SearchFragment.
         searchFragment = new SearchFragment();
         searchFragment.setActivity(this);
         searchFragment.setSearchWorker(workHandler);
-//        playlistFragment = new PlaylistFragment();
-//        playlistFragment.setActivity(this);
-//        settingFragment = new SettingFragment();
-//        settingFragment.setActivity(this);
         slidePanel = (CustomSlideUpPanel) findViewById(R.id.slidePanel);
-//        slidePanel.setTouchEnabled(false);
-//        actionBar.setDisplayShowCustomEnabled(true);
-//        actionBar.setDisplayHomeAsUpEnabled(true);
-//        actionBar.setDisplayShowCustomEnabled(true);
-//        actionBar.setDisplayShowTitleEnabled(false);
-
         fragmentManager = getFragmentManager();
         FragmentTransaction transaction = fragmentManager.beginTransaction();
         transaction
@@ -134,8 +122,6 @@ public class PlayerActivity extends AppCompatActivity implements SearchFragment.
                 .commit();
         slidePanel.addPanelSlideListener(panelSlideListener);
         drawerLayout = (DrawerLayout) findViewById(R.id.drawerLayout);
-//        drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
-
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this
                 , drawerLayout, playerToolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close) {
             @Override
@@ -370,8 +356,23 @@ public class PlayerActivity extends AppCompatActivity implements SearchFragment.
     }
 
     @Override
+    public void onStartVideo(DataHolder dataHolder) {
+
+    }
+
+    @Override
     public void onBackPressed() {
         Log.d("PlayerActivity", "activity back");
+        switch (slidePanel.getPanelState()) {
+            case HIDDEN:
+            case COLLAPSED:
+                break;
+            case EXPANDED:
+                videoFragment.previousVideo();
+                break;
+            default:
+                break;
+        }
 
 //        moveTaskToBack(true);
 
@@ -394,32 +395,6 @@ public class PlayerActivity extends AppCompatActivity implements SearchFragment.
         }
     }
 
-    @Override
-    public void onStartVideo(DataHolder dataHolder) {
-        watchedQueue.offer(dataHolder);
-    }
-
-
-//    public void setPlayerToolbar(int dy) {
-//
-//        int toolbaroffset = (int) (dy - playerToolbar.getTranslationY());
-//        if (dy > 0) {
-//            if (toolbaroffset < playerToolbar.getHeight()) {
-//                playerToolbar.setTranslationY(-toolbaroffset);
-//            } else {
-//                playerToolbar.setTranslationY(-playerToolbar.getHeight());
-//            }
-//
-//        } else {
-//            if (toolbaroffset < 0) {
-//                playerToolbar.setTranslationY(0);
-//            } else {
-//                playerToolbar.setTranslationY(-toolbaroffset);
-//            }
-//
-//        }
-//
-//    }
 
 
 }

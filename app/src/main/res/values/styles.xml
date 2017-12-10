@@ -7,6 +7,9 @@
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
         <item name="android:windowActionBarOverlay">true</item>
+        <item name="android:autoCompleteTextViewStyle">@style/myAutoCompleteTextViewStyle</item>
+        <item name="android:textAppearanceSearchResultTitle">@style/mySearchResult</item>
+        <item name="android:dropDownItemStyle">@style/myDropDownItemStyle</item>
     </style>
 
     <style name="TabLayoutTextStyle">
@@ -17,6 +20,19 @@
     <style name="AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
 
     <style name="PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
+
+    <style name="myAutoCompleteTextViewStyle" parent="Widget.AppCompat.Light.AutoCompleteTextView">
+        <item name="android:popupBackground">#FFFFFF</item>
+    </style>
+
+    <style name="mySearchResult" parent="TextAppearance.AppCompat.SearchResult.Title">
+        <item name="android:textColor">#000000</item>
+    </style>
+
+    <style name="myDropDownItemStyle" parent="Widget.AppCompat.DropDownItem.Spinner">
+        <item name="android:textColor">#000000</item>
+        <item name="android:colorBackground">#EEE000</item>
+    </style>
 
 
 </resources>

@@ -5,7 +5,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
-import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import java.util.List;
@@ -27,9 +26,9 @@ public class SearchRecyclerAdapter extends RecyclerView.Adapter<SearchRecyclerAd
 //                    ViewGroup.LayoutParams.MATCH_PARENT, Tools.convertDpToPixel(56, parent.getContext())));
 //            view = relativeLayout;
 //        } else {
-//            view = LayoutInflater.from(parent.getContext()).inflate(R.layout.video_layout, parent, false);
+//            view = LayoutInflater.from(parent.getContext()).inflate(R.layout.video_thumnail, parent, false);
 //        }
-        view = LayoutInflater.from(parent.getContext()).inflate(R.layout.video_layout, parent, false);
+        view = LayoutInflater.from(parent.getContext()).inflate(R.layout.video_thumnail, parent, false);
         return new ViewHolder(view);
     }
 

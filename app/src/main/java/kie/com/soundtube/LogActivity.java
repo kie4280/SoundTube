@@ -20,7 +20,7 @@ public class LogActivity extends AppCompatActivity implements LogFragment.Button
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_log1);
-        setTitle("Sending...");
+        setTitle("Log");
         RelativeLayout frame = (RelativeLayout) findViewById(R.id.logRelative);
         thread = new HandlerThread("worker");
         thread.start();
@@ -56,7 +56,7 @@ public class LogActivity extends AppCompatActivity implements LogFragment.Button
                 @Override
                 public void run() {
                     Github github = new Github(getApplicationContext());
-                    github.report(error);
+//                    github.report(error);
                     Log.d("LogActivity", error);
                     finish();
 

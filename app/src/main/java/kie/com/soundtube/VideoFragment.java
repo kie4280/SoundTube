@@ -15,8 +15,10 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.app.Fragment;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v7.widget.DefaultItemAnimator;
+import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.DisplayMetrics;
@@ -28,6 +30,7 @@ import com.sothree.slidinguppanel.SlidingUpPanelLayout;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 
 public class VideoFragment extends Fragment {
@@ -75,6 +78,7 @@ public class VideoFragment extends Fragment {
     Page page;
     Searcher searcher = null;
     ArrayList<View> pageviews = new ArrayList<>(3);
+    LinkedList<DataHolder> watchedQueue = new LinkedList<>();
 
     public VideoFragment() {
         // Required empty public constructor
@@ -135,7 +139,7 @@ public class VideoFragment extends Fragment {
             View r2 = inflater.inflate(R.layout.blank_loading, null);
             bar1 = (ProgressBar) r1.findViewById(R.id.pageLoadingBar);
             bar2 = (ProgressBar) r2.findViewById(R.id.pageLoadingBar);
-            View pageview = inflater.inflate(R.layout.searchpage, null);
+            View pageview = inflater.inflate(R.layout.related_video_layout, null);
             recyclerView = (RecyclerView) pageview.findViewById(R.id.searchrecyclerView);
 //        playerActivity.slidePanel.setScrollableView(recyclerView);
             pageviews.add(r1);
@@ -147,7 +151,7 @@ public class VideoFragment extends Fragment {
             viewPager.addOnPageChangeListener(onPageChangeListener);
 
             vrelativeLayout = (RelativeLayout) videoFragmentView.findViewById(R.id.videoRelativeLayout);
-            drelativeLayout = (RelativeLayout) videoFragmentView.findViewById(R.id.descriptionRelativeLayout);
+            drelativeLayout = (RelativeLayout) videoFragmentView.findViewById(R.id.RelatedVideoLayout);
             RelativeLayout.LayoutParams orig = (RelativeLayout.LayoutParams) vrelativeLayout.getLayoutParams();
             orig.height = RelativeLayout.LayoutParams.MATCH_PARENT;
             landscapelayout = new RelativeLayout.LayoutParams(orig);
@@ -404,6 +408,17 @@ public class VideoFragment extends Fragment {
     }
 
     @Override
+    public void onAttach(Activity activity) {
+        super.onAttach(activity);
+        if (activity instanceof SearchFragment.OnFragmentInteractionListener) {
+            mListener = (OnFragmentInteractionListener) activity;
+        } else {
+            throw new RuntimeException(activity.toString()
+                    + " must implement OnFragmentInteractionListener");
+        }
+    }
+
+    @Override
     public void onDetach() {
         super.onDetach();
         mListener = null;
@@ -449,9 +464,6 @@ public class VideoFragment extends Fragment {
 
     public void start(final DataHolder dataHolder) {
 
-        if (mListener != null) {
-            mListener.onStartVideo(dataHolder);
-        }
         seekHandler.post(new Runnable() {
             @Override
             public void run() {
@@ -464,27 +476,9 @@ public class VideoFragment extends Fragment {
                         mediaService.prepare(dataHolder);
                         mediaService.setDisplay(surfaceHolder);
                         mediaService.play();
+                        currentdata = dataHolder;
                         setButtonPlay(false);
-                        page.setTitle(dataHolder.title);
-
-                        if (searcher != null) {
-                            searcher.loadRelatedVideos(dataHolder.videoID);
-                            page.loading();
-                            searcher.getResults(new Searcher.YoutubeSearchResult() {
-                                @Override
-                                public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
-                                    pagerAdapter.changeSate(hasnext, hasprev);
-                                    page.updateListView(data);
-                                }
-
-                                @Override
-                                public void noData() {
-
-                                }
-                            });
-
-                        }
-
+                        loadRelatedVideos(dataHolder);
 
                     } else {
                         Toast toast = Toast.makeText(context, "No service error!!!", Toast.LENGTH_LONG);
@@ -499,6 +493,27 @@ public class VideoFragment extends Fragment {
             }
         });
 
+    }
+
+    public void loadRelatedVideos(DataHolder dataHolder) {
+        page.setTitle(dataHolder.title);
+        if (searcher != null) {
+            searcher.loadRelatedVideos(dataHolder.videoID);
+            page.loading();
+            searcher.getResults(new Searcher.YoutubeSearchResult() {
+                @Override
+                public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
+                    pagerAdapter.changeSate(hasnext, hasprev);
+                    page.updateListView(data);
+                }
+
+                @Override
+                public void noData() {
+
+                }
+            });
+
+        }
     }
 
     public void resume() {
@@ -670,6 +685,17 @@ public class VideoFragment extends Fragment {
         });
     }
 
+    public boolean previousVideo() {
+
+        DataHolder dataHolder = watchedQueue.poll();
+        if (dataHolder != null) {
+            start(dataHolder);
+            return true;
+        } else
+            return false;
+
+    }
+
 
     public interface OnFragmentInteractionListener {
 
@@ -755,7 +781,7 @@ public class VideoFragment extends Fragment {
                         createListView(recyclerView, data);
                     } else {
                         adapter.dataHolders = data;
-                        adapter.text = text;
+                        adapter.title = text;
                         adapter.notifyDataSetChanged();
                     }
                     if (waiting) {
@@ -772,7 +798,9 @@ public class VideoFragment extends Fragment {
 
 //        Log.d("createlist", "create");
             adapter = new VideoRecyclerAdapter(data);
-            adapter.text = text;
+            adapter.title = text;
+            DividerItemDecoration decoration = new DividerItemDecoration(context, DividerItemDecoration.VERTICAL);
+            recyclerView.addItemDecoration(decoration);
             recyclerView.setLayoutManager(new LinearLayoutManager(context));
             recyclerView.setItemAnimator(new DefaultItemAnimator());
             recyclerView.setAdapter(adapter);
@@ -788,6 +816,7 @@ public class VideoFragment extends Fragment {
                         @Override
                         public void onSuccess(HashMap<Integer, String> result) {
                             dataHolder.videoUris = result;
+                            watchedQueue.offer(currentdata);
                             start(dataHolder);
                             //Log.d("search", ))
                         }

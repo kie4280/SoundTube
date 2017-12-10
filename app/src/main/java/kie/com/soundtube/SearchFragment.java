@@ -2,6 +2,7 @@ package kie.com.soundtube;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
+import android.app.Activity;
 import android.content.Context;
 import android.database.MatrixCursor;
 import android.graphics.Canvas;
@@ -10,14 +11,15 @@ import android.graphics.ColorFilter;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.graphics.drawable.Drawable;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.app.Fragment;
 import android.support.design.widget.AppBarLayout;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v4.view.ViewPager.OnPageChangeListener;
+import android.support.v7.widget.DividerItemDecoration;
 import android.view.MotionEvent;
 import android.view.ViewAnimationUtils;
 import android.view.animation.AlphaAnimation;
@@ -56,6 +58,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -110,7 +113,7 @@ public class SearchFragment extends Fragment {
             bar1 = (ProgressBar) r1.findViewById(R.id.pageLoadingBar);
             bar2 = (ProgressBar) r2.findViewById(R.id.pageLoadingBar);
             pageviews.add(r1);
-            pageviews.add(inflater.inflate(R.layout.searchpage, null));
+            pageviews.add(inflater.inflate(R.layout.related_video_layout, null));
             pageviews.add(r2);
             page = new Page(pageviews.get(1));
             viewPager = (ViewPager) searchFragmentView.findViewById(R.id.searchViewPager);
@@ -352,10 +355,25 @@ public class SearchFragment extends Fragment {
 
     }
 
+    public boolean previousSearch() {
+        return true;
+    }
+
     public void setSearchWorker(Handler handler) {
         workHandler = handler;
         searcher = new Searcher(context, workHandler);
         videoRetriver = new VideoRetriver(workHandler);
+    }
+
+    @Override
+    public void onAttach(Activity activity) {
+        super.onAttach(activity);
+        if (activity instanceof OnFragmentInteractionListener) {
+            mListener = (OnFragmentInteractionListener) activity;
+        } else {
+            throw new RuntimeException(activity.toString()
+                    + " must implement OnFragmentInteractionListener");
+        }
     }
 
     @Override
@@ -373,6 +391,7 @@ public class SearchFragment extends Fragment {
     public void onDetach() {
         super.onDetach();
         mListener = null;
+        Log.d("SearchFragment", "onDetach");
     }
 
     public interface OnFragmentInteractionListener {
@@ -391,8 +410,9 @@ public class SearchFragment extends Fragment {
             blankspace = searchAreaView.findViewById(R.id.blankspace);
             searchView = searchAreaView.findViewById(R.id.searchview);
             int autoCompleteTextViewID = getResources().getIdentifier("android:id/search_src_text", null, null);
-            AutoCompleteTextView searchAutoCompleteTextView = (AutoCompleteTextView) searchView.findViewById(autoCompleteTextViewID);
+            final AutoCompleteTextView searchAutoCompleteTextView = (AutoCompleteTextView) searchView.findViewById(autoCompleteTextViewID);
             searchAutoCompleteTextView.setThreshold(1);
+
             blankspace.setOnTouchListener(new View.OnTouchListener() {
 
                 @Override
@@ -426,14 +446,15 @@ public class SearchFragment extends Fragment {
 
                 @Override
                 public boolean onQueryTextChange(final String newText) {
-                    Log.d("searchFragment", "text changed");
+
                     workHandler.post(new Runnable() {
                         @Override
                         public void run() {
+                            Log.d("searchFragment", "text changed");
                             if (PlayerActivity.netConncted && newText.length() != 0) {
                                 StringBuilder response = new StringBuilder();
                                 try {
-                                    URL url = new URL(queryUrl + newText);
+                                    URL url = new URL(queryUrl + URLEncoder.encode(newText, "UTF-8"));
                                     HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection();
                                     httpURLConnection.setRequestMethod("GET");
                                     BufferedReader in = new BufferedReader(
@@ -460,11 +481,12 @@ public class SearchFragment extends Fragment {
                                     int[] to = new int[]{android.R.id.text1};
 
                                     final SimpleCursorAdapter simpleCursorAdapter = new SimpleCursorAdapter(context
-                                            , android.R.layout.simple_list_item_1, matrixCursor, from, to, CursorAdapter.FLAG_REGISTER_CONTENT_OBSERVER);
+                                            , R.layout.suggestion_item, matrixCursor, from, to, CursorAdapter.FLAG_REGISTER_CONTENT_OBSERVER);
                                     playerActivity.runOnUiThread(new Runnable() {
                                         @Override
                                         public void run() {
                                             searchView.setSuggestionsAdapter(simpleCursorAdapter);
+                                            searchAutoCompleteTextView.showDropDown();
                                         }
                                     });
 
@@ -771,6 +793,8 @@ public class SearchFragment extends Fragment {
 
 //        Log.d("createlist", "create");
             adapter = new SearchRecyclerAdapter(data);
+            DividerItemDecoration decoration = new DividerItemDecoration(context, DividerItemDecoration.VERTICAL);
+            recyclerView.addItemDecoration(decoration);
             recyclerView.setLayoutManager(new LinearLayoutManager(context));
             recyclerView.setItemAnimator(new DefaultItemAnimator());
             recyclerView.setAdapter(adapter);
@@ -804,22 +828,6 @@ public class SearchFragment extends Fragment {
                 }
             });
             recyclerView.addOnItemTouchListener(listener);
-//            recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
-//
-//
-//                @Override
-//                public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
-//
-//                }
-//
-//                @Override
-//                public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
-////                Log.d("recyclerView dx", Integer.toString(dx));
-////                    playerActivity.setPlayerToolbar(dy);
-//
-//                }
-//            });
-
         }
     }
 

@@ -1,6 +1,7 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent">
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <!-- TODO: Update blank fragment layout -->
 
@@ -62,17 +63,21 @@
             android:layout_toEndOf="@+id/bufferProgressBar"
             android:visibility="gone" />
     </RelativeLayout>
+
     <RelativeLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:id="@+id/descriptionRelativeLayout"
-            android:layout_below="@+id/videoRelativeLayout" android:layout_alignParentBottom="true"
-            android:animateLayoutChanges="false">
+        android:id="@+id/RelatedVideoLayout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_alignParentBottom="true"
+        android:layout_below="@+id/videoRelativeLayout"
+        android:animateLayoutChanges="false">
 
         <android.support.v4.view.ViewPager
             android:id="@+id/videoViewPager"
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="wrap_content"
+
+            >
 
         </android.support.v4.view.ViewPager>
 
