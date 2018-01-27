@@ -150,7 +150,7 @@ public class MediaPlayerService2 extends Service {
         wifiLock = wifiManager.createWifiLock(WifiManager.WIFI_MODE_FULL, "ServiceWifilock");
         wifiLock.acquire();
 
-//        Intent app = new Intent(MediaPlayerService2.this, MainActivity.class);
+//        Intent app = new Intent(MediaPlayerService2.this, AccountActivity.class);
 //        PendingIntent pendingIntent = PendingIntent.getActivity(MediaPlayerService2.this,
 //                0, app, PendingIntent.FLAG_NO_CREATE);
 //        Notification.Builder builder = new Notification.Builder(MediaPlayerService2.this);

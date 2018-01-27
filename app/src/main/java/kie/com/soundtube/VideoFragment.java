@@ -15,7 +15,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.app.Fragment;
-import android.support.v4.content.ContextCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.DividerItemDecoration;
@@ -60,8 +59,8 @@ public class VideoFragment extends Fragment {
     private Context context;
     private RelativeLayout.LayoutParams portraitlayout;
     private RelativeLayout.LayoutParams landscapelayout;
-    private Activity activity;
-    private Handler seekHandler, workHandler;
+
+    private Handler seekHandler;
     private HandlerThread thread;
     private RecyclerView recyclerView;
     private ViewPager viewPager;
@@ -76,7 +75,7 @@ public class VideoFragment extends Fragment {
     MediaPlayerService mediaService;
     PlayerActivity playerActivity;
     Page page;
-    Searcher searcher = null;
+    YoutubeClient youtubeClient = null;
     ArrayList<View> pageviews = new ArrayList<>(3);
     LinkedList<DataHolder> watchedQueue = new LinkedList<>();
 
@@ -89,7 +88,9 @@ public class VideoFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         context = getActivity().getApplicationContext();
-        activity = getActivity();
+
+        youtubeClient = PlayerActivity.youtubeClient;
+        videoRetriver = PlayerActivity.videoRetriver;
         displayMetrics = context.getResources().getDisplayMetrics();
         thread = new HandlerThread("seek");
         thread.start();
@@ -332,9 +333,9 @@ public class VideoFragment extends Fragment {
                 final int index = viewPager.getCurrentItem();
                 Log.d("viewpager", Integer.toString(index));
                 if (index > previndex) {
-                    searcher.nextPage();
+                    youtubeClient.nextPage();
                     page.loading();
-                    searcher.getResults(new Searcher.YoutubeSearchResult() {
+                    youtubeClient.getResults(new YoutubeClient.YoutubeSearchResult() {
                         @Override
                         public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
                             pagerAdapter.changeSate(hasnext, hasprev);
@@ -358,9 +359,9 @@ public class VideoFragment extends Fragment {
                         }
                     });
                 } else if (index < previndex) {
-                    searcher.prevPage();
+                    youtubeClient.prevPage();
                     page.loading();
-                    searcher.getResults(new Searcher.YoutubeSearchResult() {
+                    youtubeClient.getResults(new YoutubeClient.YoutubeSearchResult() {
                         @Override
                         public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
                             pagerAdapter.changeSate(hasnext, hasprev);
@@ -428,10 +429,10 @@ public class VideoFragment extends Fragment {
     public void onResume() {
 
         if (context.getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            activity.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
+            playerActivity.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
                     View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
         } else {
-            activity.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
+            playerActivity.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
         }
         super.onResume();
     }
@@ -464,6 +465,7 @@ public class VideoFragment extends Fragment {
 
     public void start(final DataHolder dataHolder) {
 
+        currentdata = dataHolder;
         seekHandler.post(new Runnable() {
             @Override
             public void run() {
@@ -476,15 +478,11 @@ public class VideoFragment extends Fragment {
                         mediaService.prepare(dataHolder);
                         mediaService.setDisplay(surfaceHolder);
                         mediaService.play();
-                        currentdata = dataHolder;
+
                         setButtonPlay(false);
                         loadRelatedVideos(dataHolder);
 
-                    } else {
-                        Toast toast = Toast.makeText(context, "No service error!!!", Toast.LENGTH_LONG);
-                        toast.show();
                     }
-
 
                 } else {
                     Toast toast = Toast.makeText(context, getString(R.string.needNetwork), Toast.LENGTH_SHORT);
@@ -497,10 +495,10 @@ public class VideoFragment extends Fragment {
 
     public void loadRelatedVideos(DataHolder dataHolder) {
         page.setTitle(dataHolder.title);
-        if (searcher != null) {
-            searcher.loadRelatedVideos(dataHolder.videoID);
+        if (youtubeClient != null) {
+            youtubeClient.loadRelatedVideos(dataHolder.videoID);
             page.loading();
-            searcher.getResults(new Searcher.YoutubeSearchResult() {
+            youtubeClient.getResults(new YoutubeClient.YoutubeSearchResult() {
                 @Override
                 public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
                     pagerAdapter.changeSate(hasnext, hasprev);
@@ -523,7 +521,7 @@ public class VideoFragment extends Fragment {
 
     public void buffering(final boolean buff) {
         if (started) {
-            activity.runOnUiThread(new Runnable() {
+            playerActivity.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
                     if (buff) {
@@ -540,7 +538,7 @@ public class VideoFragment extends Fragment {
 
     public void setSeekBarMax(final int max) {
         if (started) {
-            activity.runOnUiThread(new Runnable() {
+            playerActivity.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
                     seekBar.setMax(max);
@@ -551,9 +549,9 @@ public class VideoFragment extends Fragment {
     }
 
     public void updateSeekBar() {
-        if (activity != null && !seekbarUpdating && started) {
+        if (playerActivity != null && !seekbarUpdating && started) {
             seekbarUpdating = true;
-            activity.runOnUiThread(new Runnable() {
+            playerActivity.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
                     if (mediaService != null && mediaService.updateSeekBar && started) {
@@ -575,7 +573,7 @@ public class VideoFragment extends Fragment {
             seekHandler.postDelayed(new Runnable() {
                 @Override
                 public void run() {
-                    activity.runOnUiThread(new Runnable() {
+                    playerActivity.runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
                             playbutton.setBackgroundResource(R.drawable.play);
@@ -590,25 +588,19 @@ public class VideoFragment extends Fragment {
 
     }
 
-    public void setSearchWorker(Handler handler) {
-        workHandler = handler;
-        searcher = new Searcher(context, workHandler);
-        videoRetriver = new VideoRetriver(handler);
-    }
-
     public void changeToPortrait() {
-        if (vrelativeLayout != null && drelativeLayout != null && activity != null) {
+        if (vrelativeLayout != null && drelativeLayout != null && playerActivity != null) {
             vrelativeLayout.setLayoutParams(portraitlayout);
             drelativeLayout.setVisibility(View.VISIBLE);
-            activity.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
+            playerActivity.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
         }
     }
 
     public void changeToLandscape() {
-        if (vrelativeLayout != null && drelativeLayout != null && activity != null) {
+        if (vrelativeLayout != null && drelativeLayout != null && playerActivity != null) {
             vrelativeLayout.setLayoutParams(landscapelayout);
             drelativeLayout.setVisibility(View.GONE);
-            activity.getWindow().getDecorView().setSystemUiVisibility(
+            playerActivity.getWindow().getDecorView().setSystemUiVisibility(
                     View.SYSTEM_UI_FLAG_FULLSCREEN |
                             View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
                             View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
@@ -617,7 +609,7 @@ public class VideoFragment extends Fragment {
     }
 
     public void showcontrols(final boolean show) {
-        activity.runOnUiThread(new Runnable() {
+        playerActivity.runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 if (show) {

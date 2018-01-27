@@ -5,27 +5,34 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Handler;
 import android.util.Log;
+
+import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential;
 import com.google.api.client.http.HttpRequest;
 import com.google.api.client.http.HttpRequestInitializer;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.api.client.util.ExponentialBackOff;
 import com.google.api.client.util.Joiner;
 import com.google.api.services.youtube.YouTube;
+import com.google.api.services.youtube.YouTubeScopes;
 import com.google.api.services.youtube.model.SearchListResponse;
 import com.google.api.services.youtube.model.SearchResult;
 import com.google.api.services.youtube.model.Video;
 import com.google.api.services.youtube.model.VideoListResponse;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Properties;
 
 
-public class Searcher {
+public class YoutubeClient {
 
     YouTube.Search.List search;
     YouTube.Search.List tokensearch;
@@ -34,7 +41,7 @@ public class Searcher {
 
     private static final long NUMBER_OF_VIDEOS_RETURNED = 25;
     private static final int MAX_LOAD_PAGES = 20;
-    private static final String APIKey = "AIzaSyANfhXgNlxpmkWKl7JNWdyRQZx4uS2vYuo";
+    private static String APIKey = null;
     private static final String Order = "relevance";
     private static final String Type = "video";
     private YouTube youtube;
@@ -45,15 +52,47 @@ public class Searcher {
     public int index = 0;
     private SearchListResponse searchResponse;
     private SearchListResponse tokenseachResponse;
+    GoogleAccountCredential credential;
 
+    static final int REQUEST_ACCOUNT_PICKER = 1000;
+    static final int REQUEST_AUTHORIZATION = 1001;
+    static final int REQUEST_GOOGLE_PLAY_SERVICES = 1002;
+    static final int REQUEST_PERMISSION_GET_ACCOUNTS = 1003;
+    private static final String[] SCOPES = {YouTubeScopes.YOUTUBE_READONLY};
 
-    public Searcher(Context context, Handler handler) {
+    public void initialize() {
+        credential = GoogleAccountCredential.usingOAuth2(context, Arrays.asList(SCOPES))
+                .setBackOff(new ExponentialBackOff());
+    }
+
+    public YoutubeClient(Context context, Handler handler) {
         this.context = context;
         this.WorkHandler = handler;
+        APIKey = getToken();
         youtube = new YouTube.Builder(new NetHttpTransport(), JacksonFactory.getDefaultInstance(), new HttpRequestInitializer() {
             public void initialize(HttpRequest request) throws IOException {
             }
         }).setApplicationName("SoundTube").build();
+
+    }
+
+
+    public String getToken() {
+
+        Properties properties = new Properties();
+        try {
+            InputStream in = context.getAssets().open("config.properties");
+            properties.load(in);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        String t = properties.getProperty("youtube_api_key");
+        t = t.replaceAll("#813", "");
+        if (t != null) {
+            return t;
+        } else {
+            return "Cannot read config file";
+        }
 
     }
 
@@ -92,13 +131,13 @@ public class Searcher {
 
 
                 } catch (IOException e) {
-                    Log.w("Searcher", "There was an IO error: " + e.getCause() + " : " + e.getMessage());
+                    Log.w("YoutubeClient", "There was an IO error: " + e.getCause() + " : " + e.getMessage());
                 } catch (Throwable t) {
                     t.printStackTrace();
                 }
             }
         });
-        Log.d("searcher", "newsearch");
+        Log.d("youtubeClient", "newsearch");
 
     }
 

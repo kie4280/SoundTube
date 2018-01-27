@@ -42,9 +42,8 @@ import kie.com.soundtube.MediaPlayerService.MusicBinder;
 public class PlayerActivity extends AppCompatActivity implements SearchFragment.OnFragmentInteractionListener,
         VideoFragment.OnFragmentInteractionListener {
 
-
-    private Handler workHandler;
-    private HandlerThread workThread;
+    public static Handler workHandler;
+    public HandlerThread workThread;
     public static boolean servicebound = false;
     private Intent serviceIntent;
     public Toolbar playerToolbar;
@@ -54,6 +53,8 @@ public class PlayerActivity extends AppCompatActivity implements SearchFragment.
     public AppBarLayout appBarLayout;
     public CustomSlideUpPanel slidePanel;
     public static boolean netConncted = false;
+    public static YoutubeClient youtubeClient;
+    public static VideoRetriver videoRetriver;
 
     //    public CustomViewPager viewPager;
     VideoFragment videoFragment;
@@ -109,10 +110,10 @@ public class PlayerActivity extends AppCompatActivity implements SearchFragment.
         workHandler = new Handler(workThread.getLooper());
         videoFragment = new VideoFragment();
         videoFragment.setActivity(this);
-        videoFragment.setSearchWorker(workHandler);
         searchFragment = new SearchFragment();
         searchFragment.setActivity(this);
-        searchFragment.setSearchWorker(workHandler);
+        youtubeClient = new YoutubeClient(context, workHandler);
+        videoRetriver = new VideoRetriver(workHandler);
         slidePanel = (CustomSlideUpPanel) findViewById(R.id.slidePanel);
         fragmentManager = getFragmentManager();
         FragmentTransaction transaction = fragmentManager.beginTransaction();
@@ -147,10 +148,8 @@ public class PlayerActivity extends AppCompatActivity implements SearchFragment.
         drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
         drawerLayout.addDrawerListener(toggle);
         toggle.syncState();
-
         NavigationView navView = (NavigationView) findViewById(R.id.navigationView);
         navView.setNavigationItemSelectedListener(navigationItemSelectedListener);
-
 
     }
 
