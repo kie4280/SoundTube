@@ -29,6 +29,8 @@ public class RecyclerTouchListener implements RecyclerView.OnItemTouchListener {
     float prevY = 0;
     float thresholdX = 15f;
     float thresholdY = 15f;
+    long totalX = 0;
+    long totalY = 0;
 
 
     public void setSlidePanel(SlidingUpPanelLayout panel) {
@@ -50,12 +52,17 @@ public class RecyclerTouchListener implements RecyclerView.OnItemTouchListener {
             }
             prevX = e.getX();
             prevY = e.getY();
+            totalX = 0;
+            totalY = 0;
+        } else if (action == MotionEvent.ACTION_MOVE) {
+            totalX += Math.abs(e.getX() - prevX);
+            totalY += Math.abs(e.getY() - prevY);
         } else if (action == MotionEvent.ACTION_UP) {
             if (panel != null) {
                 panel.setTouchEnabled(true);
             }
             if (Math.abs(e.getX() - prevX) <= thresholdX &&
-                    Math.abs(e.getY() - prevY) <= thresholdY) {
+                    Math.abs(e.getY() - prevY) <= thresholdY && totalX <= thresholdX && totalY <= thresholdY) {
                 View child = rv.findChildViewUnder(e.getX(), e.getY());
                 if (child != null && clickListener != null) {
                     clickListener.onClick(child, rv.getChildAdapterPosition(child));

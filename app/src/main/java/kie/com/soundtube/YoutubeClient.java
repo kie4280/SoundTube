@@ -52,18 +52,6 @@ public class YoutubeClient {
     public int index = 0;
     private SearchListResponse searchResponse;
     private SearchListResponse tokenseachResponse;
-    GoogleAccountCredential credential;
-
-    static final int REQUEST_ACCOUNT_PICKER = 1000;
-    static final int REQUEST_AUTHORIZATION = 1001;
-    static final int REQUEST_GOOGLE_PLAY_SERVICES = 1002;
-    static final int REQUEST_PERMISSION_GET_ACCOUNTS = 1003;
-    private static final String[] SCOPES = {YouTubeScopes.YOUTUBE_READONLY};
-
-    public void initialize() {
-        credential = GoogleAccountCredential.usingOAuth2(context, Arrays.asList(SCOPES))
-                .setBackOff(new ExponentialBackOff());
-    }
 
     public YoutubeClient(Context context, Handler handler) {
         this.context = context;

@@ -214,10 +214,11 @@ public class VideoFragment extends Fragment {
                         prevX = event.getX();
                         prevY = event.getY();
                     } else if (action == MotionEvent.ACTION_UP) {
+
                         if (Math.abs(event.getX() - prevX) <= thresholdX &&
                                 Math.abs(event.getY() - prevY) <= thresholdY && mediaService != null) {
 
-                            if (mediaService.mediaPlayer.isPlaying()) {
+                            if (mediaService.isPlaying()) {
                                 mediaService.pause();
                                 setButtonPlay(true);
 
@@ -474,7 +475,6 @@ public class VideoFragment extends Fragment {
                 if (info.isAvailable() && info.isConnected()) {
 
                     if (mediaService != null) {
-                        mediaService.reset();
                         mediaService.prepare(dataHolder);
                         mediaService.setDisplay(surfaceHolder);
                         mediaService.play();
@@ -555,7 +555,7 @@ public class VideoFragment extends Fragment {
                 @Override
                 public void run() {
                     if (mediaService != null && mediaService.updateSeekBar && started) {
-                        int pos = mediaService.mediaPlayer.getCurrentPosition();
+                        int pos = mediaService.getCurrentPos();
                         seekBar.setProgress(pos);
 //                        currentTime.setText(pos);
                         seekHandler.postDelayed(this, 1000);
@@ -651,7 +651,7 @@ public class VideoFragment extends Fragment {
             if (!mediaService.prepared) {
                 playerActivity.slidePanel.setPanelState(SlidingUpPanelLayout.PanelState.EXPANDED);
                 start(currentdata);
-            } else if (mediaService.mediaPlayer.isPlaying()) {
+            } else if (mediaService.isPlaying()) {
                 playerActivity.slidePanel.setPanelState(SlidingUpPanelLayout.PanelState.EXPANDED);
             }
         }

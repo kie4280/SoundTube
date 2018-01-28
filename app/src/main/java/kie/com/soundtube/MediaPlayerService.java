@@ -9,6 +9,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.media.AudioManager;
+import android.media.MediaCodec;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.net.wifi.WifiManager;
@@ -19,8 +20,27 @@ import android.os.IBinder;
 import android.os.PowerManager;
 import android.util.Log;
 import android.view.SurfaceHolder;
+import android.widget.MediaController;
 import android.widget.RemoteViews;
 import android.widget.Toast;
+
+import com.google.android.exoplayer2.ExoPlaybackException;
+import com.google.android.exoplayer2.ExoPlayer;
+import com.google.android.exoplayer2.ExoPlayerFactory;
+import com.google.android.exoplayer2.Player;
+import com.google.android.exoplayer2.SimpleExoPlayer;
+import com.google.android.exoplayer2.source.ExtractorMediaSource;
+import com.google.android.exoplayer2.source.MediaSource;
+import com.google.android.exoplayer2.trackselection.AdaptiveTrackSelection;
+import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
+import com.google.android.exoplayer2.trackselection.TrackSelection;
+import com.google.android.exoplayer2.trackselection.TrackSelector;
+import com.google.android.exoplayer2.upstream.BandwidthMeter;
+import com.google.android.exoplayer2.upstream.DataSource;
+import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
+import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
+import com.google.android.exoplayer2.util.Util;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -37,7 +57,7 @@ public class MediaPlayerService extends Service {
     private static final String NOTIFICATION_PLAY = "NOTIFICATION_PLAY";
     private static final String NOTIFICATION_NEXT = "NOTIFICATION_NEXT";
     private static final String NOTIFICATION_PREV = "NOTIFICATION_PREV";
-    public MediaPlayer mediaPlayer;
+    public SimpleExoPlayer exoPlayer;
     private MusicBinder musicBinder;
     Handler playHandler;
     HandlerThread thread;
@@ -74,7 +94,7 @@ public class MediaPlayerService extends Service {
                         videoFragment.Videoratio = (float) mp.getVideoWidth() / (float) mp.getVideoHeight();
                         videoFragment.buffering(false);
                         videoFragment.showcontrols(false);
-                        videoFragment.setSeekBarMax(mediaPlayer.getDuration());
+                        videoFragment.setSeekBarMax(getDuration());
 
                     }
                 }
@@ -150,9 +170,9 @@ public class MediaPlayerService extends Service {
             if (videoFragment.prepared) {
                 setDisplay(videoFragment.surfaceHolder);
             }
-            if (mediaPlayer.isPlaying()) {
+            if (isPlaying()) {
                 updateSeekBar = true;
-                videoFragment.setSeekBarMax(mediaPlayer.getDuration());
+                videoFragment.setSeekBarMax(getDuration());
                 videoFragment.updateSeekBar();
                 videoFragment.setButtonPlay(false);
             }
@@ -170,10 +190,9 @@ public class MediaPlayerService extends Service {
         videoFragment.serviceDisconnected();
         videoFragment = null;
         Log.d("service", "onUnbind");
-        if (!mediaPlayer.isPlaying()) {
+        if (!isPlaying()) {
             stopForeground(false);
         }
-
 
 //        notificationManager.notify(1, not);
 
@@ -183,28 +202,23 @@ public class MediaPlayerService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        mediaPlayer = new MediaPlayer();
-        mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-        mediaPlayer.setOnPreparedListener(preparedListener);
-        mediaPlayer.setOnErrorListener(errorListener);
-        mediaPlayer.setOnCompletionListener(completionListener);
-        mediaPlayer.setOnInfoListener(infoListener);
-        thread = new HandlerThread("playerhandler");
-        thread.setPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND);
-        thread.start();
-        playHandler = new Handler(thread.getLooper());
         PowerManager powerManager = (PowerManager) getSystemService(Service.POWER_SERVICE);
         wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "serviceWakeLock");
         wakeLock.setReferenceCounted(false);
         wifiManager = (WifiManager) getApplicationContext().getSystemService(Service.WIFI_SERVICE);
         wifiLock = wifiManager.createWifiLock(WifiManager.WIFI_MODE_FULL, "ServiceWifilock");
         wifiLock.setReferenceCounted(false);
+        thread = new HandlerThread("playerhandler");
+        thread.setPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND);
+        thread.start();
+        playHandler = new Handler(thread.getLooper());
+        newPlayer();
+
         notificationManager = (NotificationManager) getSystemService(Service.NOTIFICATION_SERVICE);
         Intent app = new Intent(getApplicationContext(), PlayerActivity.class);
         app.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         Intent destroy = new Intent(NOTIFICATION_REMOVED);
         Intent play = new Intent(NOTIFICATION_PLAY);
-
         Intent next = new Intent(NOTIFICATION_NEXT);
         Intent prev = new Intent(NOTIFICATION_PREV);
         PendingIntent notAddIntent = PendingIntent.getActivity(MediaPlayerService.this, 0, app,
@@ -244,7 +258,7 @@ public class MediaPlayerService extends Service {
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
             if (action.equals(NOTIFICATION_PLAY)) {
-                if (mediaPlayer.isPlaying()) {
+                if (exoPlayer.getPlayWhenReady()) {
                     pause();
                     if (videoFragment != null) {
                         videoFragment.setButtonPlay(true);
@@ -270,7 +284,7 @@ public class MediaPlayerService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        mediaPlayer.release();
+        exoPlayer.release();
         wifiLock.release();
         wakeLock.release();
         thread.quit();
@@ -283,11 +297,36 @@ public class MediaPlayerService extends Service {
 
     }
 
+    public void newPlayer() {
+        BandwidthMeter bandwidthMeter = new DefaultBandwidthMeter();
+        TrackSelection.Factory trackSelectionFactory = new AdaptiveTrackSelection.Factory(bandwidthMeter);
+        TrackSelector trackSelector = new DefaultTrackSelector(trackSelectionFactory);
+        exoPlayer = ExoPlayerFactory.newSimpleInstance(getApplicationContext(), trackSelector);
+        exoPlayer.setPlayWhenReady(true);
+        exoPlayer.addListener(new Player.DefaultEventListener() {
+            @Override
+            public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
+                super.onPlayerStateChanged(playWhenReady, playbackState);
+                switch (playbackState) {
+                    case Player.STATE_IDLE:
+                        prepared = false;
+                        break;
+                    case Player.STATE_BUFFERING:
+                        buffering(true);
+                        break;
+                    case Player.STATE_READY:
+                        buffering(false);
+                        prepared = true;
+                }
+            }
+        });
+    }
+
     public void play() {
-        Runnable r = new Runnable() {
+        playHandler.post(new Runnable() {
             @Override
             public void run() {
-                mediaPlayer.start();
+                exoPlayer.setPlayWhenReady(true);
                 updateSeekBar = true;
                 if (videoFragment != null) {
                     videoFragment.currentdata = currentData;
@@ -299,21 +338,16 @@ public class MediaPlayerService extends Service {
                 startForeground(1, notbuilder.build());
 
             }
-        };
-        if (prepared) {
-            playHandler.post(r);
+        });
 
-        } else {
-            preparetasks.offer(r);
-        }
     }
 
     public void pause() {
         playHandler.post(new Runnable() {
             @Override
             public void run() {
-                if (mediaPlayer.isPlaying()) {
-                    mediaPlayer.pause();
+                if (isPlaying()) {
+                    exoPlayer.setPlayWhenReady(false);
                     wifiLock.release();
                     wakeLock.release();
                     updateSeekBar = false;
@@ -331,22 +365,22 @@ public class MediaPlayerService extends Service {
         playHandler.post(new Runnable() {
             @Override
             public void run() {
-                mediaPlayer.stop();
+                exoPlayer.setPlayWhenReady(false);
                 updateSeekBar = false;
             }
         });
     }
 
-    public void reset() {
-        prepared = false;
-        playHandler.post(new Runnable() {
-            @Override
-            public void run() {
+    public int getCurrentPos() {
+        return (int) exoPlayer.getCurrentPosition();
+    }
 
-                mediaPlayer.reset();
-                updateSeekBar = false;
-            }
-        });
+    public int getDuration() {
+        return (int) exoPlayer.getDuration();
+    }
+
+    public boolean isPlaying() {
+        return exoPlayer.getPlayWhenReady();
     }
 
     boolean suspend = false;
@@ -372,15 +406,17 @@ public class MediaPlayerService extends Service {
                 for (int a = 0; a < VideoRetriver.mPreferredVideoQualities.size(); a++) {
                     int quality = VideoRetriver.mPreferredVideoQualities.get(a);
                     if (dataHolder.videoUris.containsKey(quality)) {
-                        try {
-                            mediaPlayer.setDataSource(getApplicationContext(),
-                                    Uri.parse(dataHolder.videoUris.get(quality)));
-                            mediaPlayer.prepareAsync();
-//                    mediaPlayer.setOnBufferingUpdateListener(onBufferingUpdateListener);
+                        // Measures bandwidth during playback. Can be null if not required.
+                        DefaultBandwidthMeter bandwidthMeter = new DefaultBandwidthMeter();
+// Produces DataSource instances through which media data is loaded.
+                        DataSource.Factory dataSourceFactory = new DefaultDataSourceFactory(getApplicationContext(),
+                                Util.getUserAgent(getApplicationContext(), "Soundtube"), bandwidthMeter);
+// This is the MediaSource representing the media to be played.
+                        MediaSource videoSource = new ExtractorMediaSource.Factory(dataSourceFactory)
+                                .createMediaSource(Uri.parse(dataHolder.videoUris.get(quality)));
+// Prepare the player with the source.
+                        exoPlayer.prepare(videoSource);
 
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
                         break;
                     } else if (a == VideoRetriver.mPreferredVideoQualities.size() - 1) {
                         Toast toast = Toast.makeText(getApplicationContext(), "No video resolution", Toast.LENGTH_LONG);
@@ -397,10 +433,9 @@ public class MediaPlayerService extends Service {
             @Override
             public void run() {
                 if (surfaceHolder != null) {
-                    mediaPlayer.setDisplay(surfaceHolder);
-                    mediaPlayer.setScreenOnWhilePlaying(true);
-                } else {
-                    mediaPlayer.setDisplay(null);
+                    exoPlayer.setVideoSurfaceHolder(surfaceHolder);
+                    exoPlayer.setVideoScalingMode(MediaCodec.VIDEO_SCALING_MODE_SCALE_TO_FIT_WITH_CROPPING);
+
                 }
 
             }
@@ -413,8 +448,8 @@ public class MediaPlayerService extends Service {
         playHandler.post(new Runnable() {
             @Override
             public void run() {
-                if (mediaPlayer.isPlaying()) {
-                    mediaPlayer.seekTo(millis);
+                if (isPlaying()) {
+                    exoPlayer.seekTo(millis);
                 }
             }
         });
