@@ -74,76 +74,56 @@ public class MediaPlayerService extends Service {
     Notification.Builder notbuilder;
     Notification not;
 
-    MediaPlayer.OnPreparedListener preparedListener = new MediaPlayer.OnPreparedListener() {
-        @Override
-        public void onPrepared(final MediaPlayer mp) {
+    public void onPrepared() {
 
-            playHandler.post(new Runnable() {
-                @Override
-                public void run() {
+        playHandler.post(new Runnable() {
+            @Override
+            public void run() {
 
-                    mp.setVideoScalingMode(MediaPlayer.VIDEO_SCALING_MODE_SCALE_TO_FIT_WITH_CROPPING);
-                    prepared = true;
-                    Runnable task = preparetasks.poll();
-                    while (task != null) {
-                        playHandler.post(task);
-                        task = preparetasks.poll();
-                    }
-
-                    if (videoFragment != null) {
-                        videoFragment.Videoratio = (float) mp.getVideoWidth() / (float) mp.getVideoHeight();
-                        videoFragment.buffering(false);
-                        videoFragment.showcontrols(false);
-                        videoFragment.setSeekBarMax(getDuration());
-
-                    }
-                }
-            });
-
-        }
-    };
-    MediaPlayer.OnCompletionListener completionListener = new MediaPlayer.OnCompletionListener() {
-        @Override
-        public void onCompletion(MediaPlayer mp) {
-            updateSeekBar = false;
-            if (!playList.isEmpty() && autoplay) {
-                prepared = false;
-                if (playiterator.hasNext()) {
-                    prepare(playiterator.next());
-                } else {
-                    playiterator = playList.listIterator(0);
-                    prepare(playiterator.next());
+                prepared = true;
+                Runnable task = preparetasks.poll();
+                while (task != null) {
+                    playHandler.post(task);
+                    task = preparetasks.poll();
                 }
 
-            } else if (videoFragment != null) {
+                if (videoFragment != null) {
+                    videoFragment.Videoratio = exoPlayer.getVideoFormat().pixelWidthHeightRatio;
+                    buffering(false);
+                    videoFragment.showcontrols(false);
+                    videoFragment.setSeekBarMax(getDuration());
 
-                Log.d("service", "complete");
-                stopForeground(false);
-                notificationManager.notify(1, not);
-                videoFragment.onComplete();
+                }
+                play();
+            }
+        });
+
+    }
+
+
+    public void onCompletion() {
+        updateSeekBar = false;
+        exoPlayer.setPlayWhenReady(false);
+        seekTo(0);
+        if (!playList.isEmpty() && autoplay) {
+
+            if (playiterator.hasNext()) {
+                prepare(playiterator.next());
+            } else {
+                playiterator = playList.listIterator(0);
+                prepare(playiterator.next());
             }
 
+        } else if (videoFragment != null) {
+
+            Log.d("service", "complete");
+            stopForeground(false);
+            notificationManager.notify(1, not);
+            videoFragment.onComplete();
         }
-    };
-    MediaPlayer.OnErrorListener errorListener = new MediaPlayer.OnErrorListener() {
-        @Override
-        public boolean onError(MediaPlayer mp, int what, int extra) {
-            wifiLock.release();
-            wakeLock.release();
-            return false;
-        }
-    };
-    MediaPlayer.OnInfoListener infoListener = new MediaPlayer.OnInfoListener() {
-        @Override
-        public boolean onInfo(MediaPlayer mp, int what, int extra) {
-            if (what == MediaPlayer.MEDIA_INFO_BUFFERING_START) {
-                buffering(true);
-            } else if (what == MediaPlayer.MEDIA_INFO_BUFFERING_END) {
-                buffering(false);
-            }
-            return true;
-        }
-    };
+
+    }
+
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
@@ -294,6 +274,7 @@ public class MediaPlayerService extends Service {
         unregisterReceiver(broadcastReceiver);
         serviceStarted = false;
         notificationManager = null;
+        prepared = false;
 
     }
 
@@ -302,7 +283,7 @@ public class MediaPlayerService extends Service {
         TrackSelection.Factory trackSelectionFactory = new AdaptiveTrackSelection.Factory(bandwidthMeter);
         TrackSelector trackSelector = new DefaultTrackSelector(trackSelectionFactory);
         exoPlayer = ExoPlayerFactory.newSimpleInstance(getApplicationContext(), trackSelector);
-        exoPlayer.setPlayWhenReady(true);
+//        exoPlayer.setPlayWhenReady(false);
         exoPlayer.addListener(new Player.DefaultEventListener() {
             @Override
             public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
@@ -310,16 +291,40 @@ public class MediaPlayerService extends Service {
                 switch (playbackState) {
                     case Player.STATE_IDLE:
                         prepared = false;
+                        exoPlayer.setPlayWhenReady(false);
+                        Log.d("exoPlayer", "stateIdle");
+                        Log.d("exoPlayer", "Play " + Boolean.toString(playWhenReady));
                         break;
                     case Player.STATE_BUFFERING:
                         buffering(true);
+                        Log.d("exoPlayer", "stateBuffering");
                         break;
                     case Player.STATE_READY:
                         buffering(false);
-                        prepared = true;
+                        if (!playWhenReady && !prepared) {
+                            onPrepared();
+                            Log.d("exoPlayer", "stateReady");
+                        }
+                        break;
+                    case Player.STATE_ENDED:
+                        onCompletion();
+                        break;
+                    default:
+                        break;
+
                 }
             }
         });
+
+        exoPlayer.addListener(new Player.DefaultEventListener() {
+            @Override
+            public void onPlayerError(ExoPlaybackException error) {
+                super.onPlayerError(error);
+                wakeLock.release();
+                wifiLock.release();
+            }
+        });
+
     }
 
     public void play() {
@@ -365,8 +370,13 @@ public class MediaPlayerService extends Service {
         playHandler.post(new Runnable() {
             @Override
             public void run() {
-                exoPlayer.setPlayWhenReady(false);
+                exoPlayer.stop();
+                wifiLock.release();
+                wakeLock.release();
                 updateSeekBar = false;
+                if (videoFragment == null) {
+                    stopForeground(false);
+                }
             }
         });
     }
@@ -415,8 +425,9 @@ public class MediaPlayerService extends Service {
                         MediaSource videoSource = new ExtractorMediaSource.Factory(dataSourceFactory)
                                 .createMediaSource(Uri.parse(dataHolder.videoUris.get(quality)));
 // Prepare the player with the source.
+                        exoPlayer.stop();
                         exoPlayer.prepare(videoSource);
-
+                        prepared = false;
                         break;
                     } else if (a == VideoRetriver.mPreferredVideoQualities.size() - 1) {
                         Toast toast = Toast.makeText(getApplicationContext(), "No video resolution", Toast.LENGTH_LONG);

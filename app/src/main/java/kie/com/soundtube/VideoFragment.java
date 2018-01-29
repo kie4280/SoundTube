@@ -470,15 +470,14 @@ public class VideoFragment extends Fragment {
         seekHandler.post(new Runnable() {
             @Override
             public void run() {
-                ConnectivityManager connectmgr = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+                ConnectivityManager connectmgr = (ConnectivityManager) context
+                        .getSystemService(Context.CONNECTIVITY_SERVICE);
                 NetworkInfo info = connectmgr.getActiveNetworkInfo();
                 if (info.isAvailable() && info.isConnected()) {
 
                     if (mediaService != null) {
                         mediaService.prepare(dataHolder);
                         mediaService.setDisplay(surfaceHolder);
-                        mediaService.play();
-
                         setButtonPlay(false);
                         loadRelatedVideos(dataHolder);
 
