@@ -702,7 +702,7 @@ public class VideoFragment extends Fragment {
 
     public boolean previousVideo() {
 
-        DataHolder dataHolder = watchedQueue.poll();
+        DataHolder dataHolder = watchedQueue.pollLast();
         if (dataHolder != null) {
             start(dataHolder);
             return true;
@@ -798,6 +798,7 @@ public class VideoFragment extends Fragment {
                         adapter.dataHolders = data;
                         adapter.title = text;
                         adapter.notifyDataSetChanged();
+                        recyclerView.scrollToPosition(0);
                     }
                     if (waiting) {
                         waiting = false;
