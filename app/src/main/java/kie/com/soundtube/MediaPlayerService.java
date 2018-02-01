@@ -8,9 +8,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.media.AudioManager;
 import android.media.MediaCodec;
-import android.media.MediaPlayer;
 import android.net.Uri;
 import android.net.wifi.WifiManager;
 import android.os.Binder;
@@ -18,14 +16,13 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.PowerManager;
+import android.os.Process;
 import android.util.Log;
 import android.view.SurfaceHolder;
-import android.widget.MediaController;
 import android.widget.RemoteViews;
 import android.widget.Toast;
 
 import com.google.android.exoplayer2.ExoPlaybackException;
-import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.ExoPlayerFactory;
 import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.SimpleExoPlayer;
@@ -41,7 +38,6 @@ import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 import com.google.android.exoplayer2.util.Util;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.ListIterator;
@@ -53,6 +49,7 @@ public class MediaPlayerService extends Service {
     public boolean autoplay = true;
 
     public static boolean serviceStarted = false;
+    private static final int NOTIFICATION_ID = 1;
     private static final String NOTIFICATION_REMOVED = "NOTIFICATION_REMOVED";
     private static final String NOTIFICATION_PLAY = "NOTIFICATION_PLAY";
     private static final String NOTIFICATION_NEXT = "NOTIFICATION_NEXT";
@@ -71,8 +68,9 @@ public class MediaPlayerService extends Service {
     NotificationManager notificationManager;
     ArrayList<DataHolder> playList = new ArrayList<>();
     ListIterator<DataHolder> playiterator = playList.listIterator();
-    Notification.Builder notbuilder;
+    Notification.Builder notBuilder;
     Notification not;
+    RemoteViews notContentView;
 
     public void onPrepared() {
 
@@ -100,11 +98,12 @@ public class MediaPlayerService extends Service {
 
     }
 
-
     public void onCompletion() {
         updateSeekBar = false;
+        exoPlayer.seekTo(0);
         exoPlayer.setPlayWhenReady(false);
-        seekTo(0);
+        pause();
+
         if (!playList.isEmpty() && autoplay) {
 
             if (playiterator.hasNext()) {
@@ -118,11 +117,35 @@ public class MediaPlayerService extends Service {
 
             Log.d("service", "complete");
             stopForeground(false);
-            notificationManager.notify(1, not);
+            notificationManager.notify(NOTIFICATION_ID, not);
             videoFragment.onComplete();
         }
 
     }
+
+    private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+            if (action.equals(NOTIFICATION_PLAY)) {
+                if (isPlaying()) {
+                    pause();
+
+                } else {
+                    play();
+
+                }
+            } else if (action.equals(NOTIFICATION_NEXT)) {
+
+            } else if (action.equals(NOTIFICATION_PREV)) {
+
+            } else if (action.equals(NOTIFICATION_REMOVED)) {
+
+                stopSelf();
+                Log.d("service", "notification remove");
+            }
+        }
+    };
 
 
     @Override
@@ -137,7 +160,7 @@ public class MediaPlayerService extends Service {
         if (videoFragment != null && videoFragment.prepared) {
             setDisplay(videoFragment.surfaceHolder);
         }
-        startForeground(1, not);
+        startForeground(NOTIFICATION_ID, not);
         return musicBinder;
     }
 
@@ -159,7 +182,7 @@ public class MediaPlayerService extends Service {
         }
 
 
-        startForeground(1, not);
+        startForeground(NOTIFICATION_ID, not);
     }
 
     @Override
@@ -174,7 +197,7 @@ public class MediaPlayerService extends Service {
             stopForeground(false);
         }
 
-//        notificationManager.notify(1, not);
+//        notificationManager.notify(NOTIFICATION_ID, not);
 
         return true;
     }
@@ -189,7 +212,7 @@ public class MediaPlayerService extends Service {
         wifiLock = wifiManager.createWifiLock(WifiManager.WIFI_MODE_FULL, "ServiceWifilock");
         wifiLock.setReferenceCounted(false);
         thread = new HandlerThread("playerhandler");
-        thread.setPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND);
+        thread.setPriority(Process.THREAD_PRIORITY_BACKGROUND);
         thread.start();
         playHandler = new Handler(thread.getLooper());
         newPlayer();
@@ -215,51 +238,23 @@ public class MediaPlayerService extends Service {
         registerReceiver(broadcastReceiver, new IntentFilter(NOTIFICATION_NEXT));
         registerReceiver(broadcastReceiver, new IntentFilter(NOTIFICATION_PREV));
         registerReceiver(broadcastReceiver, new IntentFilter(NOTIFICATION_PLAY));
-        RemoteViews contentView = new RemoteViews(getPackageName(), R.layout.notification_layout);
-        contentView.setOnClickPendingIntent(R.id.ppButton, playIntent);
-        contentView.setOnClickPendingIntent(R.id.next, nextIntent);
-        contentView.setOnClickPendingIntent(R.id.prev, prevIntent);
-        notbuilder = new Notification.Builder(MediaPlayerService.this);
-        notbuilder.setContentIntent(notAddIntent)
+        notBuilder = new Notification.Builder(MediaPlayerService.this);
+        notContentView = new RemoteViews(getPackageName(), R.layout.notification_layout);
+        notContentView.setOnClickPendingIntent(R.id.ppButton, playIntent);
+        notContentView.setOnClickPendingIntent(R.id.next, nextIntent);
+        notContentView.setOnClickPendingIntent(R.id.prev, prevIntent);
+        notBuilder.setContentIntent(notAddIntent)
                 .setSmallIcon(R.drawable.icon)
                 .setOngoing(false)
                 .setContentTitle("SoundTube")
                 .setDeleteIntent(notRemoveIntent)
-                .setContent(contentView);
-        not = notbuilder.build();
+                .setContent(notContentView);
+        not = notBuilder.build();
 //        not.flags |= Notification.FLAG_NO_CLEAR;
         Log.d("service", "created");
         serviceStarted = true;
 
     }
-
-    private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            String action = intent.getAction();
-            if (action.equals(NOTIFICATION_PLAY)) {
-                if (exoPlayer.getPlayWhenReady()) {
-                    pause();
-                    if (videoFragment != null) {
-                        videoFragment.setButtonPlay(true);
-                    }
-                } else {
-                    play();
-                    if (videoFragment != null) {
-                        videoFragment.setButtonPlay(false);
-                    }
-                }
-            } else if (action.equals(NOTIFICATION_NEXT)) {
-
-            } else if (action.equals(NOTIFICATION_PREV)) {
-
-            } else if (action.equals(NOTIFICATION_REMOVED)) {
-
-                stopSelf();
-                Log.d("service", "notification remove");
-            }
-        }
-    };
 
     @Override
     public void onDestroy() {
@@ -283,7 +278,6 @@ public class MediaPlayerService extends Service {
         TrackSelection.Factory trackSelectionFactory = new AdaptiveTrackSelection.Factory(bandwidthMeter);
         TrackSelector trackSelector = new DefaultTrackSelector(trackSelectionFactory);
         exoPlayer = ExoPlayerFactory.newSimpleInstance(getApplicationContext(), trackSelector);
-//        exoPlayer.setPlayWhenReady(false);
         exoPlayer.addListener(new Player.DefaultEventListener() {
             @Override
             public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
@@ -331,16 +325,21 @@ public class MediaPlayerService extends Service {
         playHandler.post(new Runnable() {
             @Override
             public void run() {
-                exoPlayer.setPlayWhenReady(true);
-                updateSeekBar = true;
-                if (videoFragment != null) {
-                    videoFragment.currentdata = currentData;
-                    videoFragment.updateSeekBar();
+                if (!isPlaying()) {
+                    exoPlayer.setPlayWhenReady(true);
+                    updateSeekBar = true;
+                    wifiLock.acquire();
+                    wakeLock.acquire();
+                    notContentView.setImageViewResource(R.id.ppButton, R.drawable.pause);
+//                notBuilder.setContent(notContentView);
+                    startForeground(NOTIFICATION_ID, notBuilder.build());
+                    if (videoFragment != null) {
+                        videoFragment.currentdata = currentData;
+                        videoFragment.updateSeekBar();
+                        videoFragment.setButtonPlay(false);
+
+                    }
                 }
-                wifiLock.acquire();
-                wakeLock.acquire();
-//                notificationManager.notify(1, notbuilder.build());
-                startForeground(1, notbuilder.build());
 
             }
         });
@@ -355,9 +354,14 @@ public class MediaPlayerService extends Service {
                     exoPlayer.setPlayWhenReady(false);
                     wifiLock.release();
                     wakeLock.release();
+                    stopForeground(false);
+                    notContentView.setImageViewResource(R.id.ppButton, R.drawable.play);
+                    notBuilder.setContent(notContentView);
+                    notificationManager.notify(NOTIFICATION_ID, notBuilder.build());
                     updateSeekBar = false;
-                    if (videoFragment == null) {
-                        stopForeground(false);
+                    if (videoFragment != null) {
+                        videoFragment.setButtonPlay(true);
+
                     }
                 }
 
@@ -416,6 +420,7 @@ public class MediaPlayerService extends Service {
                 for (int a = 0; a < VideoRetriver.mPreferredVideoQualities.size(); a++) {
                     int quality = VideoRetriver.mPreferredVideoQualities.get(a);
                     if (dataHolder.videoUris.containsKey(quality)) {
+                        notContentView.setTextViewText(R.id.notPlayingTitle, currentData.title);
                         // Measures bandwidth during playback. Can be null if not required.
                         DefaultBandwidthMeter bandwidthMeter = new DefaultBandwidthMeter();
 // Produces DataSource instances through which media data is loaded.

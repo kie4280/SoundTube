@@ -334,7 +334,7 @@ public class AccountActivity extends Activity
             JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
             mService = new com.google.api.services.youtube.YouTube.Builder(
                     transport, jsonFactory, credential)
-                    .setApplicationName("Soundtube")
+                    .setApplicationName("SoundTube")
                     .build();
         }
 

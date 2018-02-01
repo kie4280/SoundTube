@@ -1,6 +1,6 @@
 package kie.com.soundtube;
 
-import android.app.Activity;
+import android.app.Fragment;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.graphics.Canvas;
@@ -14,7 +14,6 @@ import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.app.Fragment;
 import android.support.v4.view.ViewPager;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.DividerItemDecoration;
@@ -22,8 +21,21 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.DisplayMetrics;
 import android.util.Log;
-import android.view.*;
-import android.widget.*;
+import android.view.LayoutInflater;
+import android.view.MotionEvent;
+import android.view.ScaleGestureDetector;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.ImageButton;
+import android.widget.ImageView;
+import android.widget.ProgressBar;
+import android.widget.RelativeLayout;
+import android.widget.SeekBar;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import com.sothree.slidinguppanel.SlidingUpPanelLayout;
 
@@ -54,6 +66,8 @@ public class VideoFragment extends Fragment {
     private ProgressBar progressBar;
     private TextView currentTime;
     private TextView totalTime;
+    private ImageView headerPlayButton;
+    public TextView playingTextView;
     private ScaleGestureDetector scaleGestureDetector;
     private DisplayMetrics displayMetrics;
     private Context context;
@@ -127,11 +141,11 @@ public class VideoFragment extends Fragment {
             videoFragmentView = inflater.inflate(R.layout.fragment_video, container, false);
             surfaceView = (SurfaceView) videoFragmentView.findViewById(R.id.surfaceView);
             seekBar = (SeekBar) videoFragmentView.findViewById(R.id.seekBar);
-
+            playingTextView = (TextView) videoFragmentView.findViewById(R.id.playingTextView);
             currentTime = (TextView) videoFragmentView.findViewById(R.id.currentTime);
             totalTime = (TextView) videoFragmentView.findViewById(R.id.totalTime);
             header = (RelativeLayout) videoFragmentView.findViewById(R.id.headerView);
-
+            headerPlayButton = (ImageView) videoFragmentView.findViewById(R.id.headerPlayButton);
             viewPager = (ViewPager) videoFragmentView.findViewById(R.id.videoViewPager);
             headersize = Tools.convertDpToPixel(HeaderDP, context);
             playbutton = (Button) videoFragmentView.findViewById(R.id.playbutton);
@@ -198,46 +212,8 @@ public class VideoFragment extends Fragment {
 
                 }
             });
-
-            playbutton.setOnTouchListener(new View.OnTouchListener() {
-                float prevX = 0;
-                float prevY = 0;
-                float thresholdX = 15f;
-                float thresholdY = 15f;
-
-                @Override
-                public boolean onTouch(View v, MotionEvent event) {
-                    int action = event.getAction();
-                    if (action == MotionEvent.ACTION_DOWN) {
-//                    playerActivity.viewPager.setSwipingEnabled(false);
-                        Log.d("playbutton", "down");
-                        prevX = event.getX();
-                        prevY = event.getY();
-                    } else if (action == MotionEvent.ACTION_UP) {
-
-                        if (Math.abs(event.getX() - prevX) <= thresholdX &&
-                                Math.abs(event.getY() - prevY) <= thresholdY && mediaService != null) {
-
-                            if (mediaService.isPlaying()) {
-                                mediaService.pause();
-                                setButtonPlay(true);
-
-                            } else {
-                                mediaService.play();
-                                setButtonPlay(false);
-                            }
-//                    playerActivity.viewPager.setSwipingEnabled(true);
-                        }
-
-                    }
-
-                    return false;
-                }
-
-
-            });
-
-
+            playbutton.setOnTouchListener(buttonTouchListener);
+            vrelativeLayout.setOnTouchListener(videoTouchListener);
             seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
                 @Override
                 public void onProgressChanged(SeekBar seekBar, final int progress, boolean fromUser) {
@@ -257,7 +233,21 @@ public class VideoFragment extends Fragment {
 
                 }
             });
-            vrelativeLayout.setOnTouchListener(videotouchListener);
+            headerPlayButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    if (mediaService != null && started) {
+                        if (mediaService.isPlaying()) {
+                            mediaService.pause();
+                            headerPlayButton.setImageResource(R.drawable.play);
+                        } else {
+                            mediaService.play();
+                            headerPlayButton.setImageResource(R.drawable.pause);
+                        }
+                    }
+                }
+            });
+
         }
 
         Log.d("video", "createView");
@@ -265,7 +255,45 @@ public class VideoFragment extends Fragment {
         return videoFragmentView;
     }
 
-    private View.OnTouchListener videotouchListener = new View.OnTouchListener() {
+    private View.OnTouchListener buttonTouchListener = new View.OnTouchListener() {
+        float prevX = 0;
+        float prevY = 0;
+        float thresholdX = 15f;
+        float thresholdY = 15f;
+
+        @Override
+        public boolean onTouch(View v, MotionEvent event) {
+            int action = event.getAction();
+            if (action == MotionEvent.ACTION_DOWN) {
+//                    playerActivity.viewPager.setSwipingEnabled(false);
+                Log.d("playbutton", "down");
+                prevX = event.getX();
+                prevY = event.getY();
+            } else if (action == MotionEvent.ACTION_UP) {
+
+                if (Math.abs(event.getX() - prevX) <= thresholdX &&
+                        Math.abs(event.getY() - prevY) <= thresholdY && mediaService != null) {
+
+                    if (mediaService.isPlaying()) {
+                        mediaService.pause();
+
+
+                    } else {
+                        mediaService.play();
+
+                    }
+//                    playerActivity.viewPager.setSwipingEnabled(true);
+                }
+
+            }
+
+            return false;
+        }
+
+
+    };
+
+    private View.OnTouchListener videoTouchListener = new View.OnTouchListener() {
         float prevX = 0;
         float prevY = 0;
         float thresholdX = 15f;
@@ -410,17 +438,6 @@ public class VideoFragment extends Fragment {
     }
 
     @Override
-    public void onAttach(Activity activity) {
-        super.onAttach(activity);
-        if (activity instanceof SearchFragment.OnFragmentInteractionListener) {
-            mListener = (OnFragmentInteractionListener) activity;
-        } else {
-            throw new RuntimeException(activity.toString()
-                    + " must implement OnFragmentInteractionListener");
-        }
-    }
-
-    @Override
     public void onDetach() {
         super.onDetach();
         mListener = null;
@@ -467,6 +484,13 @@ public class VideoFragment extends Fragment {
     public void start(final DataHolder dataHolder) {
 
         currentdata = dataHolder;
+        playerActivity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                playingTextView.setText(currentdata.title);
+            }
+        });
+
         seekHandler.post(new Runnable() {
             @Override
             public void run() {
@@ -476,11 +500,11 @@ public class VideoFragment extends Fragment {
                 if (info.isAvailable() && info.isConnected()) {
 
                     if (mediaService != null) {
+
                         mediaService.prepare(dataHolder);
                         mediaService.setDisplay(surfaceHolder);
                         setButtonPlay(false);
                         loadRelatedVideos(dataHolder);
-
                     }
 
                 } else {
@@ -575,7 +599,7 @@ public class VideoFragment extends Fragment {
                     playerActivity.runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            playbutton.setBackgroundResource(R.drawable.play);
+                            setButtonPlay(true);
                             showcontrols(true);
                             seekBar.setProgress(0);
 
@@ -798,26 +822,29 @@ public class VideoFragment extends Fragment {
             RecyclerTouchListener listener = new RecyclerTouchListener(context, new OnItemClicked() {
                 @Override
                 public void onClick(View view, int position) {
-                    System.out.println("clicked" + (position - 1));
-                    Toast toast = Toast.makeText(context, "Decrypting...", Toast.LENGTH_SHORT);
-                    toast.show();
-                    final DataHolder dataHolder = adapter.dataHolders.get(position - 1);
-                    videoRetriver.startExtracting("https://www.youtube" +
-                            ".com/watch?v=" + dataHolder.videoID, new VideoRetriver.YouTubeExtractorListener() {
-                        @Override
-                        public void onSuccess(HashMap<Integer, String> result) {
-                            dataHolder.videoUris = result;
-                            watchedQueue.offer(currentdata);
-                            start(dataHolder);
-                            //Log.d("search", ))
-                        }
+                    if (position > 0) {
+                        System.out.println("clicked" + (position - 1));
+                        Toast toast = Toast.makeText(context, "Decrypting...", Toast.LENGTH_SHORT);
+                        toast.show();
+                        final DataHolder dataHolder = adapter.dataHolders.get(position - 1);
+                        videoRetriver.startExtracting("https://www.youtube" +
+                                ".com/watch?v=" + dataHolder.videoID, new VideoRetriver.YouTubeExtractorListener() {
+                            @Override
+                            public void onSuccess(HashMap<Integer, String> result) {
+                                dataHolder.videoUris = result;
+                                watchedQueue.offer(currentdata);
+                                start(dataHolder);
+                                //Log.d("search", ))
+                            }
 
-                        @Override
-                        public void onFailure(Error error) {
-                            Log.d("search", "error extracting");
+                            @Override
+                            public void onFailure(Error error) {
+                                Log.d("search", "error extracting");
 
-                        }
-                    });
+                            }
+                        });
+                    }
+
                 }
 
                 @Override

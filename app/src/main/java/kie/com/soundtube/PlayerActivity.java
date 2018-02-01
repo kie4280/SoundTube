@@ -32,9 +32,9 @@ import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
+
 import com.sothree.slidinguppanel.SlidingUpPanelLayout.PanelSlideListener;
 import com.sothree.slidinguppanel.SlidingUpPanelLayout.PanelState;
-
 
 
 import kie.com.soundtube.MediaPlayerService.MusicBinder;
@@ -66,7 +66,6 @@ public class PlayerActivity extends AppCompatActivity implements SearchFragment.
     Context context;
     ConnectivityManager connectmgr;
     TelephonyManager telephonyManager;
-
 
 
     @Override
@@ -191,24 +190,17 @@ public class PlayerActivity extends AppCompatActivity implements SearchFragment.
                 videoFragment.setHeaderVisible(false);
                 videoFragment.setHeaderPos(1);
                 setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR);
-//                if (getSupportActionBar() != null) {
-//                    getSupportActionBar().hide();
-//                }
-
                 Log.d("Panel", "expanded");
+
             } else if (newState == PanelState.COLLAPSED) {
                 setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-                videoFragment.setHeaderPos(0);
-//                if (getSupportActionBar() != null) {
-//                    getSupportActionBar().show();
-//                }
-                Log.d("Panel", "collapsed");
-            } else if (newState == PanelState.DRAGGING) {
                 videoFragment.setHeaderVisible(true);
+                videoFragment.setHeaderPos(0);
+                Log.d("Panel", "collapsed");
+
+            } else if (newState == PanelState.DRAGGING) {
                 Log.d("Panel", "dragging");
             }
-
-
         }
     };
 
@@ -343,12 +335,13 @@ public class PlayerActivity extends AppCompatActivity implements SearchFragment.
     }
 
     @Override
-    public void onReturnSearchVideo(DataHolder dataHolder) {
+    public void onReturnSearchVideo(final DataHolder dataHolder) {
 
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 slidePanel.setPanelState(PanelState.EXPANDED);
+
             }
         });
         videoFragment.start(dataHolder);
@@ -393,7 +386,6 @@ public class PlayerActivity extends AppCompatActivity implements SearchFragment.
                 break;
         }
     }
-
 
 
 }

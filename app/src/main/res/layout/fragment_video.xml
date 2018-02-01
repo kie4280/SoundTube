@@ -12,10 +12,28 @@
             android:layout_alignParentTop="false">
 
         <TextView
-                android:text="TextView"
-                android:layout_width="match_parent"
-                android:id="@+id/textView" android:layout_height="match_parent"
-                android:textSize="36sp" android:gravity="center"/>
+            android:id="@+id/playingTextView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_alignParentTop="true"
+            android:layout_marginEnd="10dp"
+            android:layout_toStartOf="@+id/headerPlayButton"
+            android:ellipsize="end"
+            android:gravity="center"
+            android:singleLine="true"
+            android:textSize="20sp" />
+
+        <ImageView
+            android:id="@+id/headerPlayButton"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:layout_marginEnd="10dp"
+            android:layout_marginTop="18dp"
+            android:scaleType="centerCrop"
+            app:srcCompat="@drawable/play" />
+
     </RelativeLayout>
     <RelativeLayout
             android:layout_width="match_parent"
@@ -62,6 +80,7 @@
                 android:id="@+id/currentTime" android:layout_above="@+id/seekBar"
             android:layout_toEndOf="@+id/bufferProgressBar"
             android:visibility="gone" />
+
     </RelativeLayout>
 
     <RelativeLayout
