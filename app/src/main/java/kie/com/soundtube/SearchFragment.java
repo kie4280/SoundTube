@@ -776,6 +776,7 @@ public class SearchFragment extends Fragment {
                         adapter.dataHolders = data;
                         adapter.notifyDataSetChanged();
                     }
+                    recyclerView.scrollToPosition(0);
                     if (waiting) {
                         waiting = false;
                         recyclerView.setVisibility(View.VISIBLE);

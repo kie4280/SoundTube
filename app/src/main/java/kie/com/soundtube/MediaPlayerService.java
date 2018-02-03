@@ -46,7 +46,7 @@ import java.util.Queue;
 public class MediaPlayerService extends Service {
     public int mposition = 0;
     public DataHolder currentData = null;
-    public boolean autoplay = true;
+    public static boolean autoplay = true;
 
     public static boolean serviceStarted = false;
     private static final int NOTIFICATION_ID = 1;
@@ -66,7 +66,7 @@ public class MediaPlayerService extends Service {
     WifiManager.WifiLock wifiLock;
     WifiManager wifiManager;
     NotificationManager notificationManager;
-    ArrayList<DataHolder> playList = new ArrayList<>();
+    LinkedList<DataHolder> playList = new LinkedList<>();
     ListIterator<DataHolder> playiterator = playList.listIterator();
     Notification.Builder notBuilder;
     Notification not;
@@ -103,22 +103,18 @@ public class MediaPlayerService extends Service {
         exoPlayer.seekTo(0);
         exoPlayer.setPlayWhenReady(false);
         pause();
+        if (videoFragment != null) {
+            videoFragment.onComplete();
+        }
 
         if (!playList.isEmpty() && autoplay) {
+            prepare(playList.pollFirst());
 
-            if (playiterator.hasNext()) {
-                prepare(playiterator.next());
-            } else {
-                playiterator = playList.listIterator(0);
-                prepare(playiterator.next());
-            }
-
-        } else if (videoFragment != null) {
-
+        } else {
             Log.d("service", "complete");
             stopForeground(false);
             notificationManager.notify(NOTIFICATION_ID, not);
-            videoFragment.onComplete();
+
         }
 
     }
@@ -337,6 +333,7 @@ public class MediaPlayerService extends Service {
                         videoFragment.currentdata = currentData;
                         videoFragment.updateSeekBar();
                         videoFragment.setButtonPlay(false);
+                        videoFragment.headerPlayButton.setImageResource(R.drawable.pause);
 
                     }
                 }
@@ -361,7 +358,7 @@ public class MediaPlayerService extends Service {
                     updateSeekBar = false;
                     if (videoFragment != null) {
                         videoFragment.setButtonPlay(true);
-
+                        videoFragment.headerPlayButton.setImageResource(R.drawable.play);
                     }
                 }
 
@@ -421,6 +418,7 @@ public class MediaPlayerService extends Service {
                     int quality = VideoRetriver.mPreferredVideoQualities.get(a);
                     if (dataHolder.videoUris.containsKey(quality)) {
                         notContentView.setTextViewText(R.id.notPlayingTitle, currentData.title);
+                        prepared = false;
                         // Measures bandwidth during playback. Can be null if not required.
                         DefaultBandwidthMeter bandwidthMeter = new DefaultBandwidthMeter();
 // Produces DataSource instances through which media data is loaded.
@@ -432,7 +430,7 @@ public class MediaPlayerService extends Service {
 // Prepare the player with the source.
                         exoPlayer.stop();
                         exoPlayer.prepare(videoSource);
-                        prepared = false;
+
                         break;
                     } else if (a == VideoRetriver.mPreferredVideoQualities.size() - 1) {
                         Toast toast = Toast.makeText(getApplicationContext(), "No video resolution", Toast.LENGTH_LONG);

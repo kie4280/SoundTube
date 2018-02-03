@@ -66,7 +66,7 @@ public class VideoFragment extends Fragment {
     private ProgressBar progressBar;
     private TextView currentTime;
     private TextView totalTime;
-    private ImageView headerPlayButton;
+    public ImageView headerPlayButton;
     public TextView playingTextView;
     private ScaleGestureDetector scaleGestureDetector;
     private DisplayMetrics displayMetrics;
@@ -156,7 +156,7 @@ public class VideoFragment extends Fragment {
             bar2 = (ProgressBar) r2.findViewById(R.id.pageLoadingBar);
             View pageview = inflater.inflate(R.layout.related_video_layout, null);
             recyclerView = (RecyclerView) pageview.findViewById(R.id.searchrecyclerView);
-//        playerActivity.slidePanel.setScrollableView(recyclerView);
+
             pageviews.add(r1);
             pageviews.add(pageview);
             pageviews.add(r2);
@@ -593,6 +593,26 @@ public class VideoFragment extends Fragment {
     public void onComplete() {
 
         if (started) {
+            if (MediaPlayerService.autoplay) {
+                final DataHolder target = page.adapter.dataHolders.get(0);
+                videoRetriver.startExtracting("https://www.youtube" +
+                        ".com/watch?v=" + target.videoID, new VideoRetriver.YouTubeExtractorListener() {
+                    @Override
+                    public void onSuccess(HashMap<Integer, String> result) {
+                        target.videoUris = result;
+                        watchedQueue.offer(currentdata);
+                        start(target);
+                        //Log.d("search", ))
+                    }
+
+                    @Override
+                    public void onFailure(Error error) {
+                        Log.d("search", "error extracting");
+
+                    }
+                });
+
+            }
             seekHandler.postDelayed(new Runnable() {
                 @Override
                 public void run() {
@@ -798,8 +818,9 @@ public class VideoFragment extends Fragment {
                         adapter.dataHolders = data;
                         adapter.title = text;
                         adapter.notifyDataSetChanged();
-                        recyclerView.scrollToPosition(0);
+
                     }
+                    recyclerView.scrollToPosition(0);
                     if (waiting) {
                         waiting = false;
                         recyclerView.setVisibility(View.VISIBLE);

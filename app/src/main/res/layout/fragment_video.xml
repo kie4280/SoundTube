@@ -47,12 +47,16 @@
             android:layout_height="match_parent"
             android:layout_alignParentStart="true"
             android:layout_alignParentTop="true" />
+
         <SeekBar
-                android:layout_width="match_parent"
-                android:id="@+id/seekBar"
-                android:layout_alignParentBottom="true" android:layout_alignParentStart="true"
-                android:visibility="gone"
-                android:layout_height="wrap_content"/>
+            android:id="@+id/seekBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentStart="true"
+            android:layout_marginBottom="5dp"
+            android:visibility="gone"
+            android:thumb="@drawable/seekthumb" />
         <ProgressBar
                 style="@android:style/Widget.ProgressBar.Large"
                 android:layout_width="wrap_content"
