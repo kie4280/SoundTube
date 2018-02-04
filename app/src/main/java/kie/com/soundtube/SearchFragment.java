@@ -16,7 +16,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.app.Fragment;
 import android.support.design.widget.AppBarLayout;
-import android.support.v4.content.ContextCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v4.view.ViewPager.OnPageChangeListener;
 import android.support.v7.widget.DividerItemDecoration;
@@ -79,7 +78,7 @@ public class SearchFragment extends Fragment {
     public LinearLayout searchAreaView = null;
     ImageView blankspace;
     PlayerActivity playerActivity;
-    Searcher searcher;
+    YoutubeClient youtubeClient;
     CustomPagerAdapter pagerAdapter;
     ArrayList<View> pageviews = new ArrayList<>(3);
     ArrayList<String> suggests;
@@ -95,6 +94,9 @@ public class SearchFragment extends Fragment {
         super.onCreate(savedInstanceState);
         context = getActivity().getApplicationContext();
         setHasOptionsMenu(true);
+        workHandler = PlayerActivity.workHandler;
+        youtubeClient = PlayerActivity.youtubeClient;
+        videoRetriver = PlayerActivity.videoRetriver;
 
     }
 
@@ -268,9 +270,9 @@ public class SearchFragment extends Fragment {
                 final int index = viewPager.getCurrentItem();
                 Log.d("viewpager", Integer.toString(index));
                 if (index > previndex && user) {
-                    searcher.nextPage();
+                    youtubeClient.nextPage();
                     page.loading();
-                    searcher.getResults(new Searcher.YoutubeSearchResult() {
+                    youtubeClient.getResults(new YoutubeClient.YoutubeSearchResult() {
                         @Override
                         public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
                             pagerAdapter.changeSate(hasnext, hasprev);
@@ -294,9 +296,9 @@ public class SearchFragment extends Fragment {
                         }
                     });
                 } else if (index < previndex && user) {
-                    searcher.prevPage();
+                    youtubeClient.prevPage();
                     page.loading();
-                    searcher.getResults(new Searcher.YoutubeSearchResult() {
+                    youtubeClient.getResults(new YoutubeClient.YoutubeSearchResult() {
                         @Override
                         public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
                             pagerAdapter.changeSate(hasnext, hasprev);
@@ -335,10 +337,10 @@ public class SearchFragment extends Fragment {
     };
 
     public void search(String term) {
-        searcher.newSearch(term);
+        youtubeClient.newSearch(term);
         page.loading();
 
-        searcher.getResults(new Searcher.YoutubeSearchResult() {
+        youtubeClient.getResults(new YoutubeClient.YoutubeSearchResult() {
             @Override
             public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
 
@@ -359,11 +361,6 @@ public class SearchFragment extends Fragment {
         return true;
     }
 
-    public void setSearchWorker(Handler handler) {
-        workHandler = handler;
-        searcher = new Searcher(context, workHandler);
-        videoRetriver = new VideoRetriver(workHandler);
-    }
 
     @Override
     public void onAttach(Activity activity) {
@@ -779,6 +776,7 @@ public class SearchFragment extends Fragment {
                         adapter.dataHolders = data;
                         adapter.notifyDataSetChanged();
                     }
+                    recyclerView.scrollToPosition(0);
                     if (waiting) {
                         waiting = false;
                         recyclerView.setVisibility(View.VISIBLE);

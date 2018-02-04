@@ -1,6 +1,6 @@
 package kie.com.soundtube;
 
-import android.app.Activity;
+import android.app.Fragment;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.graphics.Canvas;
@@ -14,8 +14,6 @@ import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.app.Fragment;
-import android.support.v4.content.ContextCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.DividerItemDecoration;
@@ -23,8 +21,21 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.DisplayMetrics;
 import android.util.Log;
-import android.view.*;
-import android.widget.*;
+import android.view.LayoutInflater;
+import android.view.MotionEvent;
+import android.view.ScaleGestureDetector;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.ImageButton;
+import android.widget.ImageView;
+import android.widget.ProgressBar;
+import android.widget.RelativeLayout;
+import android.widget.SeekBar;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import com.sothree.slidinguppanel.SlidingUpPanelLayout;
 
@@ -55,13 +66,15 @@ public class VideoFragment extends Fragment {
     private ProgressBar progressBar;
     private TextView currentTime;
     private TextView totalTime;
+    public ImageView headerPlayButton;
+    public TextView playingTextView;
     private ScaleGestureDetector scaleGestureDetector;
     private DisplayMetrics displayMetrics;
     private Context context;
     private RelativeLayout.LayoutParams portraitlayout;
     private RelativeLayout.LayoutParams landscapelayout;
-    private Activity activity;
-    private Handler seekHandler, workHandler;
+
+    private Handler seekHandler;
     private HandlerThread thread;
     private RecyclerView recyclerView;
     private ViewPager viewPager;
@@ -76,7 +89,7 @@ public class VideoFragment extends Fragment {
     MediaPlayerService mediaService;
     PlayerActivity playerActivity;
     Page page;
-    Searcher searcher = null;
+    YoutubeClient youtubeClient = null;
     ArrayList<View> pageviews = new ArrayList<>(3);
     LinkedList<DataHolder> watchedQueue = new LinkedList<>();
 
@@ -89,7 +102,9 @@ public class VideoFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         context = getActivity().getApplicationContext();
-        activity = getActivity();
+
+        youtubeClient = PlayerActivity.youtubeClient;
+        videoRetriver = PlayerActivity.videoRetriver;
         displayMetrics = context.getResources().getDisplayMetrics();
         thread = new HandlerThread("seek");
         thread.start();
@@ -126,11 +141,11 @@ public class VideoFragment extends Fragment {
             videoFragmentView = inflater.inflate(R.layout.fragment_video, container, false);
             surfaceView = (SurfaceView) videoFragmentView.findViewById(R.id.surfaceView);
             seekBar = (SeekBar) videoFragmentView.findViewById(R.id.seekBar);
-
+            playingTextView = (TextView) videoFragmentView.findViewById(R.id.playingTextView);
             currentTime = (TextView) videoFragmentView.findViewById(R.id.currentTime);
             totalTime = (TextView) videoFragmentView.findViewById(R.id.totalTime);
             header = (RelativeLayout) videoFragmentView.findViewById(R.id.headerView);
-
+            headerPlayButton = (ImageView) videoFragmentView.findViewById(R.id.headerPlayButton);
             viewPager = (ViewPager) videoFragmentView.findViewById(R.id.videoViewPager);
             headersize = Tools.convertDpToPixel(HeaderDP, context);
             playbutton = (Button) videoFragmentView.findViewById(R.id.playbutton);
@@ -141,7 +156,7 @@ public class VideoFragment extends Fragment {
             bar2 = (ProgressBar) r2.findViewById(R.id.pageLoadingBar);
             View pageview = inflater.inflate(R.layout.related_video_layout, null);
             recyclerView = (RecyclerView) pageview.findViewById(R.id.searchrecyclerView);
-//        playerActivity.slidePanel.setScrollableView(recyclerView);
+
             pageviews.add(r1);
             pageviews.add(pageview);
             pageviews.add(r2);
@@ -197,45 +212,8 @@ public class VideoFragment extends Fragment {
 
                 }
             });
-
-            playbutton.setOnTouchListener(new View.OnTouchListener() {
-                float prevX = 0;
-                float prevY = 0;
-                float thresholdX = 15f;
-                float thresholdY = 15f;
-
-                @Override
-                public boolean onTouch(View v, MotionEvent event) {
-                    int action = event.getAction();
-                    if (action == MotionEvent.ACTION_DOWN) {
-//                    playerActivity.viewPager.setSwipingEnabled(false);
-                        Log.d("playbutton", "down");
-                        prevX = event.getX();
-                        prevY = event.getY();
-                    } else if (action == MotionEvent.ACTION_UP) {
-                        if (Math.abs(event.getX() - prevX) <= thresholdX &&
-                                Math.abs(event.getY() - prevY) <= thresholdY && mediaService != null) {
-
-                            if (mediaService.mediaPlayer.isPlaying()) {
-                                mediaService.pause();
-                                setButtonPlay(true);
-
-                            } else {
-                                mediaService.play();
-                                setButtonPlay(false);
-                            }
-//                    playerActivity.viewPager.setSwipingEnabled(true);
-                        }
-
-                    }
-
-                    return false;
-                }
-
-
-            });
-
-
+            playbutton.setOnTouchListener(buttonTouchListener);
+            vrelativeLayout.setOnTouchListener(videoTouchListener);
             seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
                 @Override
                 public void onProgressChanged(SeekBar seekBar, final int progress, boolean fromUser) {
@@ -255,7 +233,21 @@ public class VideoFragment extends Fragment {
 
                 }
             });
-            vrelativeLayout.setOnTouchListener(videotouchListener);
+            headerPlayButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    if (mediaService != null && started) {
+                        if (mediaService.isPlaying()) {
+                            mediaService.pause();
+                            headerPlayButton.setImageResource(R.drawable.play);
+                        } else {
+                            mediaService.play();
+                            headerPlayButton.setImageResource(R.drawable.pause);
+                        }
+                    }
+                }
+            });
+
         }
 
         Log.d("video", "createView");
@@ -263,7 +255,45 @@ public class VideoFragment extends Fragment {
         return videoFragmentView;
     }
 
-    private View.OnTouchListener videotouchListener = new View.OnTouchListener() {
+    private View.OnTouchListener buttonTouchListener = new View.OnTouchListener() {
+        float prevX = 0;
+        float prevY = 0;
+        float thresholdX = 15f;
+        float thresholdY = 15f;
+
+        @Override
+        public boolean onTouch(View v, MotionEvent event) {
+            int action = event.getAction();
+            if (action == MotionEvent.ACTION_DOWN) {
+//                    playerActivity.viewPager.setSwipingEnabled(false);
+                Log.d("playbutton", "down");
+                prevX = event.getX();
+                prevY = event.getY();
+            } else if (action == MotionEvent.ACTION_UP) {
+
+                if (Math.abs(event.getX() - prevX) <= thresholdX &&
+                        Math.abs(event.getY() - prevY) <= thresholdY && mediaService != null) {
+
+                    if (mediaService.isPlaying()) {
+                        mediaService.pause();
+
+
+                    } else {
+                        mediaService.play();
+
+                    }
+//                    playerActivity.viewPager.setSwipingEnabled(true);
+                }
+
+            }
+
+            return false;
+        }
+
+
+    };
+
+    private View.OnTouchListener videoTouchListener = new View.OnTouchListener() {
         float prevX = 0;
         float prevY = 0;
         float thresholdX = 15f;
@@ -332,9 +362,9 @@ public class VideoFragment extends Fragment {
                 final int index = viewPager.getCurrentItem();
                 Log.d("viewpager", Integer.toString(index));
                 if (index > previndex) {
-                    searcher.nextPage();
+                    youtubeClient.nextPage();
                     page.loading();
-                    searcher.getResults(new Searcher.YoutubeSearchResult() {
+                    youtubeClient.getResults(new YoutubeClient.YoutubeSearchResult() {
                         @Override
                         public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
                             pagerAdapter.changeSate(hasnext, hasprev);
@@ -358,9 +388,9 @@ public class VideoFragment extends Fragment {
                         }
                     });
                 } else if (index < previndex) {
-                    searcher.prevPage();
+                    youtubeClient.prevPage();
                     page.loading();
-                    searcher.getResults(new Searcher.YoutubeSearchResult() {
+                    youtubeClient.getResults(new YoutubeClient.YoutubeSearchResult() {
                         @Override
                         public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
                             pagerAdapter.changeSate(hasnext, hasprev);
@@ -408,17 +438,6 @@ public class VideoFragment extends Fragment {
     }
 
     @Override
-    public void onAttach(Activity activity) {
-        super.onAttach(activity);
-        if (activity instanceof SearchFragment.OnFragmentInteractionListener) {
-            mListener = (OnFragmentInteractionListener) activity;
-        } else {
-            throw new RuntimeException(activity.toString()
-                    + " must implement OnFragmentInteractionListener");
-        }
-    }
-
-    @Override
     public void onDetach() {
         super.onDetach();
         mListener = null;
@@ -428,10 +447,10 @@ public class VideoFragment extends Fragment {
     public void onResume() {
 
         if (context.getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            activity.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
+            playerActivity.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
                     View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
         } else {
-            activity.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
+            playerActivity.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
         }
         super.onResume();
     }
@@ -464,27 +483,29 @@ public class VideoFragment extends Fragment {
 
     public void start(final DataHolder dataHolder) {
 
+        currentdata = dataHolder;
+        playerActivity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                playingTextView.setText(currentdata.title);
+            }
+        });
+
         seekHandler.post(new Runnable() {
             @Override
             public void run() {
-                ConnectivityManager connectmgr = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+                ConnectivityManager connectmgr = (ConnectivityManager) context
+                        .getSystemService(Context.CONNECTIVITY_SERVICE);
                 NetworkInfo info = connectmgr.getActiveNetworkInfo();
                 if (info.isAvailable() && info.isConnected()) {
 
                     if (mediaService != null) {
-                        mediaService.reset();
+
                         mediaService.prepare(dataHolder);
                         mediaService.setDisplay(surfaceHolder);
-                        mediaService.play();
-                        currentdata = dataHolder;
                         setButtonPlay(false);
                         loadRelatedVideos(dataHolder);
-
-                    } else {
-                        Toast toast = Toast.makeText(context, "No service error!!!", Toast.LENGTH_LONG);
-                        toast.show();
                     }
-
 
                 } else {
                     Toast toast = Toast.makeText(context, getString(R.string.needNetwork), Toast.LENGTH_SHORT);
@@ -497,10 +518,10 @@ public class VideoFragment extends Fragment {
 
     public void loadRelatedVideos(DataHolder dataHolder) {
         page.setTitle(dataHolder.title);
-        if (searcher != null) {
-            searcher.loadRelatedVideos(dataHolder.videoID);
+        if (youtubeClient != null) {
+            youtubeClient.loadRelatedVideos(dataHolder.videoID);
             page.loading();
-            searcher.getResults(new Searcher.YoutubeSearchResult() {
+            youtubeClient.getResults(new YoutubeClient.YoutubeSearchResult() {
                 @Override
                 public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
                     pagerAdapter.changeSate(hasnext, hasprev);
@@ -523,7 +544,7 @@ public class VideoFragment extends Fragment {
 
     public void buffering(final boolean buff) {
         if (started) {
-            activity.runOnUiThread(new Runnable() {
+            playerActivity.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
                     if (buff) {
@@ -540,7 +561,7 @@ public class VideoFragment extends Fragment {
 
     public void setSeekBarMax(final int max) {
         if (started) {
-            activity.runOnUiThread(new Runnable() {
+            playerActivity.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
                     seekBar.setMax(max);
@@ -551,13 +572,13 @@ public class VideoFragment extends Fragment {
     }
 
     public void updateSeekBar() {
-        if (activity != null && !seekbarUpdating && started) {
+        if (playerActivity != null && !seekbarUpdating && started) {
             seekbarUpdating = true;
-            activity.runOnUiThread(new Runnable() {
+            playerActivity.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
                     if (mediaService != null && mediaService.updateSeekBar && started) {
-                        int pos = mediaService.mediaPlayer.getCurrentPosition();
+                        int pos = mediaService.getCurrentPos();
                         seekBar.setProgress(pos);
 //                        currentTime.setText(pos);
                         seekHandler.postDelayed(this, 1000);
@@ -572,13 +593,33 @@ public class VideoFragment extends Fragment {
     public void onComplete() {
 
         if (started) {
+            if (MediaPlayerService.autoplay) {
+                final DataHolder target = page.adapter.dataHolders.get(0);
+                videoRetriver.startExtracting("https://www.youtube" +
+                        ".com/watch?v=" + target.videoID, new VideoRetriver.YouTubeExtractorListener() {
+                    @Override
+                    public void onSuccess(HashMap<Integer, String> result) {
+                        target.videoUris = result;
+                        watchedQueue.offer(currentdata);
+                        start(target);
+                        //Log.d("search", ))
+                    }
+
+                    @Override
+                    public void onFailure(Error error) {
+                        Log.d("search", "error extracting");
+
+                    }
+                });
+
+            }
             seekHandler.postDelayed(new Runnable() {
                 @Override
                 public void run() {
-                    activity.runOnUiThread(new Runnable() {
+                    playerActivity.runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            playbutton.setBackgroundResource(R.drawable.play);
+                            setButtonPlay(true);
                             showcontrols(true);
                             seekBar.setProgress(0);
 
@@ -590,25 +631,19 @@ public class VideoFragment extends Fragment {
 
     }
 
-    public void setSearchWorker(Handler handler) {
-        workHandler = handler;
-        searcher = new Searcher(context, workHandler);
-        videoRetriver = new VideoRetriver(handler);
-    }
-
     public void changeToPortrait() {
-        if (vrelativeLayout != null && drelativeLayout != null && activity != null) {
+        if (vrelativeLayout != null && drelativeLayout != null && playerActivity != null) {
             vrelativeLayout.setLayoutParams(portraitlayout);
             drelativeLayout.setVisibility(View.VISIBLE);
-            activity.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
+            playerActivity.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
         }
     }
 
     public void changeToLandscape() {
-        if (vrelativeLayout != null && drelativeLayout != null && activity != null) {
+        if (vrelativeLayout != null && drelativeLayout != null && playerActivity != null) {
             vrelativeLayout.setLayoutParams(landscapelayout);
             drelativeLayout.setVisibility(View.GONE);
-            activity.getWindow().getDecorView().setSystemUiVisibility(
+            playerActivity.getWindow().getDecorView().setSystemUiVisibility(
                     View.SYSTEM_UI_FLAG_FULLSCREEN |
                             View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
                             View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
@@ -617,7 +652,7 @@ public class VideoFragment extends Fragment {
     }
 
     public void showcontrols(final boolean show) {
-        activity.runOnUiThread(new Runnable() {
+        playerActivity.runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 if (show) {
@@ -659,7 +694,7 @@ public class VideoFragment extends Fragment {
             if (!mediaService.prepared) {
                 playerActivity.slidePanel.setPanelState(SlidingUpPanelLayout.PanelState.EXPANDED);
                 start(currentdata);
-            } else if (mediaService.mediaPlayer.isPlaying()) {
+            } else if (mediaService.isPlaying()) {
                 playerActivity.slidePanel.setPanelState(SlidingUpPanelLayout.PanelState.EXPANDED);
             }
         }
@@ -687,7 +722,7 @@ public class VideoFragment extends Fragment {
 
     public boolean previousVideo() {
 
-        DataHolder dataHolder = watchedQueue.poll();
+        DataHolder dataHolder = watchedQueue.pollLast();
         if (dataHolder != null) {
             start(dataHolder);
             return true;
@@ -783,7 +818,9 @@ public class VideoFragment extends Fragment {
                         adapter.dataHolders = data;
                         adapter.title = text;
                         adapter.notifyDataSetChanged();
+
                     }
+                    recyclerView.scrollToPosition(0);
                     if (waiting) {
                         waiting = false;
                         recyclerView.setVisibility(View.VISIBLE);
@@ -807,26 +844,29 @@ public class VideoFragment extends Fragment {
             RecyclerTouchListener listener = new RecyclerTouchListener(context, new OnItemClicked() {
                 @Override
                 public void onClick(View view, int position) {
-                    System.out.println("clicked" + (position - 1));
-                    Toast toast = Toast.makeText(context, "Decrypting...", Toast.LENGTH_SHORT);
-                    toast.show();
-                    final DataHolder dataHolder = adapter.dataHolders.get(position - 1);
-                    videoRetriver.startExtracting("https://www.youtube" +
-                            ".com/watch?v=" + dataHolder.videoID, new VideoRetriver.YouTubeExtractorListener() {
-                        @Override
-                        public void onSuccess(HashMap<Integer, String> result) {
-                            dataHolder.videoUris = result;
-                            watchedQueue.offer(currentdata);
-                            start(dataHolder);
-                            //Log.d("search", ))
-                        }
+                    if (position > 0) {
+                        System.out.println("clicked" + (position - 1));
+                        Toast toast = Toast.makeText(context, "Decrypting...", Toast.LENGTH_SHORT);
+                        toast.show();
+                        final DataHolder dataHolder = adapter.dataHolders.get(position - 1);
+                        videoRetriver.startExtracting("https://www.youtube" +
+                                ".com/watch?v=" + dataHolder.videoID, new VideoRetriver.YouTubeExtractorListener() {
+                            @Override
+                            public void onSuccess(HashMap<Integer, String> result) {
+                                dataHolder.videoUris = result;
+                                watchedQueue.offer(currentdata);
+                                start(dataHolder);
+                                //Log.d("search", ))
+                            }
 
-                        @Override
-                        public void onFailure(Error error) {
-                            Log.d("search", "error extracting");
+                            @Override
+                            public void onFailure(Error error) {
+                                Log.d("search", "error extracting");
 
-                        }
-                    });
+                            }
+                        });
+                    }
+
                 }
 
                 @Override

@@ -24,9 +24,9 @@ import static java.util.Arrays.asList;
 /**
  * Created by Pietro Caselani
  * On 06/03/14
- * YouTubeExtractor
+ * YoutubeExtractor
  */
-public final class YouTubeExtractor {
+public final class YoutubeExtractor {
     //region Fields
     public static final int YOUTUBE_VIDEO_QUALITY_SMALL_240 = 36;
     public static final int YOUTUBE_VIDEO_QUALITY_MEDIUM_360 = 18;
@@ -42,7 +42,7 @@ public final class YouTubeExtractor {
     //endregion
 
     //region Constructors
-    public YouTubeExtractor(String videoIdentifier) {
+    public YoutubeExtractor(String videoIdentifier) {
         mVideoIdentifier = videoIdentifier;
         mElFields = new ArrayList<String>(asList("embedded", "detailpage", "vevo", ""));
 

@@ -4,7 +4,9 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.CompoundButton;
 import android.widget.ImageView;
+import android.widget.Switch;
 import android.widget.TextView;
 
 import java.util.List;
@@ -74,15 +76,19 @@ public class VideoRecyclerAdapter extends RecyclerView.Adapter<RecyclerView.View
 
     public class HeaderHolder extends RecyclerView.ViewHolder {
 
-        public ImageView imageView = null;
         public TextView titleview = null;
-        public TextView durationview = null;
+        public Switch playSwitch = null;
 
         public HeaderHolder(View itemView) {
             super(itemView);
-            imageView = (ImageView) itemView.findViewById(R.id.imageView);
+            playSwitch = (Switch) itemView.findViewById(R.id.autoPlaySwitch);
             titleview = (TextView) itemView.findViewById(R.id.videoTitle);
-            durationview = (TextView) itemView.findViewById(R.id.durationview);
+            playSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                @Override
+                public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                    MediaPlayerService.autoplay = b;
+                }
+            });
         }
     }
 }

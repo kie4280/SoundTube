@@ -7,6 +7,7 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.GET_ACCOUNTS" />
 
     <application
         android:allowBackup="true"
@@ -53,6 +54,12 @@
             android:label="@string/title_activity_playlist"
             android:launchMode="singleTop"
             android:parentActivityName=".PlayerActivity"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".AccountActivity"
+            android:label="AccountActivity"
+            android:launchMode="singleTop"
             android:screenOrientation="portrait" />
 
     </application>
