@@ -178,7 +178,7 @@ public class MediaPlayerService extends Service {
             } else {
                 updateSeekBar = false;
                 videoFragment.setButtonPlay(true);
-                videoFragment.setHeaderPlayButton(false);
+                videoFragment.setHeaderPlayButton(true);
             }
         }
 
