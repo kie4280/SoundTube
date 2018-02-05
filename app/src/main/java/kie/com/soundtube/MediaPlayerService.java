@@ -174,6 +174,11 @@ public class MediaPlayerService extends Service {
                 videoFragment.setSeekBarMax(getDuration());
                 videoFragment.updateSeekBar();
                 videoFragment.setButtonPlay(false);
+                videoFragment.setHeaderPlayButton(false);
+            } else {
+                updateSeekBar = false;
+                videoFragment.setButtonPlay(true);
+                videoFragment.setHeaderPlayButton(false);
             }
         }
 
@@ -333,7 +338,7 @@ public class MediaPlayerService extends Service {
                         videoFragment.currentdata = currentData;
                         videoFragment.updateSeekBar();
                         videoFragment.setButtonPlay(false);
-                        videoFragment.headerPlayButton.setImageResource(R.drawable.pause);
+                        videoFragment.setHeaderPlayButton(false);
 
                     }
                 }
@@ -358,7 +363,7 @@ public class MediaPlayerService extends Service {
                     updateSeekBar = false;
                     if (videoFragment != null) {
                         videoFragment.setButtonPlay(true);
-                        videoFragment.headerPlayButton.setImageResource(R.drawable.play);
+                        videoFragment.setHeaderPlayButton(true);
                     }
                 }
 

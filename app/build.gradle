@@ -1,6 +1,9 @@
 apply plugin: 'com.android.application'
-
 android {
+    configurations {
+        all { exclude module: 'common-logging'
+        exclude module: 'httpclient'}
+    }
     signingConfigs {
         config {
             keyAlias 'key0'
@@ -59,8 +62,9 @@ dependencies {
     implementation 'com.google.http-client:google-http-client-gson:1.23.0'
     implementation 'com.google.code.findbugs:jsr305:3.0.2'
     implementation 'com.android.support:appcompat-v7:26.1.0'
-    compile 'com.google.android.gms:play-services-auth:11.8.0'
-    compile 'pub.devrel:easypermissions:0.3.0'
+    implementation 'com.google.android.gms:play-services-auth:11.8.0'
+    implementation 'pub.devrel:easypermissions:0.3.0'
+
     implementation('com.google.api-client:google-api-client-android:1.23.0') {
         exclude group: 'org.apache.httpcomponents'
     }

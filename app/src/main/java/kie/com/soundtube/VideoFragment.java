@@ -720,6 +720,19 @@ public class VideoFragment extends Fragment {
         });
     }
 
+    public void setHeaderPlayButton(final boolean play) {
+        playerActivity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (play) {
+                    headerPlayButton.setImageResource(R.drawable.play);
+                } else {
+                    headerPlayButton.setImageResource(R.drawable.pause);
+                }
+            }
+        });
+    }
+
     public boolean previousVideo() {
 
         DataHolder dataHolder = watchedQueue.pollLast();
