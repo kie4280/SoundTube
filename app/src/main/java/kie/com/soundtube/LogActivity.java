@@ -56,7 +56,7 @@ public class LogActivity extends AppCompatActivity implements LogFragment.Button
                 @Override
                 public void run() {
                     Github github = new Github(getApplicationContext());
-//                    github.report(error);
+                    github.report(error);
                     Log.d("LogActivity", error);
                     finish();
 

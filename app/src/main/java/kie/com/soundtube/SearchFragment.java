@@ -424,7 +424,6 @@ public class SearchFragment extends Fragment {
             searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
                 @Override
                 public boolean onQueryTextSubmit(String query) {
-
                     System.out.println("submit");
                     if (query != null) {
                         if (PlayerActivity.netConncted) {
@@ -483,7 +482,8 @@ public class SearchFragment extends Fragment {
                                         @Override
                                         public void run() {
                                             searchView.setSuggestionsAdapter(simpleCursorAdapter);
-                                            searchAutoCompleteTextView.showDropDown();
+                                            if (newText.length() == 1)
+                                                searchAutoCompleteTextView.showDropDown();
                                         }
                                     });
 
@@ -491,6 +491,14 @@ public class SearchFragment extends Fragment {
                                 } catch (IOException e) {
                                     e.printStackTrace();
                                 }
+                            } else if (newText.length() == 0) {
+                                playerActivity.runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+
+                                        searchAutoCompleteTextView.dismissDropDown();
+                                    }
+                                });
                             }
 
                         }
@@ -552,7 +560,6 @@ public class SearchFragment extends Fragment {
                     animateSearchArea(true);
                 }
             });
-
 //            searchView.setIconifiedByDefault(true);
 //            searchView.setMaxWidth(Integer.MAX_VALUE);
 //            searchView.setMinimumHeight(Integer.MAX_VALUE);
@@ -595,9 +602,7 @@ public class SearchFragment extends Fragment {
 //                v.setLayoutParams(params);
 //            }
 //            playerToolbar.setContentInsetsAbsolute(0, 0);
-
         }
-
     }
 
     public void animateSearchArea(boolean show) {
