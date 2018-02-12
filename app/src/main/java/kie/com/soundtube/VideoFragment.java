@@ -14,6 +14,7 @@ import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.Process;
 import android.support.v4.view.ViewPager;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.DividerItemDecoration;
@@ -106,6 +107,7 @@ public class VideoFragment extends Fragment {
         videoRetriver = new VideoRetriver(PlayerActivity.workHandler);
         displayMetrics = context.getResources().getDisplayMetrics();
         thread = new HandlerThread("seek");
+        thread.setPriority(Process.THREAD_PRIORITY_BACKGROUND);
         thread.start();
         seekHandler = new Handler(thread.getLooper());
         scaleGestureDetector = new ScaleGestureDetector(context,
@@ -499,7 +501,6 @@ public class VideoFragment extends Fragment {
                 if (info.isAvailable() && info.isConnected()) {
 
                     if (mediaService != null) {
-
                         mediaService.prepare(dataHolder);
                         mediaService.setDisplay(surfaceHolder);
                         loadRelatedVideos(dataHolder);
@@ -571,7 +572,7 @@ public class VideoFragment extends Fragment {
 
     public void updateSeekBar() {
         if (playerActivity != null && !seekbarUpdating && started) {
-            seekbarUpdating = true;
+
             playerActivity.runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
@@ -580,6 +581,7 @@ public class VideoFragment extends Fragment {
                         seekBar.setProgress(pos);
 //                        currentTime.setText(pos);
                         seekHandler.postDelayed(this, 1000);
+                        seekbarUpdating = true;
                     } else {
                         seekbarUpdating = false;
                     }
@@ -714,9 +716,36 @@ public class VideoFragment extends Fragment {
 
     public boolean previousVideo() {
 
-        DataHolder dataHolder = mediaService.watchedQueue.pollLast();
+        final DataHolder dataHolder = mediaService.watchedQueue.pollLast();
         if (dataHolder != null) {
-            start(dataHolder);
+            mediaService.previousVideo();
+            playerActivity.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    playingTextView.setText(dataHolder.title);
+                }
+            });
+
+            seekHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    ConnectivityManager connectmgr = (ConnectivityManager) context
+                            .getSystemService(Context.CONNECTIVITY_SERVICE);
+                    NetworkInfo info = connectmgr.getActiveNetworkInfo();
+                    if (info.isAvailable() && info.isConnected()) {
+
+                        if (mediaService != null) {
+                            mediaService.prepare(dataHolder);
+                            mediaService.setDisplay(surfaceHolder);
+                            loadRelatedVideos(dataHolder);
+                        }
+
+                    } else {
+                        Toast toast = Toast.makeText(context, getString(R.string.needNetwork), Toast.LENGTH_SHORT);
+                        toast.show();
+                    }
+                }
+            });
             return true;
         } else
             return false;

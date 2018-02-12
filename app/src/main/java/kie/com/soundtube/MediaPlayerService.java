@@ -447,7 +447,7 @@ public class MediaPlayerService extends Service {
                             Log.d("watchedQueue", "add");
                         }
                         currentData = dataHolder;
-                        getNextVideo();
+                        nextVideo();
                         if (videoFragment != null) {
                             videoFragment.loadRelatedVideos(dataHolder);
                         }
@@ -506,7 +506,7 @@ public class MediaPlayerService extends Service {
 
     }
 
-    public void getNextVideo() {
+    public void nextVideo() {
         if (videoRetriver == null || youtubeClient == null) {
             videoRetriver = new VideoRetriver(networkHandler);
             youtubeClient = new YoutubeClient(getApplicationContext(), networkHandler);
@@ -550,8 +550,13 @@ public class MediaPlayerService extends Service {
         }
     }
 
-    public void setPlayMode(int mode) {
+    public boolean previousVideo() {
+        currentData = null;
+        return !watchedQueue.isEmpty();
+    }
 
+    public void setPlayMode(int mode) {
+        PLAYING_MODE = mode;
     }
 
     public class MusicBinder extends Binder {

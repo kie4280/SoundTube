@@ -23,6 +23,7 @@ import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
@@ -81,7 +82,14 @@ public class YoutubeClient {
 
     }
 
-    private void addSearchReseult(SearchContainer container) {
+    private void addSearchReseult(String id, SearchContainer container) {
+        if (searches.size() >= 49) {
+            Iterator<String> iterator = searches.keySet().iterator();
+            if (iterator.hasNext()) {
+                searches.remove(iterator.next());
+            }
+        }
+        searches.put(id, container);
 
     }
 
@@ -101,6 +109,8 @@ public class YoutubeClient {
                 } else {
 
                     try {
+                        pages = new HashMap<>(500);
+                        tokens = new ArrayList<>(500);
                         search = youtube.search().list("snippet");
                         search.setKey(APIKey);
                         search.setType(Type);
@@ -133,7 +143,7 @@ public class YoutubeClient {
                         container.prevPageToken = prevPageToken;
                         container.search = search;
                         container.tokensearch = tokensearch;
-                        searches.put(queryTerm, container);
+                        addSearchReseult(queryTerm, container);
 
                     } catch (IOException e) {
                         Log.w("YoutubeClient", "There was an IO error: " + e.getCause() + " : " + e.getMessage());
@@ -162,6 +172,8 @@ public class YoutubeClient {
                     prevPageToken = container.prevPageToken;
                 } else {
                     try {
+                        pages = new HashMap<>(500);
+                        tokens = new ArrayList<>(500);
                         search = youtube.search().list("snippet");
                         search.setRelatedToVideoId(id);
                         search.setType(Type);
@@ -193,7 +205,7 @@ public class YoutubeClient {
                         container.prevPageToken = prevPageToken;
                         container.search = search;
                         container.tokensearch = tokensearch;
-                        searches.put(id, container);
+                        addSearchReseult(id, container);
 
                     } catch (IOException e) {
                         e.printStackTrace();
