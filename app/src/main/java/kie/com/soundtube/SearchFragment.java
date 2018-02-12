@@ -95,8 +95,8 @@ public class SearchFragment extends Fragment {
         context = getActivity().getApplicationContext();
         setHasOptionsMenu(true);
         workHandler = PlayerActivity.workHandler;
-        youtubeClient = PlayerActivity.youtubeClient;
-        videoRetriver = PlayerActivity.videoRetriver;
+        youtubeClient = new YoutubeClient(context, workHandler);
+        videoRetriver = new VideoRetriver(workHandler);
 
     }
 
@@ -803,8 +803,7 @@ public class SearchFragment extends Fragment {
                     Toast toast = Toast.makeText(context, "Decrypting...", Toast.LENGTH_SHORT);
                     toast.show();
                     final DataHolder dataHolder = adapter.dataHolders.get(position);
-                    videoRetriver.startExtracting("https://www.youtube" +
-                            ".com/watch?v=" + dataHolder.videoID, new VideoRetriver.YouTubeExtractorListener() {
+                    videoRetriver.startExtracting(dataHolder.videoID, new VideoRetriver.YouTubeExtractorListener() {
                         @Override
                         public void onSuccess(HashMap<Integer, String> result) {
                             dataHolder.videoUris = result;

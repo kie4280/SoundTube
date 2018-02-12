@@ -7,6 +7,7 @@ import android.app.Fragment;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
+import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -17,7 +18,7 @@ public class PlaylistFragment extends Fragment {
 
 
     PlaylistActivity playlistActivity;
-
+    RecyclerView recyclerView;
     private OnFragmentInteractionListener mListener;
 
     public PlaylistFragment() {
@@ -28,35 +29,8 @@ public class PlaylistFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-
-
         View playlistview = inflater.inflate(R.layout.playlist_layout, container, false);
-
-//        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
-//                getActivity(), drawerLayout, playlistToolbar, R.string.navigation_drawer_open,
-//                R.string.navigation_drawer_close) {
-//            @Override
-//            public void onDrawerOpened(View drawerView) {
-//                super.onDrawerOpened(drawerView);
-//                drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED);
-//            }
-//
-//            @Override
-//            public void onDrawerClosed(View drawerView) {
-//                super.onDrawerClosed(drawerView);
-//                drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
-//            }
-//        };
-//        playlistToolbar.setNavigationOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View view) {
-//
-//                drawerLayout.openDrawer(GravityCompat.START);
-//            }
-//        });
-//        drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
-//        drawerLayout.addDrawerListener(toggle);
-//        toggle.syncState();
+        recyclerView = playlistview.findViewById(R.id.playListRecycler);
         return playlistview;
     }
 

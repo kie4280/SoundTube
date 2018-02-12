@@ -29,7 +29,6 @@ import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
@@ -80,7 +79,7 @@ public class VideoFragment extends Fragment {
     private ViewPager viewPager;
     public VideoRetriver videoRetriver;
     public SurfaceHolder surfaceHolder;
-    public DataHolder currentdata;
+    public DataHolder currentData;
     private CustomPagerAdapter pagerAdapter;
     private ProgressBar bar1;
     private ProgressBar bar2;
@@ -91,7 +90,7 @@ public class VideoFragment extends Fragment {
     Page page;
     YoutubeClient youtubeClient = null;
     ArrayList<View> pageviews = new ArrayList<>(3);
-    LinkedList<DataHolder> watchedQueue = new LinkedList<>();
+
 
     public VideoFragment() {
         // Required empty public constructor
@@ -103,8 +102,8 @@ public class VideoFragment extends Fragment {
         super.onCreate(savedInstanceState);
         context = getActivity().getApplicationContext();
 
-        youtubeClient = PlayerActivity.youtubeClient;
-        videoRetriver = PlayerActivity.videoRetriver;
+        youtubeClient = new YoutubeClient(context, PlayerActivity.workHandler);
+        videoRetriver = new VideoRetriver(PlayerActivity.workHandler);
         displayMetrics = context.getResources().getDisplayMetrics();
         thread = new HandlerThread("seek");
         thread.start();
@@ -483,11 +482,11 @@ public class VideoFragment extends Fragment {
 
     public void start(final DataHolder dataHolder) {
 
-        currentdata = dataHolder;
+        currentData = dataHolder;
         playerActivity.runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                playingTextView.setText(currentdata.title);
+                playingTextView.setText(currentData.title);
             }
         });
 
@@ -503,7 +502,6 @@ public class VideoFragment extends Fragment {
 
                         mediaService.prepare(dataHolder);
                         mediaService.setDisplay(surfaceHolder);
-                        setButtonPlay(false);
                         loadRelatedVideos(dataHolder);
                     }
 
@@ -593,26 +591,6 @@ public class VideoFragment extends Fragment {
     public void onComplete() {
 
         if (started) {
-            if (MediaPlayerService.autoplay) {
-                final DataHolder target = page.adapter.dataHolders.get(0);
-                videoRetriver.startExtracting("https://www.youtube" +
-                        ".com/watch?v=" + target.videoID, new VideoRetriver.YouTubeExtractorListener() {
-                    @Override
-                    public void onSuccess(HashMap<Integer, String> result) {
-                        target.videoUris = result;
-                        watchedQueue.offer(currentdata);
-                        start(target);
-                        //Log.d("search", ))
-                    }
-
-                    @Override
-                    public void onFailure(Error error) {
-                        Log.d("search", "error extracting");
-
-                    }
-                });
-
-            }
             seekHandler.postDelayed(new Runnable() {
                 @Override
                 public void run() {
@@ -688,17 +666,18 @@ public class VideoFragment extends Fragment {
 
     public void serviceConnected() {
         if (mediaService.currentData != null) {
-            currentdata = mediaService.currentData;
+            currentData = mediaService.currentData;
         }
-        if (currentdata != null) {
-            if (!mediaService.prepared) {
-                playerActivity.slidePanel.setPanelState(SlidingUpPanelLayout.PanelState.EXPANDED);
-                start(currentdata);
-            } else if (mediaService.isPlaying()) {
-                playerActivity.slidePanel.setPanelState(SlidingUpPanelLayout.PanelState.EXPANDED);
-            }
+        if (currentData != null && mediaService.isPlaying()) {
+            playerActivity.slidePanel.setPanelState(SlidingUpPanelLayout.PanelState.EXPANDED);
+            loadRelatedVideos(currentData);
+            playerActivity.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    playingTextView.setText(currentData.title);
+                }
+            });
         }
-
 
     }
 
@@ -735,7 +714,7 @@ public class VideoFragment extends Fragment {
 
     public boolean previousVideo() {
 
-        DataHolder dataHolder = watchedQueue.pollLast();
+        DataHolder dataHolder = mediaService.watchedQueue.pollLast();
         if (dataHolder != null) {
             start(dataHolder);
             return true;
@@ -862,12 +841,10 @@ public class VideoFragment extends Fragment {
                         Toast toast = Toast.makeText(context, "Decrypting...", Toast.LENGTH_SHORT);
                         toast.show();
                         final DataHolder dataHolder = adapter.dataHolders.get(position - 1);
-                        videoRetriver.startExtracting("https://www.youtube" +
-                                ".com/watch?v=" + dataHolder.videoID, new VideoRetriver.YouTubeExtractorListener() {
+                        videoRetriver.startExtracting(dataHolder.videoID, new VideoRetriver.YouTubeExtractorListener() {
                             @Override
                             public void onSuccess(HashMap<Integer, String> result) {
                                 dataHolder.videoUris = result;
-                                watchedQueue.offer(currentdata);
                                 start(dataHolder);
                                 //Log.d("search", ))
                             }

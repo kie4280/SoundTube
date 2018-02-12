@@ -306,7 +306,8 @@ public class VideoRetriver {
         youtubeExtractorHandler.post(new Runnable() {
             @Override
             public void run() {
-                final HashMap<Integer, String> result = getVideo(url);
+                final HashMap<Integer, String> result = getVideo("https://www.youtube" +
+                        ".com/watch?v=" + url);
                 youtubeExtractorHandler.post(new Runnable() {
                     @Override
                     public void run() {

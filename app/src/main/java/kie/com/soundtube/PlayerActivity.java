@@ -53,8 +53,6 @@ public class PlayerActivity extends AppCompatActivity implements SearchFragment.
     public AppBarLayout appBarLayout;
     public CustomSlideUpPanel slidePanel;
     public static boolean netConncted = false;
-    public static YoutubeClient youtubeClient;
-    public static VideoRetriver videoRetriver;
 
     //    public CustomViewPager viewPager;
     VideoFragment videoFragment;
@@ -111,8 +109,6 @@ public class PlayerActivity extends AppCompatActivity implements SearchFragment.
         videoFragment.setActivity(this);
         searchFragment = new SearchFragment();
         searchFragment.setActivity(this);
-        youtubeClient = new YoutubeClient(context, workHandler);
-        videoRetriver = new VideoRetriver(workHandler);
         slidePanel = (CustomSlideUpPanel) findViewById(R.id.slidePanel);
         fragmentManager = getFragmentManager();
         FragmentTransaction transaction = fragmentManager.beginTransaction();
@@ -213,34 +209,15 @@ public class PlayerActivity extends AppCompatActivity implements SearchFragment.
                     int i = item.getItemId();
                     drawerLayout.closeDrawer(GravityCompat.START);
                     switch (i) {
-
                         case R.id.playlists:
-
-//                                mainRelativeLayout.removeViewAt(0);
-//                                fragmentManager.beginTransaction()
-//                                        .remove(searchFragment)
-//                                        .remove(videoFragment)
-//                                        .remove(settingFragment)
-//                                        .add(R.id.mainRelativeLayout, playlistFragment, "playlistFragment")
-//                                        .commit();
                             Intent playlistintent = new Intent(context, PlaylistActivity.class);
                             playlistintent.setFlags(Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT
                                     | Intent.FLAG_ACTIVITY_CLEAR_TOP
                                     | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-
                             startActivity(playlistintent);
-
-
                             break;
                         case R.id.settings:
 
-//                                mainRelativeLayout.removeViewAt(0);
-//                                fragmentManager.beginTransaction()
-//                                        .remove(searchFragment)
-//                                        .remove(videoFragment)
-//                                        .remove(playlistFragment)
-//                                        .add(R.id.mainRelativeLayout, settingFragment, "settingFragment")
-//                                        .commit();
                             Intent settingintent = new Intent(context, SettingActivity.class);
                             settingintent.setFlags(Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT
                                     | Intent.FLAG_ACTIVITY_CLEAR_TOP);
@@ -250,7 +227,6 @@ public class PlayerActivity extends AppCompatActivity implements SearchFragment.
                         default:
                             break;
                     }
-
 
                     return true;
                 }
@@ -266,7 +242,7 @@ public class PlayerActivity extends AppCompatActivity implements SearchFragment.
             mediaService.videoFragment = videoFragment;
             videoFragment.mediaService = mediaService;
             videoFragment.serviceConnected();
-            Log.d("activity", "service bind");
+            Log.d("activity", "service connected");
         }
 
         @Override
@@ -291,6 +267,7 @@ public class PlayerActivity extends AppCompatActivity implements SearchFragment.
         if (servicebound) {
             unbindService(serviceConnection);
             servicebound = false;
+            Log.d("activity", "service disconnected");
         }
     }
 
@@ -344,6 +321,8 @@ public class PlayerActivity extends AppCompatActivity implements SearchFragment.
 
             }
         });
+        mediaService.watchedQueue.clear();
+        mediaService.currentData = null;
         videoFragment.start(dataHolder);
 //        videoFragment.watchedQueue.offer(dataHolder);
     }
