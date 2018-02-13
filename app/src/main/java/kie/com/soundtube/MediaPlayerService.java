@@ -108,12 +108,12 @@ public class MediaPlayerService extends Service {
     public void onCompletion() {
         updateSeekBar = false;
         exoPlayer.seekTo(0);
-        exoPlayer.setPlayWhenReady(false);
         pause();
+
         if (videoFragment != null) {
             videoFragment.onComplete();
         }
-        if (nextData != null) {
+        if (nextData != null && autoplay) {
             prepare(nextData);
         }
 
@@ -309,6 +309,7 @@ public class MediaPlayerService extends Service {
                         break;
                     case Player.STATE_ENDED:
                         onCompletion();
+                        Log.d("exoPlayer", "stateEnded");
                         break;
                     default:
                         break;
@@ -326,6 +327,11 @@ public class MediaPlayerService extends Service {
             }
         });
 
+    }
+
+    public void start() {
+        exoPlayer.seekTo(0);
+        play();
     }
 
     public void play() {
@@ -514,7 +520,7 @@ public class MediaPlayerService extends Service {
         if (!playList.isEmpty() && PLAYING_MODE == PLAY_FROM_PLAYLIST) {
             nextData = playList.pollFirst();
 
-        } else if (PLAYING_MODE == PLAY_FROM_RELATED_VIDEO && autoplay && currentData != null) {
+        } else if (PLAYING_MODE == PLAY_FROM_RELATED_VIDEO && currentData != null) {
 
             youtubeClient.loadRelatedVideos(currentData.videoID);
             youtubeClient.getResults(new YoutubeClient.YoutubeSearchResult() {
@@ -525,11 +531,9 @@ public class MediaPlayerService extends Service {
                         @Override
                         public void onSuccess(HashMap<Integer, String> result) {
                             target.videoUris = result;
-                            if (autoplay) {
-                                nextData = target;
-                            }
+                            nextData = target;
 
-                            //Log.d("search", ))
+                            Log.d("mediaService", "nextPlay");
                         }
 
                         @Override

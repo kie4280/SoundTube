@@ -157,7 +157,6 @@ public class VideoFragment extends Fragment {
             bar2 = (ProgressBar) r2.findViewById(R.id.pageLoadingBar);
             View pageview = inflater.inflate(R.layout.related_video_layout, null);
             recyclerView = (RecyclerView) pageview.findViewById(R.id.searchrecyclerView);
-
             pageviews.add(r1);
             pageviews.add(pageview);
             pageviews.add(r2);

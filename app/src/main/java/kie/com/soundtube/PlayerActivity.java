@@ -324,7 +324,6 @@ public class PlayerActivity extends AppCompatActivity implements SearchFragment.
         mediaService.watchedQueue.clear();
         mediaService.currentData = null;
         videoFragment.start(dataHolder);
-//        videoFragment.watchedQueue.offer(dataHolder);
     }
 
     @Override
