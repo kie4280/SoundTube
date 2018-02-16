@@ -28,6 +28,7 @@ import android.view.animation.TranslateAnimation;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.CursorAdapter;
+import android.widget.PopupMenu;
 import android.widget.SimpleCursorAdapter;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
@@ -138,113 +139,6 @@ public class SearchFragment extends Fragment {
     public void onDestroy() {
         super.onDestroy();
 
-    }
-
-    @Override
-    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-        super.onCreateOptionsMenu(menu, inflater);
-        inflater.inflate(R.menu.search_options, menu);
-//        MenuItem item = menu.findItem(R.id.action_search);
-//        MenuItemCompat.setOnActionExpandListener(item, new MenuItemCompat.OnActionExpandListener() {
-//            @Override
-//            public boolean onMenuItemActionExpand(MenuItem menuItem) {
-//                setHasOptionsMenu(false);
-//                return false;
-//            }
-//
-//            @Override
-//            public boolean onMenuItemActionCollapse(MenuItem menuItem) {
-//                setHasOptionsMenu(true);
-//                return false;
-//            }
-//        });
-//        final SearchView searchView = (SearchView) item.getActionView();
-////        TextView textView = (TextView) searchView.findViewById(R.id.search_src_text);
-////        textView.setPadding(2, 0, 0, 0);
-//
-////        "http://suggestqueries.google.com/complete/search?client=youtube&ds=yt&client=firefox&q=Query";
-//        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-//            @Override
-//            public boolean onQueryTextSubmit(String query) {
-//
-//                System.out.println("submit");
-//                if (query != null) {
-//                    if (PlayerActivity.netConncted) {
-//                        search(query);
-//                    } else {
-//                        Toast toast = Toast.makeText(context, getString(R.string.needNetwork), Toast.LENGTH_SHORT);
-//                        toast.show();
-//                    }
-//                    searchView.clearFocus();
-//                }
-//                return true;
-//            }
-//
-//            @Override
-//            public boolean onQueryTextChange(final String newText) {
-//                workHandler.post(new Runnable() {
-//                    @Override
-//                    public void run() {
-//                        if (PlayerActivity.netConncted && newText.length() != 0) {
-//                            StringBuilder response = new StringBuilder();
-//                            try {
-//                                URL url = new URL(queryUrl + newText);
-//                                httpURLConnection = (HttpURLConnection) url.openConnection();
-//                                httpURLConnection.setRequestMethod("GET");
-//                                BufferedReader in = new BufferedReader(
-//                                        new InputStreamReader(httpURLConnection.getInputStream()));
-//                                String inputLine;
-//
-//                                while ((inputLine = in.readLine()) != null) {
-//                                    response.append(inputLine);
-//                                }
-//                                in.close();
-//                                httpURLConnection.disconnect();
-//                                JsonArray jsonArray = new JsonParser().parse(response.toString()).getAsJsonArray();
-//                                jsonArray = jsonArray.get(1).getAsJsonArray();
-//                                JsonElement element;
-//                                ArrayList<String> suggests = new ArrayList<>();
-//                                MatrixCursor matrixCursor = new MatrixCursor(new String[] {"results"});
-//                                for (int a = 0; a < jsonArray.size(); a++) {
-//                                    element = jsonArray.get(a);
-//                                    suggests.add(element.getAsString());
-//                                    matrixCursor.addRow(new Object[]{element.getAsString()});
-//                                    Log.d("searchview", element.getAsString());
-//                                }
-//
-////                                SimpleCursorAdapter simpleCursorAdapter = new SimpleCursorAdapter(context, );
-////                                searchView.setSuggestionsAdapter(simpleCursorAdapter);
-//
-//                            } catch (IOException e) {
-//                                e.printStackTrace();
-//                            }
-//                        }
-//
-//                    }
-//                });
-////                SearchView.SearchAutoComplete searchAutoComplete = new SearchView.SearchAutoComplete(context);
-//
-//                return true;
-//            }
-//        });
-//        searchView.setOnQueryTextFocusChangeListener(new View.OnFocusChangeListener() {
-//            @Override
-//            public void onFocusChange(View v, boolean hasFocus) {
-////                InputMethodManager imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
-////                imm.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), InputMethodManager.RESULT_UNCHANGED_SHOWN);
-//                if (!hasFocus) {
-//                    getActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
-//                }
-//            }
-//        });
-
-    }
-
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-
-        return super.onOptionsItemSelected(item);
     }
 
 
@@ -801,7 +695,7 @@ public class SearchFragment extends Fragment {
             recyclerView.setLayoutManager(new LinearLayoutManager(context));
             recyclerView.setItemAnimator(new DefaultItemAnimator());
             recyclerView.setAdapter(adapter);
-            RecyclerTouchListener listener = new RecyclerTouchListener(context, new OnItemClicked() {
+            RecyclerTouchListener listener = new RecyclerTouchListener(context, recyclerView, new OnItemClicked() {
                 @Override
                 public void onClick(View view, int position) {
                     System.out.println("clicked" + (position - 1));
@@ -826,7 +720,7 @@ public class SearchFragment extends Fragment {
 
                 @Override
                 public void onLongClick(View view, int position) {
-
+                    Log.d("searchFragment", "Long click");
                 }
             });
             recyclerView.addOnItemTouchListener(listener);

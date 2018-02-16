@@ -3,9 +3,11 @@ package kie.com.soundtube;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
+
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
@@ -13,6 +15,7 @@ import org.liquidplayer.webkit.javascriptcore.JSContext;
 import org.liquidplayer.webkit.javascriptcore.JSException;
 
 import javax.net.ssl.HttpsURLConnection;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -25,6 +28,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 import static java.util.Arrays.asList;
 
 /**
@@ -125,50 +129,45 @@ public class VideoRetriver {
         basejsurl = "https://www.youtube.com" + jsonObj.getAsJsonObject("assets")
                 .get("js").getAsString().replaceAll("\"", "");
         JsonObject videojson = jsonObj.getAsJsonObject("args");
-
-        if (videojson.has("url_encoded_fmt_stream_map")) {
-
-            String encoded_s = videojson.get("url_encoded_fmt_stream_map").getAsString();
-            JsonElement jsonElement = videojson.get("adaptive_fmts");
-            String adaptiveurl = null;
-            if (jsonElement != null) {
-                adaptiveurl = jsonElement.getAsString();
-            }
-
-            List<String> videos = new LinkedList<>(asList(encoded_s.split(",")));
-//            videos.addAll(asList(adaptiveurl.split(",")));
-
-
-            for (String e : videos) {
-                e = decode(e);
-                String[] fields = e.split("[&\\?;]");
-                HashMap<String, String> splitmap = new HashMap<>();
-                for (String i : fields) {
-                    String[] pair = i.split("=");
-                    if (pair.length == 2) {
-                        splitmap.put(pair[0], pair[1]);
-                    }
-                }
-
-                String[] params = splitmap.get("sparams").split(",");
-                StringBuilder stringBuilder = new StringBuilder();
-                stringBuilder.append(splitmap.get("url") + "?" + "sparams=" + splitmap.get
-                        ("sparams") + "&key=" + splitmap.get("key"));
-                if (splitmap.containsKey("s")) {
-                    String fake = splitmap.get("s");
-                    stringBuilder.append("&signature=" + decipher(fake));
-
-                } else {
-                    stringBuilder.append("&signature=" + splitmap.get("signature"));
-                }
-
-                for (String par : params) {
-                    stringBuilder.append("&" + par + "=" + splitmap.get(par));
-                }
-
-                links.put(Integer.parseInt(splitmap.get("itag")), stringBuilder.toString());
-            }
+        String encoded_s = videojson.get("url_encoded_fmt_stream_map").getAsString();
+        String adaptiveurl = videojson.get("adaptive_fmts").getAsString();
+        List<String> videos = new LinkedList<>();
+        if (!encoded_s.isEmpty()) {
+            videos.addAll(asList(encoded_s.split(",")));
         }
+        if (!adaptiveurl.isEmpty()) {
+            videos.addAll(asList(adaptiveurl.split(",")));
+        }
+        for (String e : videos) {
+            e = decode(e);
+            String[] fields = e.split("[&\\?;]");
+            HashMap<String, String> splitmap = new HashMap<>();
+            for (String i : fields) {
+                String[] pair = i.split("=");
+                if (pair.length == 2) {
+                    splitmap.put(pair[0], pair[1]);
+                }
+            }
+
+            String[] params = splitmap.get("sparams").split(",");
+            StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.append(splitmap.get("url") + "?" + "sparams=" + splitmap.get
+                    ("sparams") + "&key=" + splitmap.get("key"));
+            if (splitmap.containsKey("s")) {
+                String fake = splitmap.get("s");
+                stringBuilder.append("&signature=" + decipher(fake));
+
+            } else {
+                stringBuilder.append("&signature=" + splitmap.get("signature"));
+            }
+
+            for (String par : params) {
+                stringBuilder.append("&" + par + "=" + splitmap.get(par));
+            }
+
+            links.put(Integer.parseInt(splitmap.get("itag")), stringBuilder.toString());
+        }
+
 
 //        String getvideoinfo = downloadWeb(link);
 //        String[] infos = getvideoinfo.split("&");

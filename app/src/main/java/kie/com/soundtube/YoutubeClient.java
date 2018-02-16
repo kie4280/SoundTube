@@ -54,7 +54,7 @@ public class YoutubeClient {
     public YoutubeClient(Context context, Handler handler) {
         this.context = context;
         this.WorkHandler = handler;
-        APIKey = getToken();
+        APIKey = getAPIKey();
         youtube = new YouTube.Builder(new NetHttpTransport(), JacksonFactory.getDefaultInstance(), new HttpRequestInitializer() {
             public void initialize(HttpRequest request) throws IOException {
             }
@@ -62,8 +62,7 @@ public class YoutubeClient {
 
     }
 
-
-    private String getToken() {
+    private String getAPIKey() {
 
         Properties properties = new Properties();
         try {
@@ -82,7 +81,7 @@ public class YoutubeClient {
 
     }
 
-    private void addSearchReseult(String id, SearchContainer container) {
+    private void addSearchResult(String id, SearchContainer container) {
         if (searches.size() >= 49) {
             Iterator<String> iterator = searches.keySet().iterator();
             if (iterator.hasNext()) {
@@ -143,7 +142,7 @@ public class YoutubeClient {
                         container.prevPageToken = prevPageToken;
                         container.search = search;
                         container.tokensearch = tokensearch;
-                        addSearchReseult(queryTerm, container);
+                        addSearchResult(queryTerm, container);
 
                     } catch (IOException e) {
                         Log.w("YoutubeClient", "There was an IO error: " + e.getCause() + " : " + e.getMessage());
@@ -205,7 +204,7 @@ public class YoutubeClient {
                         container.prevPageToken = prevPageToken;
                         container.search = search;
                         container.tokensearch = tokensearch;
-                        addSearchReseult(id, container);
+                        addSearchResult(id, container);
 
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -287,7 +286,6 @@ public class YoutubeClient {
         });
 
     }
-
 
     public void getResults(final YoutubeSearchResult result) {
         WorkHandler.post(new Runnable() {

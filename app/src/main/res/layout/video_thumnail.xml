@@ -24,10 +24,9 @@
         android:layout_above="@+id/durationview"
         android:layout_alignParentEnd="true"
         android:layout_alignTop="@+id/imageView"
+        android:layout_marginStart="10dp"
+        android:layout_marginTop="30dp"
         android:layout_toEndOf="@+id/imageView"
-        android:paddingBottom="0dp"
-        android:paddingStart="10dp"
-        android:paddingTop="30dp"
         android:text="title" />
 
     <TextView
@@ -36,11 +35,24 @@
         android:layout_height="wrap_content"
         android:layout_alignBottom="@+id/imageView"
         android:layout_marginBottom="10dp"
-        android:layout_marginRight="10dp"
+        android:layout_marginEnd="10dp"
         android:layout_toStartOf="@+id/titleview"
         android:background="@android:color/black"
         android:text="duration"
         android:textAlignment="center"
         android:textColor="@android:color/background_light"
         android:textSize="10sp" />
+
+    <ImageView
+        android:id="@+id/video_option"
+        android:layout_width="25dp"
+        android:layout_height="25dp"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginEnd="3dp"
+        android:layout_marginTop="3dp"
+        android:clickable="true"
+        android:focusable="true"
+        app:srcCompat="@drawable/ic_more_vert_black_24dp" />
+
 </RelativeLayout>

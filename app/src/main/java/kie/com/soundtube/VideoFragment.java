@@ -670,7 +670,7 @@ public class VideoFragment extends Fragment {
             currentData = mediaService.currentData;
         }
         if (currentData != null && mediaService.isPlaying()) {
-            playerActivity.slidePanel.setPanelState(SlidingUpPanelLayout.PanelState.EXPANDED);
+//            playerActivity.slidePanel.setPanelState(SlidingUpPanelLayout.PanelState.EXPANDED); //optional
             loadRelatedVideos(currentData);
             playerActivity.runOnUiThread(new Runnable() {
                 @Override
@@ -861,7 +861,7 @@ public class VideoFragment extends Fragment {
             recyclerView.setLayoutManager(new LinearLayoutManager(context));
             recyclerView.setItemAnimator(new DefaultItemAnimator());
             recyclerView.setAdapter(adapter);
-            RecyclerTouchListener listener = new RecyclerTouchListener(context, new OnItemClicked() {
+            RecyclerTouchListener listener = new RecyclerTouchListener(context, recyclerView, new OnItemClicked() {
                 @Override
                 public void onClick(View view, int position) {
                     if (position > 0) {
@@ -889,6 +889,7 @@ public class VideoFragment extends Fragment {
 
                 @Override
                 public void onLongClick(View view, int position) {
+                    Log.d("videoFragment", "Long click");
 
                 }
             });

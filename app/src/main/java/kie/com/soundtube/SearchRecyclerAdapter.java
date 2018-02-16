@@ -2,9 +2,11 @@ package kie.com.soundtube;
 
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
+import android.view.MenuInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.PopupMenu;
 import android.widget.TextView;
 
 import java.util.List;
@@ -34,13 +36,10 @@ public class SearchRecyclerAdapter extends RecyclerView.Adapter<SearchRecyclerAd
 
     @Override
     public void onBindViewHolder(ViewHolder holder, int position) {
-
-        if (true) {
-            DataHolder dataHolder = dataHolders.get(position);
-            holder.imageView.setImageBitmap(dataHolder.thumbnail);
-            holder.titleview.setText(dataHolder.title);
-            holder.durationview.setText(dataHolder.videolength);
-        }
+        DataHolder dataHolder = dataHolders.get(position);
+        holder.thumbnail.setImageBitmap(dataHolder.thumbnail);
+        holder.titleview.setText(dataHolder.title);
+        holder.durationview.setText(dataHolder.videolength);
 
     }
 
@@ -57,15 +56,26 @@ public class SearchRecyclerAdapter extends RecyclerView.Adapter<SearchRecyclerAd
 
     public class ViewHolder extends RecyclerView.ViewHolder {
 
-        public ImageView imageView;
+        public ImageView thumbnail, videooption;
         public TextView titleview;
         public TextView durationview;
 
-        public ViewHolder(View itemView) {
+        public ViewHolder(final View itemView) {
             super(itemView);
-            imageView = (ImageView) itemView.findViewById(R.id.imageView);
+            thumbnail = (ImageView) itemView.findViewById(R.id.imageView);
             titleview = (TextView) itemView.findViewById(R.id.titleview);
             durationview = (TextView) itemView.findViewById(R.id.durationview);
+            videooption = (ImageView) itemView.findViewById(R.id.video_option);
+            videooption.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    PopupMenu popup = new PopupMenu(itemView.getContext(), view);
+                    MenuInflater inflater = popup.getMenuInflater();
+                    inflater.inflate(R.menu.video_option, popup.getMenu());
+                    popup.show();
+                }
+            });
         }
     }
+
 }

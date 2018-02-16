@@ -158,7 +158,7 @@ public class MediaPlayerService extends Service {
         if (videoFragment != null && videoFragment.prepared) {
             setDisplay(videoFragment.surfaceHolder);
         }
-        startForeground(NOTIFICATION_ID, not);
+//        startForeground(NOTIFICATION_ID, not);
         return musicBinder;
     }
 
@@ -343,7 +343,7 @@ public class MediaPlayerService extends Service {
                     updateSeekBar = true;
                     wifiLock.acquire();
                     wakeLock.acquire();
-                    notContentView.setImageViewResource(R.id.ppButton, R.drawable.pause);
+                    notContentView.setImageViewResource(R.id.ppButton, R.drawable.ic_pause_black_36dp);
 //                notBuilder.setContent(notContentView);
                     startForeground(NOTIFICATION_ID, notBuilder.build());
                     if (videoFragment != null) {
@@ -369,7 +369,7 @@ public class MediaPlayerService extends Service {
                     wifiLock.release();
                     wakeLock.release();
                     stopForeground(false);
-                    notContentView.setImageViewResource(R.id.ppButton, R.drawable.play);
+                    notContentView.setImageViewResource(R.id.ppButton, R.drawable.ic_play_arrow_black_36dp);
                     notBuilder.setContent(notContentView);
                     notificationManager.notify(NOTIFICATION_ID, notBuilder.build());
                     updateSeekBar = false;
@@ -477,7 +477,7 @@ public class MediaPlayerService extends Service {
                 if (surfaceHolder != null) {
                     exoPlayer.setVideoSurfaceHolder(surfaceHolder);
                     exoPlayer.setVideoScalingMode(MediaCodec.VIDEO_SCALING_MODE_SCALE_TO_FIT_WITH_CROPPING);
-
+                    surfaceHolder.setKeepScreenOn(true);
                 }
 
             }

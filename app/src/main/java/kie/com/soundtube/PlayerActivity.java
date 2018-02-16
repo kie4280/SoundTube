@@ -117,6 +117,7 @@ public class PlayerActivity extends AppCompatActivity implements SearchFragment.
                 .add(R.id.searchPanel, searchFragment, "searchFragment")
                 .commit();
         slidePanel.addPanelSlideListener(panelSlideListener);
+//        slidePanel.setPanelState(PanelState.HIDDEN);           //should not be commented when building app
         drawerLayout = (DrawerLayout) findViewById(R.id.drawerLayout);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this
                 , drawerLayout, playerToolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close) {
