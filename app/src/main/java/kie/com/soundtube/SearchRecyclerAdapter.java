@@ -3,6 +3,7 @@ package kie.com.soundtube;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
@@ -14,6 +15,8 @@ import java.util.List;
 public class SearchRecyclerAdapter extends RecyclerView.Adapter<SearchRecyclerAdapter.ViewHolder> {
 
     public List<DataHolder> dataHolders;
+    public MenuActionListener menuActionListener = null;
+
 
     public SearchRecyclerAdapter(List<DataHolder> dataHolders) {
         this.dataHolders = dataHolders;
@@ -72,10 +75,30 @@ public class SearchRecyclerAdapter extends RecyclerView.Adapter<SearchRecyclerAd
                     PopupMenu popup = new PopupMenu(itemView.getContext(), view);
                     MenuInflater inflater = popup.getMenuInflater();
                     inflater.inflate(R.menu.video_option, popup.getMenu());
+                    popup.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
+                        @Override
+                        public boolean onMenuItemClick(MenuItem menuItem) {
+                            switch (menuItem.getItemId()) {
+                                case R.id.download:
+                                    if (menuActionListener != null) {
+                                        menuActionListener.onDownload(getAdapterPosition());
+                                    }
+
+                                    break;
+                                default:
+                                    break;
+                            }
+                            return false;
+                        }
+                    });
                     popup.show();
                 }
             });
         }
+    }
+
+    public interface MenuActionListener {
+        void onDownload(int pos);
     }
 
 }

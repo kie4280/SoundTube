@@ -48,7 +48,6 @@ public class MediaPlayerService extends Service {
     public int mposition = 0;
     public DataHolder currentData = null, nextData = null;
     public static boolean autoplay = true;
-
     public static boolean serviceStarted = false;
     private static final int NOTIFICATION_ID = 1;
     private static final String NOTIFICATION_REMOVED = "NOTIFICATION_REMOVED";
@@ -58,6 +57,7 @@ public class MediaPlayerService extends Service {
     public static final int PLAY_FROM_PLAYLIST = 1;
     public static final int PLAY_FROM_RELATED_VIDEO = 2;
     public static int PLAYING_MODE = 2;
+    public static int VIDEO_QUALITY = -1;
     public SimpleExoPlayer exoPlayer;
     private MusicBinder musicBinder;
     Handler playHandler, networkHandler;
@@ -81,16 +81,15 @@ public class MediaPlayerService extends Service {
 
     public void onPrepared() {
 
+        prepared = true;
+        Runnable task = preparetasks.poll();
+        while (task != null) {
+            playHandler.post(task);
+            task = preparetasks.poll();
+        }
         playHandler.post(new Runnable() {
             @Override
             public void run() {
-
-                prepared = true;
-                Runnable task = preparetasks.poll();
-                while (task != null) {
-                    playHandler.post(task);
-                    task = preparetasks.poll();
-                }
 
                 if (videoFragment != null) {
                     videoFragment.Videoratio = exoPlayer.getVideoFormat().pixelWidthHeightRatio;
@@ -427,42 +426,45 @@ public class MediaPlayerService extends Service {
     }
 
     public void prepare(final DataHolder dataHolder) {
+        prepare(dataHolder, VideoRetriver.YOUTUBE_VIDEO_QUALITY_AUTO);
+    }
+
+    public void prepare(final DataHolder dataHolder, final int[] quality) {
 
         playHandler.post(new Runnable() {
             @Override
             public void run() {
 
-                for (int a = 0; a < VideoRetriver.mPreferredVideoQualities.size(); a++) {
-                    int quality = VideoRetriver.mPreferredVideoQualities.get(a);
-                    if (dataHolder.videoUris.containsKey(quality)) {
-                        notContentView.setTextViewText(R.id.notPlayingTitle, dataHolder.title);
-                        prepared = false;
-                        // Measures bandwidth during playback. Can be null if not required.
-                        DefaultBandwidthMeter bandwidthMeter = new DefaultBandwidthMeter();
+                String url = VideoRetriver.getVideoResolution(dataHolder, quality);
+                if (url != null) {
+                    notContentView.setTextViewText(R.id.notPlayingTitle, dataHolder.title);
+                    prepared = false;
+                    // Measures bandwidth during playback. Can be null if not required.
+                    DefaultBandwidthMeter bandwidthMeter = new DefaultBandwidthMeter();
 // Produces DataSource instances through which media data is loaded.
-                        DataSource.Factory dataSourceFactory = new DefaultDataSourceFactory(getApplicationContext(),
-                                Util.getUserAgent(getApplicationContext(), "Soundtube"), bandwidthMeter);
+                    DataSource.Factory dataSourceFactory = new DefaultDataSourceFactory(getApplicationContext(),
+                            Util.getUserAgent(getApplicationContext(), "Soundtube"), bandwidthMeter);
 // This is the MediaSource representing the media to be played.
-                        MediaSource videoSource = new ExtractorMediaSource.Factory(dataSourceFactory)
-                                .createMediaSource(Uri.parse(dataHolder.videoUris.get(quality)));
+                    MediaSource videoSource = new ExtractorMediaSource.Factory(dataSourceFactory)
+                            .createMediaSource(Uri.parse(url));
 // Prepare the player with the source.
-                        exoPlayer.stop();
-                        exoPlayer.prepare(videoSource);
-                        if (currentData != null) {
-                            watchedQueue.offer(currentData);
-                            Log.d("watchedQueue", "add");
-                        }
-                        currentData = dataHolder;
-                        nextVideo();
-                        if (videoFragment != null) {
-                            videoFragment.loadRelatedVideos(dataHolder);
-                        }
-                        break;
-                    } else if (a == VideoRetriver.mPreferredVideoQualities.size() - 1) {
-                        Toast toast = Toast.makeText(getApplicationContext(), "No video resolution", Toast.LENGTH_LONG);
-                        toast.show();
+                    exoPlayer.stop();
+                    exoPlayer.prepare(videoSource);
+                    if (currentData != null) {
+                        watchedQueue.offer(currentData);
+                        Log.d("watchedQueue", "add");
                     }
+                    currentData = dataHolder;
+                    nextVideo();
+                    if (videoFragment != null) {
+                        videoFragment.loadRelatedVideos(dataHolder);
+                    }
+
+                } else {
+                    Toast toast = Toast.makeText(getApplicationContext(), "No video resolution", Toast.LENGTH_LONG);
+                    toast.show();
                 }
+
             }
         });
 
@@ -490,8 +492,16 @@ public class MediaPlayerService extends Service {
         playHandler.post(new Runnable() {
             @Override
             public void run() {
-                if (isPlaying()) {
+                if (exoPlayer.isCurrentWindowSeekable()
+                        ) {
                     exoPlayer.seekTo(millis);
+                } else if (!prepared) {
+                    preparetasks.offer(new Runnable() {
+                        @Override
+                        public void run() {
+                            exoPlayer.seekTo(millis);
+                        }
+                    });
                 }
             }
         });
@@ -557,6 +567,15 @@ public class MediaPlayerService extends Service {
     public boolean previousVideo() {
         currentData = null;
         return !watchedQueue.isEmpty();
+    }
+
+    public void setVideoQuality(int quality) {
+        VIDEO_QUALITY = quality;
+        if (currentData.videoUris.containsKey(VIDEO_QUALITY)) {
+            int pos = getCurrentPos();
+            prepare(currentData);
+            seekTo(pos);
+        }
     }
 
     public void setPlayMode(int mode) {

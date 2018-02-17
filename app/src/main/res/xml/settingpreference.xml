@@ -1,12 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <PreferenceCategory android:title="software">
+    <PreferenceCategory android:title="Download options">
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="downloadvideo"
+            android:title="Download music with video" />
+
+    </PreferenceCategory>
+    <PreferenceCategory android:title="About software">
 
         <Preference
             android:key="checkupdate"
             android:title="check update">
 
         </Preference>
+
     </PreferenceCategory>
 </PreferenceScreen>

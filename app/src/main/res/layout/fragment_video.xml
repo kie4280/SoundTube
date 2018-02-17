@@ -56,8 +56,19 @@
             android:layout_alignParentBottom="true"
             android:layout_alignParentStart="true"
             android:layout_marginBottom="5dp"
+            android:thumb="@drawable/seekthumb"
+            android:visibility="gone" />
+
+        <ImageView
+            android:id="@+id/videoSettingButton"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_alignParentEnd="true"
+            android:layout_marginEnd="5dp"
+            android:layout_marginTop="5dp"
             android:visibility="gone"
-            android:thumb="@drawable/seekthumb" />
+            app:srcCompat="@drawable/ic_settings_white_24dp" />
+
         <ProgressBar
                 style="@android:style/Widget.ProgressBar.Large"
                 android:layout_width="wrap_content"

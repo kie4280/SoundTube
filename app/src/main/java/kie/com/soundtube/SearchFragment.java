@@ -3,7 +3,9 @@ package kie.com.soundtube;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.app.Activity;
+import android.app.DownloadManager;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.database.MatrixCursor;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -11,10 +13,13 @@ import android.graphics.ColorFilter;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.graphics.drawable.Drawable;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.app.Fragment;
+import android.preference.PreferenceManager;
 import android.support.design.widget.AppBarLayout;
 import android.support.v4.view.ViewPager;
 import android.support.v4.view.ViewPager.OnPageChangeListener;
@@ -54,6 +59,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
@@ -698,7 +704,7 @@ public class SearchFragment extends Fragment {
             RecyclerTouchListener listener = new RecyclerTouchListener(context, recyclerView, new OnItemClicked() {
                 @Override
                 public void onClick(View view, int position) {
-                    System.out.println("clicked" + (position - 1));
+                    System.out.println("clicked" + position);
                     Toast toast = Toast.makeText(context, "Decrypting...", Toast.LENGTH_SHORT);
                     toast.show();
                     final DataHolder dataHolder = adapter.dataHolders.get(position);
@@ -724,6 +730,41 @@ public class SearchFragment extends Fragment {
                 }
             });
             recyclerView.addOnItemTouchListener(listener);
+            adapter.menuActionListener = new SearchRecyclerAdapter.MenuActionListener() {
+
+                DownloadManager manager = (DownloadManager) context.getSystemService(Context.DOWNLOAD_SERVICE);
+
+                @Override
+                public void onDownload(int pos) {
+                    final DataHolder dataHolder = adapter.dataHolders.get(pos);
+                    videoRetriver.startExtracting(dataHolder.videoID, new VideoRetriver.YouTubeExtractorListener() {
+                        @Override
+                        public void onSuccess(HashMap<Integer, String> result) {
+                            SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+                            boolean downloadvideo = preferences.getBoolean("downloadvideo", false);
+                            File file = new File(playerActivity.getExternalFilesDir(Environment.DIRECTORY_MUSIC),
+                                    "SoundTube/" + dataHolder.title);
+
+                            if (!file.exists()) {
+                                DownloadManager.Request request = new DownloadManager.Request(
+                                        Uri.parse(result.get("")));
+                                request.setDestinationInExternalFilesDir(context, Environment.DIRECTORY_MUSIC,
+                                        "SoundTube/" + dataHolder.title);
+                                request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE);
+                                request.allowScanningByMediaScanner();
+                                manager.enqueue(request);
+                            }
+
+                        }
+
+                        @Override
+                        public void onFailure(Error error) {
+                            Log.d("download", "error extracting");
+
+                        }
+                    });
+                }
+            };
         }
     }
 

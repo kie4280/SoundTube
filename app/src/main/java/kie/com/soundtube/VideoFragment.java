@@ -66,7 +66,7 @@ public class VideoFragment extends Fragment {
     private ProgressBar progressBar;
     private TextView currentTime;
     private TextView totalTime;
-    public ImageView headerPlayButton;
+    public ImageView headerPlayButton, videoSettingButton;
     public TextView playingTextView;
     private ScaleGestureDetector scaleGestureDetector;
     private DisplayMetrics displayMetrics;
@@ -147,6 +147,7 @@ public class VideoFragment extends Fragment {
             totalTime = (TextView) videoFragmentView.findViewById(R.id.totalTime);
             header = (RelativeLayout) videoFragmentView.findViewById(R.id.headerView);
             headerPlayButton = (ImageView) videoFragmentView.findViewById(R.id.headerPlayButton);
+            videoSettingButton = (ImageView) videoFragmentView.findViewById(R.id.videoSettingButton);
             viewPager = (ViewPager) videoFragmentView.findViewById(R.id.videoViewPager);
             headersize = Tools.convertDpToPixel(HeaderDP, context);
             playbutton = (Button) videoFragmentView.findViewById(R.id.playbutton);
@@ -637,10 +638,12 @@ public class VideoFragment extends Fragment {
                 if (show) {
                     seekBar.setVisibility(View.VISIBLE);
                     playbutton.setVisibility(View.VISIBLE);
+                    videoSettingButton.setVisibility(View.VISIBLE);
                     controlshow = true;
                 } else {
                     seekBar.setVisibility(View.GONE);
                     playbutton.setVisibility(View.GONE);
+                    videoSettingButton.setVisibility(View.GONE);
                     controlshow = false;
                 }
             }
