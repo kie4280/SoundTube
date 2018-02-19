@@ -6,6 +6,11 @@
             android:defaultValue="false"
             android:key="downloadvideo"
             android:title="Download music with video" />
+        <Preference android:title="Download location">
+            <intent
+                android:targetClass="FileChooser"
+                android:targetPackage="kie.com.soundtube" />
+        </Preference>
 
     </PreferenceCategory>
     <PreferenceCategory android:title="About software">

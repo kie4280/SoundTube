@@ -124,23 +124,36 @@ public class MediaPlayerService extends Service {
         @Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
-            if (action.equals(NOTIFICATION_PLAY)) {
-                if (isPlaying()) {
-                    pause();
-
-                } else {
-                    play();
-
-                }
-            } else if (action.equals(NOTIFICATION_NEXT)) {
-
-            } else if (action.equals(NOTIFICATION_PREV)) {
-
-            } else if (action.equals(NOTIFICATION_REMOVED)) {
-
-                stopSelf();
-                Log.d("service", "notification remove");
+            switch (action) {
+                case NOTIFICATION_PLAY:
+                    if (isPlaying()) {
+                        pause();
+                    } else {
+                        play();
+                    }
+                    break;
+                case NOTIFICATION_NEXT:
+                    prepare(nextData);
+                    Log.d("service", "notification next");
+                    break;
+                case NOTIFICATION_PREV:
+                    if (videoFragment != null) {
+                        videoFragment.previousVideo();
+                    } else {
+                        previousVideo();
+                        DataHolder dataHolder = watchedQueue.pollLast();
+                        prepare(dataHolder);
+                    }
+                    Log.d("service", "notification previous");
+                    break;
+                case NOTIFICATION_REMOVED:
+                    stopSelf();
+                    Log.d("service", "notification remove");
+                    break;
+                default:
+                    break;
             }
+
         }
     };
 
@@ -247,8 +260,11 @@ public class MediaPlayerService extends Service {
         notBuilder = new Notification.Builder(MediaPlayerService.this);
         notContentView = new RemoteViews(getPackageName(), R.layout.notification_layout);
         notContentView.setOnClickPendingIntent(R.id.ppButton, playIntent);
-        notContentView.setOnClickPendingIntent(R.id.next, nextIntent);
-        notContentView.setOnClickPendingIntent(R.id.prev, prevIntent);
+        notContentView.setOnClickPendingIntent(R.id.nextButton, nextIntent);
+        notContentView.setOnClickPendingIntent(R.id.prevButton, prevIntent);
+        notContentView.setImageViewResource(R.id.ppButton, R.drawable.ic_play_arrow_black_36dp);
+        notContentView.setImageViewResource(R.id.nextButton, R.drawable.ic_skip_next_black_36dp);
+        notContentView.setImageViewResource(R.id.prevButton, R.drawable.ic_skip_previous_black_36dp);
         notBuilder.setContentIntent(notAddIntent)
                 .setSmallIcon(R.drawable.icon)
                 .setOngoing(false)
@@ -256,7 +272,6 @@ public class MediaPlayerService extends Service {
                 .setDeleteIntent(notRemoveIntent)
                 .setContent(notContentView);
         not = notBuilder.build();
-//        not.flags |= Notification.FLAG_NO_CLEAR;
         Log.d("service", "created");
         serviceStarted = true;
 

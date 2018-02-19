@@ -26,7 +26,6 @@ public class SettingFragment extends PreferenceFragment {
     boolean checkedLatest = false;
     boolean downloaded = false;
     Toast toast = null;
-
     Github github;
 
     private OnFragmentInteractionListener mListener;
@@ -44,8 +43,8 @@ public class SettingFragment extends PreferenceFragment {
         thread.start();
         worker = new Handler(thread.getLooper());
         addPreferencesFromResource(R.xml.settingpreference);
-        Preference preference = (Preference) findPreference("checkupdate");
-        preference.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+        Preference checkupdate = (Preference) findPreference("checkupdate");
+        checkupdate.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
             public boolean onPreferenceClick(Preference preference) {
                 updateSoftware();
                 return true;

@@ -41,21 +41,18 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
-
         <activity
             android:name=".SettingActivity"
             android:label="@string/title_activity_settings"
             android:launchMode="singleTop"
             android:parentActivityName=".PlayerActivity"
             android:screenOrientation="portrait" />
-
         <activity
             android:name=".PlaylistActivity"
             android:label="@string/title_activity_playlist"
             android:launchMode="singleTop"
             android:parentActivityName=".PlayerActivity"
             android:screenOrientation="portrait" />
-
         <activity
             android:name=".AccountActivity"
             android:label="AccountActivity"
@@ -63,10 +60,17 @@
             android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="kie.com.soundtube.getAccount" />
+
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
+        <activity android:name=".FolderChooserActivity">
+            <intent-filter>
+                <action android:name="kie.com.soundtube.getFolder" />
 
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
     </application>
 
 </manifest>
