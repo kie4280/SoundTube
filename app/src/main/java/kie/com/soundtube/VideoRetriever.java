@@ -1,7 +1,16 @@
 package kie.com.soundtube;
 
+import android.content.Context;
+import android.net.Uri;
 import android.os.Handler;
 
+import com.google.android.exoplayer2.source.ExtractorMediaSource;
+import com.google.android.exoplayer2.source.MediaSource;
+import com.google.android.exoplayer2.source.MergingMediaSource;
+import com.google.android.exoplayer2.upstream.DataSource;
+import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
+import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
+import com.google.android.exoplayer2.util.Util;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -19,6 +28,8 @@ import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLDecoder;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -32,51 +43,205 @@ import static java.util.Arrays.asList;
 /**
  * Created by kieChang on 2017/5/21.
  */
-public class VideoRetriver {
-    public static final int[] YOUTUBE_VIDEO_QUALITY_TINY_144 = {17, 160, 278};
-    public static final int[] YOUTUBE_VIDEO_QUALITY_SMALL_240 = {36, 43, 133, 242};
-    public static final int[] YOUTUBE_VIDEO_QUALITY_MEDIUM_360 = {18, 134, 243};
-    public static final int[] YOUTUBE_VIDEO_QUALITY_MEDIUM_480 = {244};
-    public static final int[] YOUTUBE_VIDEO_QUALITY_HD_720 = {22, 136, 247};
-    public static final int[] YOUTUBE_VIDEO_QUALITY_HD_1080 = {37, 137, 248};
-    public static final int[] YOUTUBE_VIDEO_QUALITY_HD_1440 = {264, 271};
-    public static final int[] YOUTUBE_VIDEO_QUALITY_4K = {38, 266, 313};
-    public static final int[] YOUTUBE_AUDIO = {140, 171, 172, 249, 250, 251};
-    public static final int[] YOUTUBE_VIDEO_QUALITY_AUTO = {-1};
+public class VideoRetriever {
+//    public static final int DASH_MP4_VIDEO_240 = 133;
+//    public static final int DASH_MP4_VIDEO_360 = 134;
+//    public static final int DASH_MP4_VIDEO_480 = 135;
+//    public static final int DASH_MP4__VIDEO_720 = 136;
+//    public static final int DASH_MP4_VIDEO_1080 = 137;
+//    public static final int DASH_MP4_VIDEO_1440 = 134;
+//    public static final int DASH_MP4_VIDEO_4k = 313;
+
+    public static final ArrayList<Integer> YOUTUBE_VIDEO_QUALITY_AUTO = new ArrayList<>(asList(new Integer[]{-1}));
+    public static final ArrayList<Integer> YOUTUBE_144 = new ArrayList<>(asList(new Integer[]{160, 278, 17}));
+    public static final ArrayList<Integer> YOUTUBE_240 = new ArrayList<>(asList(new Integer[]{133, 242, 5}));
+    public static final ArrayList<Integer> YOUTUBE_360 = new ArrayList<>(asList(new Integer[]{134, 243, 18, 43}));
+    public static final ArrayList<Integer> YOUTUBE_480 = new ArrayList<>(asList(new Integer[]{135, 244, 44}));
+    public static final ArrayList<Integer> YOUTUBE_720 = new ArrayList<>(asList(new Integer[]{136, 247, 298, 302, 22, 45}));
+    public static final ArrayList<Integer> YOUTUBE_1080 = new ArrayList<>(asList(new Integer[]{137, 248, 299, 303, 37, 46}));
+    public static final ArrayList<Integer> YOUTUBE_1440 = new ArrayList<>(asList(new Integer[]{264, 271, 308}));
+    public static final ArrayList<Integer> YOUTUBE_4K = new ArrayList<>(asList(new Integer[]{266, 313, 315}));
+    public static final ArrayList<Integer> YOUTUBE_60FPS = new ArrayList<>(asList(new Integer[]{302, 303, 308, 315, 298, 299}));
+    public static final ArrayList<Integer> DASH_VIDEO_MP4 = new ArrayList<>(asList(new Integer[]{160, 133, 134, 135, 136, 137, 264, 266, 298, 299}));
+    public static final ArrayList<Integer> DASH_VIDEO_WEBM = new ArrayList<>(asList(new Integer[]{278, 242, 243, 244, 247, 248, 271, 313, 302, 303, 308, 315}));
+    public static final ArrayList<Integer> DASH_AUDIO_MP4 = new ArrayList<>(asList(new Integer[]{139, 140, 141, 256, 258, 325, 328}));
+    public static final ArrayList<Integer> DASH_AUDIO_WEBM = new ArrayList<>(asList(new Integer[]{171, 172, 249, 250, 251}));
+    public static Integer PreferredAudioQualityIndex = 0;
+
+    private static final ArrayList<ArrayList<Integer>> VideoFormats = new ArrayList<>(asList(YOUTUBE_144, YOUTUBE_240, YOUTUBE_360
+            , YOUTUBE_480, YOUTUBE_720, YOUTUBE_1080, YOUTUBE_1440, YOUTUBE_4K));
+//    public static final int[] DASH_WEBM_OPUS_AUDIO = {249, 250, 251};
 
     Handler youtubeExtractorHandler;
-    public static List<int[]> mPreferredVideoQualities = asList(YOUTUBE_VIDEO_QUALITY_4K,
-            YOUTUBE_VIDEO_QUALITY_HD_1080, YOUTUBE_VIDEO_QUALITY_HD_720,
-            YOUTUBE_VIDEO_QUALITY_MEDIUM_480, YOUTUBE_VIDEO_QUALITY_MEDIUM_360,
-            YOUTUBE_VIDEO_QUALITY_SMALL_240, YOUTUBE_VIDEO_QUALITY_HD_1440,
-            YOUTUBE_VIDEO_QUALITY_TINY_144);
+    //    public static List<int[]> mPreferredVideoQualities = asList(YOUTUBE_1080, YOUTUBE_720, YOUTUBE_480, YOUTUBE_360
+//            , YOUTUBE_240, YOUTUBE_144);
+//    public static ArrayList<String> VideoQualityStrings = new ArrayList<>(asList("4K", "1440p", "1080p"
+//    ,"720p", "480p", "360p", "240p", "144p", "audio only"));
+    public static ArrayList<String> VideoQualityStrings = new ArrayList<>(asList("144p", "240p", "360p"
+            , "480p", "720p", "1080p", "1440p", "4k"));
     JsonObject jsonObj = null;
     String decipherfunc = null;
     String basejsurl = null;
 
-    public static String getVideoResolution(DataHolder dataHolder, int[] preferredRes) {
+    public static MediaSource getVideoResolution(DataHolder dataHolder, ArrayList<Integer> preferredRes, Context context) {
         HashMap<Integer, String> urls = dataHolder.videoUris;
+
+        // Measures bandwidth during playback. Can be null if not required.
+        DefaultBandwidthMeter bandwidthMeter = new DefaultBandwidthMeter();
+// Produces DataSource instances through which media data is loaded.
+        DataSource.Factory dataSourceFactory = new DefaultDataSourceFactory(context,
+                Util.getUserAgent(context, "SoundTube"), bandwidthMeter);
+// This is the MediaSource representing the media to be played.
         if (preferredRes != YOUTUBE_VIDEO_QUALITY_AUTO) {
-            for (int mpreferredRes : preferredRes) {
+            for (Integer mpreferredRes : preferredRes) {
                 if (urls.containsKey(mpreferredRes)) {
-                    return urls.get(mpreferredRes);
+                    ArrayList dashes = filter(AND, filter(OR, DASH_VIDEO_MP4, DASH_VIDEO_WEBM), preferredRes);
+                    ArrayList sound = new ArrayList<>(urls.keySet());
+                    ArrayList audios = filter(AND, filter(OR, DASH_AUDIO_MP4, DASH_AUDIO_WEBM), sound);
+                    if (!dashes.isEmpty() && !audios.isEmpty()) {
+                        MediaSource videoSource = new ExtractorMediaSource.Factory(dataSourceFactory)
+                                .createMediaSource(Uri.parse(urls.get(mpreferredRes)));
+                        MediaSource audioSource = new ExtractorMediaSource.Factory(dataSourceFactory)
+                                .createMediaSource(Uri.parse(urls.get(audios.get(PreferredAudioQualityIndex))));
+                        MediaSource mediaSource = new MergingMediaSource(videoSource, audioSource);
+                        return mediaSource;
+                    } else {
+                        MediaSource mediaSource = new ExtractorMediaSource.Factory(dataSourceFactory).createMediaSource(Uri.parse(urls.get(mpreferredRes)));
+                        return mediaSource;
+                    }
+                }
+            }
+        } else {
+            ArrayList<ArrayList<Integer>> available = getMatchedFormats(dataHolder);
+            for (int a = available.size() - 1; a >= 0; a--) {
+                ArrayList<Integer> sameQuality = available.get(a);
+                for (Integer aSameQuality : sameQuality) {
+                    if (urls.containsKey(aSameQuality)) {
+                        ArrayList dashes = filter(AND, filter(OR, DASH_VIDEO_MP4, DASH_VIDEO_WEBM), sameQuality);
+                        ArrayList sound = new ArrayList<>(urls.keySet());
+                        ArrayList audios = filter(AND, filter(OR, DASH_AUDIO_MP4, DASH_AUDIO_WEBM), sound);
+                        if (!dashes.isEmpty() && !audios.isEmpty()) {
+                            MediaSource videoSource = new ExtractorMediaSource.Factory(dataSourceFactory)
+                                    .createMediaSource(Uri.parse(urls.get(aSameQuality)));
+                            MediaSource audioSource = new ExtractorMediaSource.Factory(dataSourceFactory)
+                                    .createMediaSource(Uri.parse(urls.get(audios.get(PreferredAudioQualityIndex))));
+                            MediaSource mediaSource = new MergingMediaSource(videoSource, audioSource);
+                            return mediaSource;
+
+                        } else {
+                            MediaSource mediaSource = new ExtractorMediaSource.Factory(dataSourceFactory).createMediaSource(Uri.parse(urls.get(aSameQuality)));
+                            return mediaSource;
+                        }
+                    }
                 }
             }
         }
-        for (int a = 0; a < mPreferredVideoQualities.size(); a++) {
-            int[] sameQuality = mPreferredVideoQualities.get(a);
-            for (int aSameQuality : sameQuality) {
-                if (urls.containsKey(aSameQuality)) {
-                    return urls.get(aSameQuality);
-                }
-            }
-        }
+
         return null;
     }
 
-    public VideoRetriver(Handler handler) {
-        youtubeExtractorHandler = handler;
+    public static ArrayList<String> getAvailableFormats(DataHolder dataHolder) {
+        ArrayList<String> available = new ArrayList<>();
+        HashMap<Integer, String> urls = dataHolder.videoUris;
+        for (int a = 0; a < VideoQualityStrings.size(); a++) {
+            for (int q : VideoFormats.get(a)) {
+                if (urls.containsKey(q)) {
+                    available.add(VideoQualityStrings.get(a));
+                    break;
+                }
+            }
+        }
+        return available;
+    }
 
+    private static ArrayList<ArrayList<Integer>> getMatchedFormats(DataHolder dataHolder) {
+        ArrayList<ArrayList<Integer>> available = new ArrayList<>();
+        HashMap<Integer, String> urls = dataHolder.videoUris;
+        for (int a = 0; a < VideoFormats.size(); a++) {
+            ArrayList<Integer> b = VideoFormats.get(a);
+            for (Integer format : b) {
+                if (urls.containsKey(format)) {
+                    available.add(b);
+                    break;
+                }
+            }
+        }
+        return available;
+    }
+
+    private static boolean isDash(int target, HashMap<Integer, String> data) {
+        if (Arrays.asList(DASH_VIDEO_MP4).contains(target) || Arrays.asList(DASH_VIDEO_WEBM).contains(target)) {
+            for (Integer a : DASH_AUDIO_MP4) {
+                if (data.containsKey(a)) {
+                    return true;
+                }
+            }
+            for (Integer a : DASH_AUDIO_WEBM) {
+                if (data.containsKey(a)) {
+                    return true;
+                }
+            }
+            return false;
+        } else {
+            return false;
+        }
+
+    }
+
+    private static final String NOT = "not";
+    private static final String AND = "and";
+    private static final String OR = "or";
+
+    public static ArrayList<Integer> filter(String options, ArrayList<Integer>... flags) {
+        ArrayList<Integer> res = new ArrayList<>();
+        if (options.contentEquals(AND)) {
+
+            int min = Integer.MAX_VALUE;
+            int MinIndex = 0;
+            for (int a = 0; a < flags.length; a++) {
+                ArrayList<Integer> c = flags[a];
+                if (c.size() < min) {
+                    MinIndex = a;
+                    min = c.size();
+                }
+            }
+
+            ArrayList<Integer> keep = new ArrayList<>(flags[MinIndex]);
+            for (Integer com : keep) {
+                boolean has = true;
+                for (ArrayList<Integer> a : flags) {
+                    if (!a.contains(com)) {
+                        has = false;
+                    }
+                }
+                if (has) {
+                    res.add(com);
+                }
+            }
+
+            return res;
+        } else if (options.contentEquals(OR)) {
+
+            for (ArrayList<Integer> a : flags) {
+                for (Integer b : a) {
+                    if (!res.contains(a)) {
+                        res.add(b);
+                    }
+                }
+
+            }
+
+            return res;
+        } else if (options.contentEquals(NOT)) {
+            return res;
+        }
+
+        return res;
+    }
+
+
+    public VideoRetriever(Handler handler) {
+        youtubeExtractorHandler = handler;
     }
 
     public String downloadWeb(String url) {

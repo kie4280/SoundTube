@@ -3,9 +3,12 @@ package kie.com.soundtube;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.Dialog;
 import android.app.DownloadManager;
+import android.app.Fragment;
 import android.content.Context;
-import android.content.SharedPreferences;
+import android.content.DialogInterface;
 import android.database.MatrixCursor;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -18,14 +21,21 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
-import android.app.Fragment;
-import android.preference.PreferenceManager;
 import android.support.design.widget.AppBarLayout;
 import android.support.v4.view.ViewPager;
 import android.support.v4.view.ViewPager.OnPageChangeListener;
+import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.DividerItemDecoration;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.Toolbar;
+import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.MotionEvent;
+import android.view.View;
 import android.view.ViewAnimationUtils;
+import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
 import android.view.animation.AnimationSet;
@@ -33,25 +43,12 @@ import android.view.animation.TranslateAnimation;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.CursorAdapter;
-import android.widget.PopupMenu;
-import android.widget.SimpleCursorAdapter;
-import android.support.v7.widget.DefaultItemAnimator;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
-import android.support.v7.widget.Toolbar;
-import android.util.Log;
-import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuInflater;
-import android.view.MenuItem;
-import android.view.View;
-import android.view.ViewGroup;
-import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.SearchView;
+import android.widget.SimpleCursorAdapter;
 import android.widget.Toast;
 
 import com.google.gson.JsonArray;
@@ -75,7 +72,7 @@ public class SearchFragment extends Fragment {
     private View searchFragmentView = null;
     private Handler workHandler = null;
     private Context context;
-    public VideoRetriver videoRetriver;
+    public VideoRetriever videoRetriever;
     private ViewPager viewPager;
     private ProgressBar bar1, bar2;
     public Button searchButton;
@@ -103,7 +100,7 @@ public class SearchFragment extends Fragment {
         setHasOptionsMenu(true);
         workHandler = PlayerActivity.workHandler;
         youtubeClient = new YoutubeClient(context, workHandler);
-        videoRetriver = new VideoRetriver(workHandler);
+        videoRetriever = new VideoRetriever(workHandler);
 
     }
 
@@ -708,12 +705,12 @@ public class SearchFragment extends Fragment {
                     Toast toast = Toast.makeText(context, "Decrypting...", Toast.LENGTH_SHORT);
                     toast.show();
                     final DataHolder dataHolder = adapter.dataHolders.get(position);
-                    videoRetriver.startExtracting(dataHolder.videoID, new VideoRetriver.YouTubeExtractorListener() {
+                    videoRetriever.startExtracting(dataHolder.videoID, new VideoRetriever.YouTubeExtractorListener() {
                         @Override
                         public void onSuccess(HashMap<Integer, String> result) {
                             dataHolder.videoUris = result;
                             mListener.onReturnSearchVideo(dataHolder);
-                            //Log.d("search", ))
+
                         }
 
                         @Override
@@ -737,15 +734,18 @@ public class SearchFragment extends Fragment {
                 @Override
                 public void onDownload(int pos) {
                     final DataHolder dataHolder = adapter.dataHolders.get(pos);
-                    videoRetriver.startExtracting(dataHolder.videoID, new VideoRetriver.YouTubeExtractorListener() {
+                    videoRetriever.startExtracting(dataHolder.videoID, new VideoRetriever.YouTubeExtractorListener() {
                         @Override
                         public void onSuccess(HashMap<Integer, String> result) {
-                            SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
-                            boolean downloadvideo = preferences.getBoolean("downloadvideo", false);
+                            dataHolder.videoUris = result;
                             File file = new File(playerActivity.getExternalFilesDir(Environment.DIRECTORY_MUSIC),
                                     "SoundTube/" + dataHolder.title);
 
                             if (!file.exists()) {
+
+                                OptionDialog optionDialog = new OptionDialog();
+                                optionDialog.createDialog(VideoRetriever.getAvailableFormats(dataHolder));
+
                                 DownloadManager.Request request = new DownloadManager.Request(
                                         Uri.parse(result.get("")));
                                 request.setDestinationInExternalFilesDir(context, Environment.DIRECTORY_MUSIC,
@@ -765,6 +765,37 @@ public class SearchFragment extends Fragment {
                     });
                 }
             };
+        }
+    }
+
+    private class OptionDialog {
+
+        AlertDialog.Builder builder = null;
+        AlertDialog dialog = null;
+
+        public OptionDialog() {
+
+        }
+
+        public Dialog createDialog(List<String> items) {
+            builder = new AlertDialog.Builder(context);
+            builder.setTitle("Download options")
+                    .setMultiChoiceItems((String[]) items.toArray(), null,
+                            new DialogInterface.OnMultiChoiceClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialogInterface, int i, boolean b) {
+
+                                }
+                            });
+            dialog = builder.create();
+            return dialog;
+
+        }
+
+        public void show() {
+            if (dialog != null) {
+                dialog.show();
+            }
         }
     }
 

@@ -37,11 +37,8 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.sothree.slidinguppanel.SlidingUpPanelLayout;
-
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 
 public class VideoFragment extends Fragment {
@@ -78,7 +75,7 @@ public class VideoFragment extends Fragment {
     private HandlerThread thread;
     private RecyclerView recyclerView;
     private ViewPager viewPager;
-    public VideoRetriver videoRetriver;
+    public VideoRetriever videoRetriever;
     public SurfaceHolder surfaceHolder;
     public DataHolder currentData;
     private CustomPagerAdapter pagerAdapter;
@@ -104,7 +101,7 @@ public class VideoFragment extends Fragment {
         context = getActivity().getApplicationContext();
 
         youtubeClient = new YoutubeClient(context, PlayerActivity.workHandler);
-        videoRetriver = new VideoRetriver(PlayerActivity.workHandler);
+        videoRetriever = new VideoRetriever(PlayerActivity.workHandler);
         displayMetrics = context.getResources().getDisplayMetrics();
         thread = new HandlerThread("seek");
         thread.setPriority(Process.THREAD_PRIORITY_BACKGROUND);
@@ -872,7 +869,7 @@ public class VideoFragment extends Fragment {
                         Toast toast = Toast.makeText(context, "Decrypting...", Toast.LENGTH_SHORT);
                         toast.show();
                         final DataHolder dataHolder = adapter.dataHolders.get(position - 1);
-                        videoRetriver.startExtracting(dataHolder.videoID, new VideoRetriver.YouTubeExtractorListener() {
+                        videoRetriever.startExtracting(dataHolder.videoID, new VideoRetriever.YouTubeExtractorListener() {
                             @Override
                             public void onSuccess(HashMap<Integer, String> result) {
                                 dataHolder.videoUris = result;

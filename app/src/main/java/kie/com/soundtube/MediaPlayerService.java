@@ -9,7 +9,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.media.MediaCodec;
-import android.net.Uri;
 import android.net.wifi.WifiManager;
 import android.os.Binder;
 import android.os.Handler;
@@ -26,18 +25,15 @@ import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.ExoPlayerFactory;
 import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.SimpleExoPlayer;
-import com.google.android.exoplayer2.source.ExtractorMediaSource;
 import com.google.android.exoplayer2.source.MediaSource;
 import com.google.android.exoplayer2.trackselection.AdaptiveTrackSelection;
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
 import com.google.android.exoplayer2.trackselection.TrackSelection;
 import com.google.android.exoplayer2.trackselection.TrackSelector;
 import com.google.android.exoplayer2.upstream.BandwidthMeter;
-import com.google.android.exoplayer2.upstream.DataSource;
 import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
-import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
-import com.google.android.exoplayer2.util.Util;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -76,7 +72,7 @@ public class MediaPlayerService extends Service {
     Notification not;
     RemoteViews notContentView;
     YoutubeClient youtubeClient = null;
-    VideoRetriver videoRetriver = null;
+    VideoRetriever videoRetriever = null;
     LinkedList<DataHolder> watchedQueue = new LinkedList<>();
 
     public void onPrepared() {
@@ -441,27 +437,21 @@ public class MediaPlayerService extends Service {
     }
 
     public void prepare(final DataHolder dataHolder) {
-        prepare(dataHolder, VideoRetriver.YOUTUBE_VIDEO_QUALITY_AUTO);
+        prepare(dataHolder, VideoRetriever.YOUTUBE_VIDEO_QUALITY_AUTO);
     }
 
-    public void prepare(final DataHolder dataHolder, final int[] quality) {
+    public void prepare(final DataHolder dataHolder, final ArrayList<Integer> quality) {
 
         playHandler.post(new Runnable() {
             @Override
             public void run() {
 
-                String url = VideoRetriver.getVideoResolution(dataHolder, quality);
-                if (url != null) {
+                MediaSource videoSource = VideoRetriever.getVideoResolution(dataHolder, quality, getApplicationContext());
+
+                if (videoSource != null) {
                     notContentView.setTextViewText(R.id.notPlayingTitle, dataHolder.title);
                     prepared = false;
-                    // Measures bandwidth during playback. Can be null if not required.
-                    DefaultBandwidthMeter bandwidthMeter = new DefaultBandwidthMeter();
-// Produces DataSource instances through which media data is loaded.
-                    DataSource.Factory dataSourceFactory = new DefaultDataSourceFactory(getApplicationContext(),
-                            Util.getUserAgent(getApplicationContext(), "Soundtube"), bandwidthMeter);
-// This is the MediaSource representing the media to be played.
-                    MediaSource videoSource = new ExtractorMediaSource.Factory(dataSourceFactory)
-                            .createMediaSource(Uri.parse(url));
+
 // Prepare the player with the source.
                     exoPlayer.stop();
                     exoPlayer.prepare(videoSource);
@@ -538,8 +528,8 @@ public class MediaPlayerService extends Service {
     }
 
     public void nextVideo() {
-        if (videoRetriver == null || youtubeClient == null) {
-            videoRetriver = new VideoRetriver(networkHandler);
+        if (videoRetriever == null || youtubeClient == null) {
+            videoRetriever = new VideoRetriever(networkHandler);
             youtubeClient = new YoutubeClient(getApplicationContext(), networkHandler);
         }
         if (!playList.isEmpty() && PLAYING_MODE == PLAY_FROM_PLAYLIST) {
@@ -552,7 +542,7 @@ public class MediaPlayerService extends Service {
                 @Override
                 public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
                     final DataHolder target = data.get(0);
-                    videoRetriver.startExtracting(target.videoID, new VideoRetriver.YouTubeExtractorListener() {
+                    videoRetriever.startExtracting(target.videoID, new VideoRetriever.YouTubeExtractorListener() {
                         @Override
                         public void onSuccess(HashMap<Integer, String> result) {
                             target.videoUris = result;

@@ -12,6 +12,16 @@
     <string name="search_settings">search settings</string>
     <string name="title_activity_settings">Settings</string>
 
+    <string name="video_quality_0">144p</string>
+    <string name="video_quality_1">240p</string>
+    <string name="video_quality_2">360p</string>
+    <string name="video_quality_3">480p</string>
+    <string name="video_quality_4">720p</string>
+    <string name="video_quality_5">1080p</string>
+    <string name="video_quality_6">1440p</string>
+    <string name="video_quality_7">4k</string>
+    <string name="video_quality_8">audio only</string>
+
     <!-- Strings related to Settings -->
 
     <!-- Example General settings -->
