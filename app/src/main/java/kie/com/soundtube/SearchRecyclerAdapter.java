@@ -2,12 +2,9 @@ package kie.com.soundtube;
 
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
-import android.view.MenuInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
-import android.widget.PopupMenu;
 import android.widget.TextView;
 
 import java.util.List;
@@ -69,31 +66,31 @@ public class SearchRecyclerAdapter extends RecyclerView.Adapter<SearchRecyclerAd
             titleview = (TextView) itemView.findViewById(R.id.titleview);
             durationview = (TextView) itemView.findViewById(R.id.durationview);
             videooption = (ImageView) itemView.findViewById(R.id.video_option);
-            videooption.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    PopupMenu popup = new PopupMenu(itemView.getContext(), view);
-                    MenuInflater inflater = popup.getMenuInflater();
-                    inflater.inflate(R.menu.video_option, popup.getMenu());
-                    popup.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
-                        @Override
-                        public boolean onMenuItemClick(MenuItem menuItem) {
-                            switch (menuItem.getItemId()) {
-                                case R.id.download:
-                                    if (menuActionListener != null) {
-                                        menuActionListener.onDownload(getAdapterPosition());
-                                    }
-
-                                    break;
-                                default:
-                                    break;
-                            }
-                            return false;
-                        }
-                    });
-                    popup.show();
-                }
-            });
+//            videooption.setOnClickListener(new View.OnClickListener() {
+//                @Override
+//                public void onClick(View view) {
+//                    PopupMenu popup = new PopupMenu(itemView.getContext(), view);
+//                    MenuInflater inflater = popup.getMenuInflater();
+//                    inflater.inflate(R.menu.video_option, popup.getMenu());
+//                    popup.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
+//                        @Override
+//                        public boolean onMenuItemClick(MenuItem menuItem) {
+//                            switch (menuItem.getItemId()) {
+//                                case R.id.download:
+//                                    if (menuActionListener != null) {
+//                                        menuActionListener.onDownload(getAdapterPosition());
+//                                    }
+//
+//                                    break;
+//                                default:
+//                                    break;
+//                            }
+//                            return false;
+//                        }
+//                    });
+//                    popup.show();
+//                }
+//            });
         }
     }
 

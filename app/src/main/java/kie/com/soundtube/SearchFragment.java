@@ -1,5 +1,6 @@
 package kie.com.soundtube;
 
+import android.Manifest;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.app.Activity;
@@ -7,8 +8,14 @@ import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DownloadManager;
 import android.app.Fragment;
+import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.database.MatrixCursor;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -22,6 +29,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.support.design.widget.AppBarLayout;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v4.view.ViewPager.OnPageChangeListener;
 import android.support.v7.widget.DefaultItemAnimator;
@@ -55,13 +63,22 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 
+import org.mp4parser.Container;
+import org.mp4parser.muxer.FileDataSourceImpl;
+import org.mp4parser.muxer.Movie;
+import org.mp4parser.muxer.builder.DefaultMp4Builder;
+import org.mp4parser.muxer.tracks.AACTrackImpl;
+import org.mp4parser.muxer.tracks.h264.H264TrackImpl;
+
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -729,8 +746,6 @@ public class SearchFragment extends Fragment {
             recyclerView.addOnItemTouchListener(listener);
             adapter.menuActionListener = new SearchRecyclerAdapter.MenuActionListener() {
 
-                DownloadManager manager = (DownloadManager) context.getSystemService(Context.DOWNLOAD_SERVICE);
-
                 @Override
                 public void onDownload(int pos) {
                     final DataHolder dataHolder = adapter.dataHolders.get(pos);
@@ -738,22 +753,10 @@ public class SearchFragment extends Fragment {
                         @Override
                         public void onSuccess(HashMap<Integer, String> result) {
                             dataHolder.videoUris = result;
-                            File file = new File(playerActivity.getExternalFilesDir(Environment.DIRECTORY_MUSIC),
-                                    "SoundTube/" + dataHolder.title);
 
-                            if (!file.exists()) {
-
-                                OptionDialog optionDialog = new OptionDialog();
-                                optionDialog.createDialog(VideoRetriever.getAvailableFormats(dataHolder));
-
-                                DownloadManager.Request request = new DownloadManager.Request(
-                                        Uri.parse(result.get("")));
-                                request.setDestinationInExternalFilesDir(context, Environment.DIRECTORY_MUSIC,
-                                        "SoundTube/" + dataHolder.title);
-                                request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE);
-                                request.allowScanningByMediaScanner();
-                                manager.enqueue(request);
-                            }
+                            OptionDialog optionDialog = new OptionDialog();
+                            optionDialog.createDialog(dataHolder);
+                            optionDialog.show();
 
                         }
 
@@ -772,21 +775,48 @@ public class SearchFragment extends Fragment {
 
         AlertDialog.Builder builder = null;
         AlertDialog dialog = null;
+        final String Download_Directory = Environment.DIRECTORY_MUSIC;
 
         public OptionDialog() {
+            playerActivity.registerReceiver(downloadReceiver, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
 
         }
 
-        public Dialog createDialog(List<String> items) {
-            builder = new AlertDialog.Builder(context);
+        public Dialog createDialog(final DataHolder dataHolder) {
+            final ArrayList<String> items = VideoRetriever.getAvailableFormatString(dataHolder);
+            final ArrayList<ArrayList<Integer>> res = VideoRetriever.getAvailableFormatType(dataHolder);
+            final ArrayList<ArrayList<Integer>> download = new ArrayList<>();
+
+            builder = new AlertDialog.Builder(playerActivity);
             builder.setTitle("Download options")
-                    .setMultiChoiceItems((String[]) items.toArray(), null,
+                    .setMultiChoiceItems(items.toArray(new String[items.size()]), null,
                             new DialogInterface.OnMultiChoiceClickListener() {
                                 @Override
                                 public void onClick(DialogInterface dialogInterface, int i, boolean b) {
+                                    if (b) {
+                                        download.add(res.get(i));
+                                    } else {
+                                        download.remove(res.get(i));
+                                    }
 
                                 }
-                            });
+                            })
+                    .setPositiveButton("Download", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialogInterface, int i) {
+
+                            for (int a = 0; a < download.size(); a++) {
+                                File file = new File(Environment.getExternalStoragePublicDirectory(Download_Directory),
+                                        "SoundTube/" + dataHolder.videoID + "/" + items.get(a));
+                                boolean permission = isStoragePermissionGranted();
+                                if (!file.exists() && permission) {
+                                    VideoRetriever.downloadVideo(dataHolder, download.get(a), context,
+                                            Download_Directory, "SoundTube/" + dataHolder.videoID + "/" + items.get(a));
+                                }
+                            }
+
+                        }
+                    });
             dialog = builder.create();
             return dialog;
 
@@ -797,6 +827,84 @@ public class SearchFragment extends Fragment {
                 dialog.show();
             }
         }
+
+        public boolean isStoragePermissionGranted() {
+            if (Build.VERSION.SDK_INT >= 23) {
+                if (context.checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                        == PackageManager.PERMISSION_GRANTED) {
+                    Log.v("SearchFragment", "Permission is granted");
+                    return true;
+                } else {
+
+                    Log.v("SearchFragment", "Permission is revoked");
+                    ActivityCompat.requestPermissions(getActivity(),
+                            new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
+                    return false;
+                }
+            } else { //permission is automatically granted on sdk<23 upon installation
+                Log.v("SearchFragment", "Permission is granted");
+                return true;
+            }
+        }
+
+        BroadcastReceiver downloadReceiver = new BroadcastReceiver() {
+            DownloadManager downloadManager = (DownloadManager) context.getSystemService(Service.DOWNLOAD_SERVICE);
+
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                switch (intent.getAction()) {
+                    case DownloadManager.ACTION_DOWNLOAD_COMPLETE:
+//                        long id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, 0);
+                        if (!VideoRetriever.downloadList.isEmpty()) {
+                            DownloadManager.Query query = new DownloadManager.Query();
+                            Long[] pair = VideoRetriever.downloadList.get(0);
+                            if (pair.length > 1) {
+                                query.setFilterById(pair[0], pair[1]);
+                                ArrayList<String> url = new ArrayList<>();
+                                Cursor c = downloadManager.query(query);
+                                int statusIndex = c.getColumnIndex(DownloadManager.COLUMN_STATUS);
+                                int urlIndex = c.getColumnIndex(DownloadManager.COLUMN_LOCAL_URI);
+                                String videoID = null;
+                                boolean merge = true;
+                                while (c.moveToNext()) {
+                                    if (videoID == null) {
+                                        videoID = c.getString(c.getColumnIndex(DownloadManager.COLUMN_DESCRIPTION));
+                                    }
+                                    if (c.getInt(statusIndex) != DownloadManager.STATUS_SUCCESSFUL) {
+                                        merge = false;
+                                    } else {
+                                        url.add(0, Uri.parse(c.getString(urlIndex)).getPath());
+                                    }
+                                }
+                                if (merge) {
+                                    try {
+                                        H264TrackImpl video = new H264TrackImpl(new FileDataSourceImpl(url.get(0)));
+                                        AACTrackImpl audio = new AACTrackImpl(new FileDataSourceImpl(url.get(1)));
+                                        Movie movie = new Movie();
+                                        movie.addTrack(video);
+                                        movie.addTrack(audio);
+                                        Container mp4file = new DefaultMp4Builder().build(movie);
+                                        FileChannel channel = new FileOutputStream(
+                                                Download_Directory + "/SoundTube/" + videoID + ".mp4").getChannel();
+                                        mp4file.writeContainer(channel);
+                                        channel.close();
+                                    } catch (IOException e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+                            } else {
+                                //nothing
+                            }
+
+                        }
+
+                        break;
+                    default:
+                        break;
+                }
+
+            }
+        };
     }
 
 }

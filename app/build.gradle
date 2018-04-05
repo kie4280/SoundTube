@@ -3,21 +3,22 @@ android {
     configurations {
         all { exclude module: 'common-logging'
         exclude module: 'httpclient'}
+
     }
     signingConfigs {
         config {
             keyAlias 'key0'
             keyPassword 'kie4280'
-            storeFile file('D:/development/MyProjects/IdeaProjects/android/SoundTube/keystore.jks')
+            storeFile file('E:/development/MyProjects/IdeaProjects/android/SoundTube/keystore.jks')
             storePassword 'kie4280'
         }
     }
     compileSdkVersion 26
-    buildToolsVersion '27.0.1'
+    buildToolsVersion '27.0.3'
     defaultConfig {
         applicationId "kie.com.soundtube"
         minSdkVersion 19
-        targetSdkVersion 26
+        targetSdkVersion 24
         versionCode 1
         versionName "v1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
@@ -61,9 +62,9 @@ dependencies {
     implementation 'com.google.http-client:google-http-client-jackson2:1.23.0'
     implementation 'com.google.http-client:google-http-client-gson:1.23.0'
     implementation 'com.google.code.findbugs:jsr305:3.0.2'
-    implementation 'com.android.support:appcompat-v7:26.1.0'
-    implementation 'com.google.android.gms:play-services-auth:11.8.0'
-    implementation 'pub.devrel:easypermissions:0.3.0'
+
+//    implementation 'com.google.android.gms:play-services-auth:11.8.0'
+//    implementation 'pub.devrel:easypermissions:0.3.0'
 
     implementation('com.google.api-client:google-api-client-android:1.23.0') {
         exclude group: 'org.apache.httpcomponents'
@@ -72,7 +73,7 @@ dependencies {
         exclude group: 'org.apache.httpcomponents'
     }
     testImplementation 'junit:junit:4.12'
-
+    implementation 'org.mp4parser:muxer:1.9.27'
 }
 
 

@@ -369,7 +369,7 @@ public class AccountActivity extends Activity
             List<Channel> channels = result.getItems();
             if (channels != null) {
                 Channel channel = channels.get(0);
-                channelInfo.add("This channel's ID is " + channel.getId() + ". " +
+                channelInfo.add("This channel's ID is " + channel.getId() + " " +
                         "Its title is '" + channel.getSnippet().getTitle() + ", " +
                         "and it has " + channel.getStatistics().getViewCount() + " views.");
             }

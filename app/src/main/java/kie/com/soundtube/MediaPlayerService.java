@@ -1,6 +1,7 @@
 package kie.com.soundtube;
 
 import android.app.Notification;
+import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
@@ -11,6 +12,7 @@ import android.content.IntentFilter;
 import android.media.MediaCodec;
 import android.net.wifi.WifiManager;
 import android.os.Binder;
+import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
@@ -102,9 +104,22 @@ public class MediaPlayerService extends Service {
 
     public void onCompletion() {
         updateSeekBar = false;
-        exoPlayer.seekTo(0);
-        pause();
+//        exoPlayer.seekTo(0);
+//        pause();
 
+        //do the same as pause() but without pausing the player
+        wifiLock.release();
+        wakeLock.release();
+        stopForeground(false);
+        notContentView.setImageViewResource(R.id.ppButton, R.drawable.ic_play_arrow_black_36dp);
+        notBuilder.setContent(notContentView);
+        notificationManager.notify(NOTIFICATION_ID, notBuilder.build());
+        updateSeekBar = false;
+
+        if (videoFragment != null) {
+            videoFragment.setButtonPlay(true);
+            videoFragment.setHeaderPlayButton(true);
+        }
         if (videoFragment != null) {
             videoFragment.onComplete();
         }
@@ -261,6 +276,18 @@ public class MediaPlayerService extends Service {
         notContentView.setImageViewResource(R.id.ppButton, R.drawable.ic_play_arrow_black_36dp);
         notContentView.setImageViewResource(R.id.nextButton, R.drawable.ic_skip_next_black_36dp);
         notContentView.setImageViewResource(R.id.prevButton, R.drawable.ic_skip_previous_black_36dp);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel mChannel = notificationManager.getNotificationChannel("MyChannel");
+            if (mChannel == null) {
+                mChannel = new NotificationChannel("Not_1", "SoundTube", NotificationManager.IMPORTANCE_HIGH);
+                mChannel.setDescription("SoundTube_service");
+                mChannel.enableVibration(true);
+                mChannel.setVibrationPattern(new long[]{100, 200, 300, 400, 500, 400, 300, 200, 400});
+                notificationManager.createNotificationChannel(mChannel);
+
+            }
+
+        }
         notBuilder.setContentIntent(notAddIntent)
                 .setSmallIcon(R.drawable.icon)
                 .setOngoing(false)
@@ -446,7 +473,7 @@ public class MediaPlayerService extends Service {
             @Override
             public void run() {
 
-                MediaSource videoSource = VideoRetriever.getVideoResolution(dataHolder, quality, getApplicationContext());
+                MediaSource videoSource = VideoRetriever.getMediaSource(dataHolder, quality, getApplicationContext());
 
                 if (videoSource != null) {
                     notContentView.setTextViewText(R.id.notPlayingTitle, dataHolder.title);

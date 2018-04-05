@@ -1,7 +1,6 @@
 package kie.com.soundtube;
 
 import android.graphics.Bitmap;
-import android.net.Uri;
 
 import java.util.HashMap;
 
@@ -15,4 +14,5 @@ public class DataHolder {
     String videoID;
     String videolength;
     HashMap<Integer, String> videoUris;
+    HashMap<Integer, String> localUris;
 }
