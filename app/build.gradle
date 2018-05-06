@@ -9,7 +9,7 @@ android {
         config {
             keyAlias 'key0'
             keyPassword 'kie4280'
-            storeFile file('E:/development/MyProjects/IdeaProjects/android/SoundTube/keystore.jks')
+            storeFile file('D:/development/MyProjects/IdeaProjects/android/SoundTube/keystore.jks')
             storePassword 'kie4280'
         }
     }

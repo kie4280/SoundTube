@@ -81,7 +81,7 @@ public class VideoFragment extends Fragment {
     private CustomPagerAdapter pagerAdapter;
     private ProgressBar bar1;
     private ProgressBar bar2;
-    public boolean started = false;
+    private boolean started = false;
 
     MediaPlayerService mediaService;
     PlayerActivity playerActivity;
@@ -459,6 +459,7 @@ public class VideoFragment extends Fragment {
         playerActivity.connect();
         started = true;
 
+
     }
 
     @Override
@@ -568,9 +569,9 @@ public class VideoFragment extends Fragment {
     }
 
     public void updateSeekBar() {
+        Log.d("VideoFragment", "updateSeekBar");
         if (playerActivity != null && !seekbarUpdating && started) {
-
-            playerActivity.runOnUiThread(new Runnable() {
+            seekHandler.post(new Runnable() {
                 @Override
                 public void run() {
                     if (mediaService != null && mediaService.updateSeekBar && started) {
@@ -666,6 +667,19 @@ public class VideoFragment extends Fragment {
     }
 
     public void serviceConnected() {
+        if (mediaService != null) {
+            if (mediaService.isPlaying()) {
+                mediaService.updateSeekBar = true;
+                setSeekBarMax(mediaService.getDuration());
+                updateSeekBar();
+                setButtonPlay(false);
+                setHeaderPlayButton(false);
+            } else {
+                mediaService.updateSeekBar = false;
+                setButtonPlay(true);
+                setHeaderPlayButton(true);
+            }
+        }
         if (mediaService.currentData != null) {
             currentData = mediaService.currentData;
         }

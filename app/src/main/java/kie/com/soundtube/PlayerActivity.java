@@ -276,7 +276,7 @@ public class PlayerActivity extends AppCompatActivity implements SearchFragment.
     @Override
     protected void onStart() {
         super.onStart();
-        Log.d("activity", "onStartVideo");
+        Log.d("activity", "onStart");
 
     }
 

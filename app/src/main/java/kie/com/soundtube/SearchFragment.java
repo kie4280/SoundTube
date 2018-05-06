@@ -28,6 +28,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
+import android.provider.MediaStore;
 import android.support.design.widget.AppBarLayout;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.view.ViewPager;
@@ -64,11 +65,10 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 
 import org.mp4parser.Container;
-import org.mp4parser.muxer.FileDataSourceImpl;
 import org.mp4parser.muxer.Movie;
+import org.mp4parser.muxer.Track;
 import org.mp4parser.muxer.builder.DefaultMp4Builder;
-import org.mp4parser.muxer.tracks.AACTrackImpl;
-import org.mp4parser.muxer.tracks.h264.H264TrackImpl;
+import org.mp4parser.muxer.container.mp4.MovieCreator;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -84,6 +84,7 @@ import java.util.HashMap;
 import java.util.List;
 
 public class SearchFragment extends Fragment {
+
 
     private OnFragmentInteractionListener mListener;
     private View searchFragmentView = null;
@@ -775,7 +776,8 @@ public class SearchFragment extends Fragment {
 
         AlertDialog.Builder builder = null;
         AlertDialog dialog = null;
-        final String Download_Directory = Environment.DIRECTORY_MUSIC;
+
+        boolean permission = false;
 
         public OptionDialog() {
             playerActivity.registerReceiver(downloadReceiver, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
@@ -785,8 +787,9 @@ public class SearchFragment extends Fragment {
         public Dialog createDialog(final DataHolder dataHolder) {
             final ArrayList<String> items = VideoRetriever.getAvailableFormatString(dataHolder);
             final ArrayList<ArrayList<Integer>> res = VideoRetriever.getAvailableFormatType(dataHolder);
-            final ArrayList<ArrayList<Integer>> download = new ArrayList<>();
-
+            final ArrayList<ArrayList<Integer>> downloadType = new ArrayList<>();
+            final ArrayList<Integer> downloadIndex = new ArrayList<>();
+            permission = isStoragePermissionGranted();
             builder = new AlertDialog.Builder(playerActivity);
             builder.setTitle("Download options")
                     .setMultiChoiceItems(items.toArray(new String[items.size()]), null,
@@ -794,9 +797,11 @@ public class SearchFragment extends Fragment {
                                 @Override
                                 public void onClick(DialogInterface dialogInterface, int i, boolean b) {
                                     if (b) {
-                                        download.add(res.get(i));
+                                        downloadType.add(res.get(i));
+                                        downloadIndex.add(i);
                                     } else {
-                                        download.remove(res.get(i));
+                                        downloadType.remove(res.get(i));
+                                        downloadIndex.remove(i);
                                     }
 
                                 }
@@ -805,13 +810,16 @@ public class SearchFragment extends Fragment {
                         @Override
                         public void onClick(DialogInterface dialogInterface, int i) {
 
-                            for (int a = 0; a < download.size(); a++) {
-                                File file = new File(Environment.getExternalStoragePublicDirectory(Download_Directory),
-                                        "SoundTube/" + dataHolder.videoID + "/" + items.get(a));
-                                boolean permission = isStoragePermissionGranted();
+                            for (int a = 0; a < downloadIndex.size(); a++) {
+                                String res = items.get(downloadIndex.get(a));
+                                File file = new File(context.getExternalFilesDir(VideoRetriever.downloadDirectory), dataHolder.videoID + "/" + res);
+
                                 if (!file.exists() && permission) {
-                                    VideoRetriever.downloadVideo(dataHolder, download.get(a), context,
-                                            Download_Directory, "SoundTube/" + dataHolder.videoID + "/" + items.get(a));
+                                    VideoRetriever.downloadVideo(context, dataHolder, downloadType.get(a),
+                                            res, new File(context.getExternalFilesDir(VideoRetriever.downloadDirectory),
+                                                    dataHolder.videoID + "/" + res));
+                                } else {
+
                                 }
                             }
 
@@ -824,7 +832,13 @@ public class SearchFragment extends Fragment {
 
         public void show() {
             if (dialog != null) {
-                dialog.show();
+                if (permission) {
+                    dialog.show();
+                } else {
+                    Toast toast = Toast.makeText(context, "Haven't granted permission yet", Toast.LENGTH_SHORT);
+                    toast.show();
+                }
+
             }
         }
 
@@ -865,11 +879,15 @@ public class SearchFragment extends Fragment {
                                 int statusIndex = c.getColumnIndex(DownloadManager.COLUMN_STATUS);
                                 int urlIndex = c.getColumnIndex(DownloadManager.COLUMN_LOCAL_URI);
                                 String videoID = null;
+                                String resolution = null;
                                 boolean merge = true;
                                 while (c.moveToNext()) {
                                     if (videoID == null) {
-                                        videoID = c.getString(c.getColumnIndex(DownloadManager.COLUMN_DESCRIPTION));
+                                        String id = c.getString(c.getColumnIndex(DownloadManager.COLUMN_DESCRIPTION));
+                                        videoID = id.substring(0, id.indexOf("_"));
+                                        resolution = id.substring(id.indexOf("_") + 1);
                                     }
+
                                     if (c.getInt(statusIndex) != DownloadManager.STATUS_SUCCESSFUL) {
                                         merge = false;
                                     } else {
@@ -877,20 +895,7 @@ public class SearchFragment extends Fragment {
                                     }
                                 }
                                 if (merge) {
-                                    try {
-                                        H264TrackImpl video = new H264TrackImpl(new FileDataSourceImpl(url.get(0)));
-                                        AACTrackImpl audio = new AACTrackImpl(new FileDataSourceImpl(url.get(1)));
-                                        Movie movie = new Movie();
-                                        movie.addTrack(video);
-                                        movie.addTrack(audio);
-                                        Container mp4file = new DefaultMp4Builder().build(movie);
-                                        FileChannel channel = new FileOutputStream(
-                                                Download_Directory + "/SoundTube/" + videoID + ".mp4").getChannel();
-                                        mp4file.writeContainer(channel);
-                                        channel.close();
-                                    } catch (IOException e) {
-                                        e.printStackTrace();
-                                    }
+                                    VideoRetriever.generateMergedVideo(videoID, resolution, url);
                                 }
                             } else {
                                 //nothing
