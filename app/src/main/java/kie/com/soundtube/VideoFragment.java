@@ -679,20 +679,21 @@ public class VideoFragment extends Fragment {
                 setButtonPlay(true);
                 setHeaderPlayButton(true);
             }
-        }
-        if (mediaService.currentData != null) {
-            currentData = mediaService.currentData;
-        }
-        if (currentData != null && mediaService.isPlaying()) {
+            if (mediaService.currentData != null) {
+                currentData = mediaService.currentData;
+            }
+            if (currentData != null && mediaService.isPlaying()) {
 //            playerActivity.slidePanel.setPanelState(SlidingUpPanelLayout.PanelState.EXPANDED); //optional
-            loadRelatedVideos(currentData);
-            playerActivity.runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    playingTextView.setText(currentData.title);
-                }
-            });
+                loadRelatedVideos(currentData);
+                playerActivity.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        playingTextView.setText(currentData.title);
+                    }
+                });
+            }
         }
+
 
     }
 
