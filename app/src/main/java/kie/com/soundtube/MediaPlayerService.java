@@ -18,6 +18,8 @@ import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.PowerManager;
 import android.os.Process;
+import android.telephony.PhoneStateListener;
+import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.widget.RemoteViews;
@@ -168,6 +170,32 @@ public class MediaPlayerService extends Service {
         }
     };
 
+    boolean suspend = false;
+
+    private PhoneStateListener phoneStateListener = new PhoneStateListener() {
+        @Override
+        public void onCallStateChanged(int state, String incomingNumber) {
+            switch (state) {
+                case TelephonyManager.CALL_STATE_RINGING:
+                    pause();
+                    suspend = true;
+
+                    break;
+                case TelephonyManager.CALL_STATE_IDLE:
+                    if (suspend) {
+                        play();
+                    }
+                    suspend = false;
+
+                    break;
+                case TelephonyManager.CALL_STATE_OFFHOOK:
+                    break;
+
+            }
+            super.onCallStateChanged(state, incomingNumber);
+        }
+    };
+
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
@@ -297,7 +325,8 @@ public class MediaPlayerService extends Service {
         not = notBuilder.build();
         Log.d("service", "created");
         serviceStarted = true;
-
+        TelephonyManager telephonyManager = (TelephonyManager) getApplicationContext().getSystemService(Context.TELEPHONY_SERVICE);
+        telephonyManager.listen(phoneStateListener, PhoneStateListener.LISTEN_CALL_STATE);
     }
 
     @Override
@@ -449,20 +478,6 @@ public class MediaPlayerService extends Service {
         return exoPlayer.getPlayWhenReady();
     }
 
-    boolean suspend = false;
-
-    public void phonecall(boolean calling) {
-        if (calling) {
-            pause();
-            suspend = true;
-        } else {
-            if (suspend) {
-                play();
-            }
-            suspend = false;
-        }
-    }
-
     public void prepare(final DataHolder dataHolder) {
         prepare(dataHolder, VideoRetriever.YOUTUBE_VIDEO_QUALITY_AUTO);
     }
@@ -473,7 +488,7 @@ public class MediaPlayerService extends Service {
             @Override
             public void run() {
 
-                MediaSource videoSource = VideoRetriever.getMediaSource(dataHolder, quality, getApplicationContext());
+                MediaSource videoSource = VideoRetriever.toMediaSource(dataHolder, quality, getApplicationContext());
 
                 if (videoSource != null) {
                     notContentView.setTextViewText(R.id.notPlayingTitle, dataHolder.title);
@@ -556,7 +571,7 @@ public class MediaPlayerService extends Service {
 
     public void nextVideo() {
         if (videoRetriever == null || youtubeClient == null) {
-            videoRetriever = new VideoRetriever(networkHandler);
+            videoRetriever = new VideoRetriever(getApplicationContext(), networkHandler);
             youtubeClient = new YoutubeClient(getApplicationContext(), networkHandler);
         }
         if (!playList.isEmpty() && PLAYING_MODE == PLAY_FROM_PLAYLIST) {
@@ -569,12 +584,12 @@ public class MediaPlayerService extends Service {
                 @Override
                 public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
                     final DataHolder target = data.get(0);
-                    videoRetriever.startExtracting(target.videoID, new VideoRetriever.YouTubeExtractorListener() {
-                        @Override
-                        public void onSuccess(HashMap<Integer, String> result) {
-                            target.videoUris = result;
-                            nextData = target;
+                    videoRetriever.getDataHolder(target, new VideoRetriever.YouTubeExtractorListener() {
 
+                        @Override
+                        public void onSuccess(DataHolder result) {
+
+                            nextData = result;
                             Log.d("mediaService", "nextPlay");
                         }
 

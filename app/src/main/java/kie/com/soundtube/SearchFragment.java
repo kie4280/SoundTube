@@ -7,15 +7,11 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DownloadManager;
-import android.app.Fragment;
-import android.app.Service;
-import android.content.BroadcastReceiver;
+import android.support.v4.app.Fragment;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
-import android.database.Cursor;
 import android.database.MatrixCursor;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -23,12 +19,9 @@ import android.graphics.ColorFilter;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.graphics.drawable.Drawable;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.Handler;
-import android.provider.MediaStore;
 import android.support.design.widget.AppBarLayout;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.view.ViewPager;
@@ -64,21 +57,12 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 
-import org.mp4parser.Container;
-import org.mp4parser.muxer.Movie;
-import org.mp4parser.muxer.Track;
-import org.mp4parser.muxer.builder.DefaultMp4Builder;
-import org.mp4parser.muxer.container.mp4.MovieCreator;
-
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
-import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -111,14 +95,14 @@ public class SearchFragment extends Fragment {
         // Required empty public constructor
     }
 
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        context = getActivity().getApplicationContext();
         setHasOptionsMenu(true);
         workHandler = PlayerActivity.workHandler;
         youtubeClient = new YoutubeClient(context, workHandler);
-        videoRetriever = new VideoRetriever(workHandler);
+        videoRetriever = new VideoRetriever(context, workHandler);
 
     }
 
@@ -130,7 +114,7 @@ public class SearchFragment extends Fragment {
         if (searchFragmentView == null) {
 
             searchFragmentView = inflater.inflate(R.layout.fragment_search, container, false);
-            playerToolbar = playerActivity.playerToolbar;
+            playerToolbar = getActivity().findViewById(R.id.playerToolbar);
             Log.d("searchfragment", "createview");
             View r1 = inflater.inflate(R.layout.blank_loading, null);
             View r2 = inflater.inflate(R.layout.blank_loading, null);
@@ -194,7 +178,7 @@ public class SearchFragment extends Fragment {
                             page.updateListView(data);
 
                             if (hasnext) {
-                                playerActivity.runOnUiThread(new Runnable() {
+                                getActivity().runOnUiThread(new Runnable() {
                                     @Override
                                     public void run() {
                                         viewPager.setCurrentItem(1, false);
@@ -219,7 +203,7 @@ public class SearchFragment extends Fragment {
                             pagerAdapter.changeSate(hasnext, hasprev);
                             page.updateListView(data);
                             if (hasprev) {
-                                playerActivity.runOnUiThread(new Runnable() {
+                                getActivity().runOnUiThread(new Runnable() {
                                     @Override
                                     public void run() {
                                         viewPager.setCurrentItem(1, false);
@@ -276,21 +260,10 @@ public class SearchFragment extends Fragment {
         return true;
     }
 
-
-    @Override
-    public void onAttach(Activity activity) {
-        super.onAttach(activity);
-        if (activity instanceof OnFragmentInteractionListener) {
-            mListener = (OnFragmentInteractionListener) activity;
-        } else {
-            throw new RuntimeException(activity.toString()
-                    + " must implement OnFragmentInteractionListener");
-        }
-    }
-
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
+        this.context = context;
         if (context instanceof OnFragmentInteractionListener) {
             mListener = (OnFragmentInteractionListener) context;
         } else {
@@ -311,14 +284,10 @@ public class SearchFragment extends Fragment {
         void onReturnSearchVideo(DataHolder dataHolder);
     }
 
-    public void setActivity(PlayerActivity activity) {
-        this.playerActivity = activity;
-    }
-
     public void createSearchView() {
         if (searchAreaView == null) {
-            searchAreaView = playerActivity.searchArea;
-            appBarLayout = playerActivity.appBarLayout;
+            searchAreaView = getActivity().findViewById(R.id.searchArea);
+            appBarLayout = getActivity().findViewById(R.id.appBarLayout);
             blankspace = searchAreaView.findViewById(R.id.blankspace);
             searchView = searchAreaView.findViewById(R.id.searchview);
             int autoCompleteTextViewID = getResources().getIdentifier("android:id/search_src_text", null, null);
@@ -393,7 +362,7 @@ public class SearchFragment extends Fragment {
 
                                     final SimpleCursorAdapter simpleCursorAdapter = new SimpleCursorAdapter(context
                                             , R.layout.suggestion_item, matrixCursor, from, to, CursorAdapter.FLAG_REGISTER_CONTENT_OBSERVER);
-                                    playerActivity.runOnUiThread(new Runnable() {
+                                    getActivity().runOnUiThread(new Runnable() {
                                         @Override
                                         public void run() {
                                             searchView.setSuggestionsAdapter(simpleCursorAdapter);
@@ -407,7 +376,7 @@ public class SearchFragment extends Fragment {
                                     e.printStackTrace();
                                 }
                             } else if (newText.length() == 0) {
-                                playerActivity.runOnUiThread(new Runnable() {
+                                getActivity().runOnUiThread(new Runnable() {
                                     @Override
                                     public void run() {
 
@@ -673,7 +642,7 @@ public class SearchFragment extends Fragment {
         }
 
         public void loading() {
-            playerActivity.runOnUiThread(new Runnable() {
+            getActivity().runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
                     if (!waiting) {
@@ -687,7 +656,7 @@ public class SearchFragment extends Fragment {
         }
 
         public void updateListView(final List<DataHolder> data) {
-            playerActivity.runOnUiThread(new Runnable() {
+            getActivity().runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
                     if (adapter == null) {
@@ -723,12 +692,10 @@ public class SearchFragment extends Fragment {
                     Toast toast = Toast.makeText(context, "Decrypting...", Toast.LENGTH_SHORT);
                     toast.show();
                     final DataHolder dataHolder = adapter.dataHolders.get(position);
-                    videoRetriever.startExtracting(dataHolder.videoID, new VideoRetriever.YouTubeExtractorListener() {
+                    videoRetriever.getDataHolder(dataHolder, new VideoRetriever.YouTubeExtractorListener() {
                         @Override
-                        public void onSuccess(HashMap<Integer, String> result) {
-                            dataHolder.videoUris = result;
-                            mListener.onReturnSearchVideo(dataHolder);
-
+                        public void onSuccess(DataHolder result) {
+                            mListener.onReturnSearchVideo(result);
                         }
 
                         @Override
@@ -750,15 +717,14 @@ public class SearchFragment extends Fragment {
                 @Override
                 public void onDownload(int pos) {
                     final DataHolder dataHolder = adapter.dataHolders.get(pos);
-                    videoRetriever.startExtracting(dataHolder.videoID, new VideoRetriever.YouTubeExtractorListener() {
+                    videoRetriever.getDataHolder(dataHolder, new VideoRetriever.YouTubeExtractorListener() {
+
                         @Override
-                        public void onSuccess(HashMap<Integer, String> result) {
-                            dataHolder.videoUris = result;
+                        public void onSuccess(DataHolder result) {
 
                             OptionDialog optionDialog = new OptionDialog();
-                            optionDialog.createDialog(dataHolder);
+                            optionDialog.createDialog(result);
                             optionDialog.show();
-
                         }
 
                         @Override
@@ -776,11 +742,11 @@ public class SearchFragment extends Fragment {
 
         AlertDialog.Builder builder = null;
         AlertDialog dialog = null;
-
         boolean permission = false;
+        VideoManager videoManager;
 
         public OptionDialog() {
-            playerActivity.registerReceiver(downloadReceiver, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
+            getActivity().registerReceiver(videoRetriever.downloadReceiver, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
 
         }
 
@@ -790,7 +756,7 @@ public class SearchFragment extends Fragment {
             final ArrayList<ArrayList<Integer>> downloadType = new ArrayList<>();
             final ArrayList<Integer> downloadIndex = new ArrayList<>();
             permission = isStoragePermissionGranted();
-            builder = new AlertDialog.Builder(playerActivity);
+            builder = new AlertDialog.Builder(getActivity());
             builder.setTitle("Download options")
                     .setMultiChoiceItems(items.toArray(new String[items.size()]), null,
                             new DialogInterface.OnMultiChoiceClickListener() {
@@ -812,13 +778,7 @@ public class SearchFragment extends Fragment {
 
                             for (int a = 0; a < downloadIndex.size(); a++) {
                                 String res = items.get(downloadIndex.get(a));
-                                File file = new File(context.getExternalFilesDir(VideoRetriever.downloadDirectory), dataHolder.videoID + "/" + res);
-
-                                if (!file.exists() && permission) {
-                                    VideoRetriever.downloadVideo(context, dataHolder, downloadType.get(a),
-                                            res, new File(context.getExternalFilesDir(VideoRetriever.downloadDirectory),
-                                                    dataHolder.videoID + "/" + res));
-                                } else {
+                                if (permission) {
 
                                 }
                             }
@@ -861,55 +821,6 @@ public class SearchFragment extends Fragment {
             }
         }
 
-        BroadcastReceiver downloadReceiver = new BroadcastReceiver() {
-            DownloadManager downloadManager = (DownloadManager) context.getSystemService(Service.DOWNLOAD_SERVICE);
-
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                switch (intent.getAction()) {
-                    case DownloadManager.ACTION_DOWNLOAD_COMPLETE:
-//                        long id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, 0);
-                        if (!VideoRetriever.downloadList.isEmpty()) {
-                            DownloadManager.Query query = new DownloadManager.Query();
-                            Long[] pair = VideoRetriever.downloadList.get(0);
-                            if (pair.length > 1) {
-                                query.setFilterById(pair[0], pair[1]);
-                                ArrayList<String> url = new ArrayList<>();
-                                Cursor c = downloadManager.query(query);
-                                int statusIndex = c.getColumnIndex(DownloadManager.COLUMN_STATUS);
-                                int urlIndex = c.getColumnIndex(DownloadManager.COLUMN_LOCAL_URI);
-                                String videoID = null;
-                                String resolution = null;
-                                boolean merge = true;
-                                while (c.moveToNext()) {
-                                    if (videoID == null) {
-                                        String id = c.getString(c.getColumnIndex(DownloadManager.COLUMN_DESCRIPTION));
-                                        videoID = id.substring(0, id.indexOf("_"));
-                                        resolution = id.substring(id.indexOf("_") + 1);
-                                    }
-
-                                    if (c.getInt(statusIndex) != DownloadManager.STATUS_SUCCESSFUL) {
-                                        merge = false;
-                                    } else {
-                                        url.add(0, Uri.parse(c.getString(urlIndex)).getPath());
-                                    }
-                                }
-                                if (merge) {
-                                    VideoRetriever.generateMergedVideo(videoID, resolution, url);
-                                }
-                            } else {
-                                //nothing
-                            }
-
-                        }
-
-                        break;
-                    default:
-                        break;
-                }
-
-            }
-        };
     }
 
 }

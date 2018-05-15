@@ -40,10 +40,11 @@ public class LogActivity extends AppCompatActivity implements LogFragment.Button
     @Override
     protected void onDestroy() {
         Log.d("LogActivity", "onDestroy");
-        thread.quit();
-        thread = null;
+
 //        log.dismiss();
         super.onDestroy();
+        thread.quit();
+        thread = null;
 //        System.exit(0);
 
     }

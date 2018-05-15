@@ -1,7 +1,11 @@
 package kie.com.soundtube;
 
 import android.app.DownloadManager;
+import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Environment;
 import android.os.Handler;
@@ -70,8 +74,11 @@ public class VideoRetriever {
     public static final ArrayList<Integer> DASH_AUDIO_MP4 = new ArrayList<>(asList(new Integer[]{139, 140, 141, 256, 258, 325, 328}));
     public static final ArrayList<Integer> DASH_AUDIO_WEBM = new ArrayList<>(asList(new Integer[]{171, 172, 249, 250, 251}));
     public static Integer PreferredAudioQualityIndex = 0;
+    Context context;
+    BroadcastReceiver downloadReceiver;
     static final String downloadDirectory = Environment.DIRECTORY_DOWNLOADS;
     static final String musicDirectory = Environment.DIRECTORY_MUSIC;
+
     private static final ArrayList<ArrayList<Integer>> VideoFormats = new ArrayList<>(asList(YOUTUBE_144, YOUTUBE_240, YOUTUBE_360
             , YOUTUBE_480, YOUTUBE_720, YOUTUBE_1080, YOUTUBE_1440, YOUTUBE_4K));
 //    public static final int[] DASH_WEBM_OPUS_AUDIO = {249, 250, 251};
@@ -88,7 +95,61 @@ public class VideoRetriever {
     String basejsurl = null;
     static ArrayList<Long[]> downloadList = new ArrayList<>();
 
-    public static MediaSource getMediaSource(DataHolder dataHolder, ArrayList<Integer> preferredRes, Context context) {
+    public VideoRetriever(final Context context, Handler handler) {
+        this.context = context;
+        youtubeExtractorHandler = handler;
+        downloadReceiver = new BroadcastReceiver() {
+            DownloadManager downloadManager = (DownloadManager) context.getSystemService(Service.DOWNLOAD_SERVICE);
+
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                switch (intent.getAction()) {
+                    case DownloadManager.ACTION_DOWNLOAD_COMPLETE:
+//                        long id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, 0);
+                        if (!VideoRetriever.downloadList.isEmpty()) {
+                            DownloadManager.Query query = new DownloadManager.Query();
+                            Long[] pair = VideoRetriever.downloadList.get(0);
+                            if (pair.length > 1) {
+                                query.setFilterById(pair[0], pair[1]);
+                                ArrayList<String> url = new ArrayList<>();
+                                Cursor c = downloadManager.query(query);
+                                int statusIndex = c.getColumnIndex(DownloadManager.COLUMN_STATUS);
+                                int urlIndex = c.getColumnIndex(DownloadManager.COLUMN_LOCAL_URI);
+                                String videoID = null;
+                                String resolution = null;
+                                boolean merge = true;
+                                while (c.moveToNext()) {
+                                    if (videoID == null) {
+                                        String id = c.getString(c.getColumnIndex(DownloadManager.COLUMN_DESCRIPTION));
+                                        videoID = id.substring(0, id.indexOf("_"));
+                                        resolution = id.substring(id.indexOf("_") + 1);
+                                    }
+
+                                    if (c.getInt(statusIndex) != DownloadManager.STATUS_SUCCESSFUL) {
+                                        merge = false;
+                                    } else {
+                                        url.add(0, Uri.parse(c.getString(urlIndex)).getPath());
+                                    }
+                                }
+                                if (merge) {
+                                    generateMergedVideo(videoID, resolution, url);
+                                }
+                            } else {
+                                //nothing
+                            }
+
+                        }
+
+                        break;
+                    default:
+                        break;
+                }
+
+            }
+        };
+    }
+
+    public static MediaSource toMediaSource(DataHolder dataHolder, ArrayList<Integer> preferredRes, Context context) {
         HashMap<Integer, String> urls = dataHolder.videoUris;
 
         // Measures bandwidth during playback. Can be null if not required.
@@ -145,75 +206,6 @@ public class VideoRetriever {
         return null;
     }
 
-    public static void downloadVideo(Context context, DataHolder dataHolder, ArrayList<Integer> preferredRes,
-                                     String resolution, File destinationDir) {
-        HashMap<Integer, String> urls = dataHolder.videoUris;
-        DownloadManager manager = (DownloadManager) context.getSystemService(Context.DOWNLOAD_SERVICE);
-
-
-        if (preferredRes != YOUTUBE_VIDEO_QUALITY_AUTO) {
-            for (Integer mpreferredRes : preferredRes) {
-                if (urls.containsKey(mpreferredRes)) {
-                    ArrayList<Integer> dashes = filter(AND, filter(OR, DASH_VIDEO_MP4, DASH_VIDEO_WEBM), preferredRes);
-                    ArrayList<Integer> sound = new ArrayList<>(urls.keySet());
-                    ArrayList<Integer> audios = filter(AND, filter(OR, DASH_AUDIO_MP4, DASH_AUDIO_WEBM), sound);
-                    if (!dashes.isEmpty() && !audios.isEmpty()) {
-                        DownloadManager.Request requestVideo = new DownloadManager.Request(Uri.parse(urls.get(mpreferredRes)));
-                        requestVideo.setDestinationInExternalFilesDir(context, downloadDirectory, dataHolder.videoID + "/" + resolution + "Video");
-                        requestVideo.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE);
-                        requestVideo.allowScanningByMediaScanner();
-
-                        requestVideo.setDescription(dataHolder.videoID + "_" + resolution);
-
-                        long v = manager.enqueue(requestVideo);
-                        DownloadManager.Request requestAudio = new DownloadManager.Request(Uri.parse(urls.get(
-                                audios.get(PreferredAudioQualityIndex))));
-                        requestAudio.setDestinationInExternalFilesDir(context, downloadDirectory, dataHolder.videoID + "/" + resolution + "Audio");
-                        requestAudio.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE);
-                        requestAudio.allowScanningByMediaScanner();
-                        requestAudio.setDescription(dataHolder.videoID + "_" + resolution);
-
-                        long a = manager.enqueue(requestAudio);
-                        downloadList.add(new Long[]{v, a});
-
-                    } else {
-                        DownloadManager.Request request = new DownloadManager.Request(Uri.parse(urls.get(mpreferredRes)));
-                        File des = new File(destinationDir, resolution + "Full");
-                        request.setDestinationUri(Uri.fromFile(des));
-                        request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE);
-                        request.allowScanningByMediaScanner();
-                        long all = manager.enqueue(request);
-                    }
-
-                }
-            }
-        }
-    }
-
-    public static boolean hasVideo(String videoID, String resolution) {
-        return false;
-    }
-
-
-    public static void generateMergedVideo(String videoID, String resolution, ArrayList<String> url) {
-        try {
-            Track video = MovieCreator.build(url.get(0)).getTracks().get(0);
-            Track audio = MovieCreator.build(url.get(1)).getTracks().get(0);
-            Movie movie = new Movie();
-            movie.addTrack(video);
-            movie.addTrack(audio);
-            Container mp4file = new DefaultMp4Builder().build(movie);
-            File file = new File(Environment.getExternalStoragePublicDirectory(musicDirectory),
-                    "SoundTube/" + videoID + "/" + resolution + ".mp4");
-
-            FileChannel channel = new FileOutputStream(file).getChannel();
-
-            mp4file.writeContainer(channel);
-            channel.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
 
     public static ArrayList<Boolean> getAvailableFormatIndex(DataHolder dataHolder) {
         ArrayList<Boolean> available = new ArrayList<>(VideoFormats.size());
@@ -260,9 +252,9 @@ public class VideoRetriever {
         return available;
     }
 
-    private static final String NOT = "not";
-    private static final String AND = "and";
-    private static final String OR = "or";
+    static final String NOT = "not";
+    static final String AND = "and";
+    static final String OR = "or";
 
     public static ArrayList<Integer> filter(String options, ArrayList<Integer>... flags) {
         ArrayList<Integer> res = new ArrayList<>();
@@ -311,12 +303,7 @@ public class VideoRetriever {
         return res;
     }
 
-
-    public VideoRetriever(Handler handler) {
-        youtubeExtractorHandler = handler;
-    }
-
-    public String downloadWeb(String url) {
+    private String downloadWeb(String url) {
         String t = null;
         try {
             t = downloadWeb(new URL(url));
@@ -326,7 +313,7 @@ public class VideoRetriever {
         return t;
     }
 
-    public String downloadWeb(URL url) {
+    private String downloadWeb(URL url) {
         StringBuilder response = new StringBuilder();
         try {
             HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
@@ -352,7 +339,7 @@ public class VideoRetriever {
         return response.toString();
     }
 
-    private HashMap<Integer, String> getVideo(String url) {
+    private HashMap<Integer, String> getVideoUris(String url) {
 
         String videoHTML = downloadWeb(url);
         String videoID = url.substring(url.indexOf("=") + 1);
@@ -519,15 +506,11 @@ public class VideoRetriever {
                     if (r == l && r != 0 && a == ';') {
                         break;
                     }
-
                 }
 
                 decipherfunc = stringBuilder.toString() + res + String.format("var output = %s", funcname);
-
                 String input = decipherfunc + String.format("(\"%s\");", in);
-
                 JSContext context = new JSContext();
-
                 context.setExceptionHandler(new JSContext.IJSExceptionHandler() {
                     @Override
                     public void handle(JSException exception) {
@@ -541,9 +524,7 @@ public class VideoRetriever {
         } else {
 
             String input = decipherfunc + String.format("(\"%s\");", in);
-
             JSContext context = new JSContext();
-
             context.setExceptionHandler(new JSContext.IJSExceptionHandler() {
                 @Override
                 public void handle(JSException exception) {
@@ -558,17 +539,18 @@ public class VideoRetriever {
         return out;
     }
 
-    public void startExtracting(final String url, final YouTubeExtractorListener listener) {
+    public void getDataHolder(final DataHolder dataHolder, final YouTubeExtractorListener listener) {
         youtubeExtractorHandler.post(new Runnable() {
             @Override
             public void run() {
-                final HashMap<Integer, String> result = getVideo("https://www.youtube" +
-                        ".com/watch?v=" + url);
+                final HashMap<Integer, String> result = getVideoUris("https://www.youtube" +
+                        ".com/watch?v=" + dataHolder.videoID);
+                dataHolder.videoUris = result;
                 youtubeExtractorHandler.post(new Runnable() {
                     @Override
                     public void run() {
                         if (listener != null) {
-                            listener.onSuccess(result);
+                            listener.onSuccess(dataHolder);
                         }
                     }
                 });
@@ -577,6 +559,85 @@ public class VideoRetriever {
 
     }
 
+    public void getVideo(DataHolder dataHolder, ArrayList<Integer> preferredRes,
+                         String resolution) {
+        File download = new File(context.getExternalFilesDir(downloadDirectory),
+                dataHolder.videoID + "/" + resolution);
+
+    }
+
+    private void downloadVideo(DataHolder dataHolder, ArrayList<Integer> preferredRes,
+                               String resolution, File destinationDir) {
+        HashMap<Integer, String> urls = dataHolder.videoUris;
+        DownloadManager manager = (DownloadManager) context.getSystemService(Context.DOWNLOAD_SERVICE);
+
+
+        if (preferredRes != YOUTUBE_VIDEO_QUALITY_AUTO) {
+            for (Integer mpreferredRes : preferredRes) {
+                if (urls.containsKey(mpreferredRes)) {
+                    ArrayList<Integer> dashes = filter(AND, filter(OR, DASH_VIDEO_MP4, DASH_VIDEO_WEBM), preferredRes);
+                    ArrayList<Integer> sound = new ArrayList<>(urls.keySet());
+                    ArrayList<Integer> audios = filter(AND, filter(OR, DASH_AUDIO_MP4, DASH_AUDIO_WEBM), sound);
+                    if (!dashes.isEmpty() && !audios.isEmpty()) {
+                        DownloadManager.Request requestVideo = new DownloadManager.Request(Uri.parse(urls.get(mpreferredRes)));
+                        requestVideo.setDestinationInExternalFilesDir(context, downloadDirectory, dataHolder.videoID + "/" + resolution + "Video");
+                        requestVideo.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE);
+                        requestVideo.allowScanningByMediaScanner();
+
+                        requestVideo.setDescription(dataHolder.videoID + "_" + resolution);
+
+                        long v = manager.enqueue(requestVideo);
+                        DownloadManager.Request requestAudio = new DownloadManager.Request(Uri.parse(urls.get(
+                                audios.get(PreferredAudioQualityIndex))));
+                        requestAudio.setDestinationInExternalFilesDir(context, downloadDirectory, dataHolder.videoID + "/" + resolution + "Audio");
+                        requestAudio.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE);
+                        requestAudio.allowScanningByMediaScanner();
+                        requestAudio.setDescription(dataHolder.videoID + "_" + resolution);
+
+                        long a = manager.enqueue(requestAudio);
+                        downloadList.add(new Long[]{v, a});
+
+                    } else {
+                        DownloadManager.Request request = new DownloadManager.Request(Uri.parse(urls.get(mpreferredRes)));
+                        File des = new File(destinationDir, resolution + "Full");
+                        request.setDestinationUri(Uri.fromFile(des));
+                        request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE);
+                        request.allowScanningByMediaScanner();
+                        long all = manager.enqueue(request);
+                    }
+
+                }
+            }
+        }
+    }
+
+    public boolean hasVideo(String videoID, String resolution) {
+        return false;
+    }
+
+    public void generateMergedVideo(String videoID, String resolution, ArrayList<String> url) {
+        try {
+            Track video = MovieCreator.build(url.get(0)).getTracks().get(0);
+            Track audio = MovieCreator.build(url.get(1)).getTracks().get(0);
+            Movie movie = new Movie();
+            movie.addTrack(video);
+            movie.addTrack(audio);
+            Container mp4file = new DefaultMp4Builder().build(movie);
+            File file = new File(Environment.getExternalStoragePublicDirectory(musicDirectory),
+                    "SoundTube/" + videoID + "/" + resolution + ".mp4");
+
+            FileChannel channel = new FileOutputStream(file).getChannel();
+
+            mp4file.writeContainer(channel);
+            channel.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+
+
     public final class YouTubeExtractorException extends Exception {
         public YouTubeExtractorException(String detailMessage) {
             super(detailMessage);
@@ -584,7 +645,7 @@ public class VideoRetriever {
     }
 
     public interface YouTubeExtractorListener {
-        void onSuccess(HashMap<Integer, String> result);
+        void onSuccess(DataHolder result);
 
         void onFailure(Error error);
     }

@@ -24,6 +24,7 @@
         android:layout_above="@+id/durationview"
         android:layout_alignParentEnd="true"
         android:layout_alignTop="@+id/imageView"
+        android:layout_marginEnd="30dp"
         android:layout_marginStart="10dp"
         android:layout_marginTop="30dp"
         android:layout_toEndOf="@+id/imageView"
@@ -45,14 +46,15 @@
 
     <ImageView
         android:id="@+id/video_option"
-        android:layout_width="30dp"
-        android:layout_height="30dp"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
         android:layout_alignParentEnd="true"
         android:layout_alignParentTop="true"
-        android:layout_marginEnd="2dp"
-        android:layout_marginTop="2dp"
+        android:layout_marginTop="3dp"
         android:clickable="true"
-        android:focusable="true"
+        android:paddingBottom="10dp"
+        android:paddingStart="20dp"
+        android:paddingTop="10dp"
         app:srcCompat="@drawable/ic_more_vert_black_24dp" />
 
 </RelativeLayout>

@@ -16,15 +16,14 @@ import android.os.Process;
 import android.support.annotation.NonNull;
 import android.support.design.widget.AppBarLayout;
 import android.support.design.widget.NavigationView;
-import android.app.FragmentManager;
-import android.app.FragmentTransaction;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.telephony.PhoneStateListener;
-import android.telephony.TelephonyManager;
+
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
@@ -63,7 +62,7 @@ public class PlayerActivity extends AppCompatActivity implements SearchFragment.
     MediaPlayerService mediaService;
     Context context;
     ConnectivityManager connectmgr;
-    TelephonyManager telephonyManager;
+
 
 
     @Override
@@ -99,18 +98,16 @@ public class PlayerActivity extends AppCompatActivity implements SearchFragment.
         searchArea = (LinearLayout) findViewById(R.id.searchArea);
         serviceIntent = new Intent(this, MediaPlayerService.class);
         connectmgr = (ConnectivityManager) getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
-        telephonyManager = (TelephonyManager) getApplicationContext().getSystemService(Context.TELEPHONY_SERVICE);
-        telephonyManager.listen(phoneStateListener, PhoneStateListener.LISTEN_CALL_STATE);
+
+
         workThread = new HandlerThread("WorkThread");
         workThread.setPriority(Process.THREAD_PRIORITY_BACKGROUND);
         workThread.start();
         workHandler = new Handler(workThread.getLooper());
         videoFragment = new VideoFragment();
-        videoFragment.setActivity(this);
         searchFragment = new SearchFragment();
-        searchFragment.setActivity(this);
         slidePanel = (CustomSlideUpPanel) findViewById(R.id.slidePanel);
-        fragmentManager = getFragmentManager();
+        fragmentManager = getSupportFragmentManager();
         FragmentTransaction transaction = fragmentManager.beginTransaction();
         transaction
                 .add(R.id.videoPanel, videoFragment, "videoFragment")
@@ -149,28 +146,7 @@ public class PlayerActivity extends AppCompatActivity implements SearchFragment.
 
     }
 
-    private PhoneStateListener phoneStateListener = new PhoneStateListener() {
-        @Override
-        public void onCallStateChanged(int state, String incomingNumber) {
-            switch (state) {
-                case TelephonyManager.CALL_STATE_RINGING:
-                    if (mediaService != null) {
-                        mediaService.phonecall(true);
-                    }
 
-                    break;
-                case TelephonyManager.CALL_STATE_IDLE:
-                    if (mediaService != null) {
-                        mediaService.phonecall(false);
-                    }
-                    break;
-                case TelephonyManager.CALL_STATE_OFFHOOK:
-                    break;
-
-            }
-            super.onCallStateChanged(state, incomingNumber);
-        }
-    };
 
     private PanelSlideListener panelSlideListener = new PanelSlideListener() {
         @Override
@@ -276,6 +252,7 @@ public class PlayerActivity extends AppCompatActivity implements SearchFragment.
     @Override
     protected void onStart() {
         super.onStart();
+        connect();
         Log.d("activity", "onStart");
 
     }

@@ -1,6 +1,5 @@
 package kie.com.soundtube;
 
-import android.app.Fragment;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.graphics.Canvas;
@@ -15,6 +14,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Process;
+import android.support.v4.app.Fragment;
 import android.support.v4.view.ViewPager;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.DividerItemDecoration;
@@ -38,7 +38,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 public class VideoFragment extends Fragment {
@@ -50,7 +49,6 @@ public class VideoFragment extends Fragment {
     private int HeaderDP = 70;
     private float headersize = 0;
     public boolean prepared = false;
-    boolean connected = false;
     boolean controlshow = false;
     boolean seekbarUpdating = false;
     private Button playbutton;
@@ -84,7 +82,7 @@ public class VideoFragment extends Fragment {
     private boolean started = false;
 
     MediaPlayerService mediaService;
-    PlayerActivity playerActivity;
+
     Page page;
     YoutubeClient youtubeClient = null;
     ArrayList<View> pageviews = new ArrayList<>(3);
@@ -101,7 +99,7 @@ public class VideoFragment extends Fragment {
         context = getActivity().getApplicationContext();
 
         youtubeClient = new YoutubeClient(context, PlayerActivity.workHandler);
-        videoRetriever = new VideoRetriever(PlayerActivity.workHandler);
+        videoRetriever = new VideoRetriever(context, PlayerActivity.workHandler);
         displayMetrics = context.getResources().getDisplayMetrics();
         thread = new HandlerThread("seek");
         thread.setPriority(Process.THREAD_PRIORITY_BACKGROUND);
@@ -369,7 +367,7 @@ public class VideoFragment extends Fragment {
                             page.updateListView(data);
 
                             if (hasnext) {
-                                playerActivity.runOnUiThread(new Runnable() {
+                                getActivity().runOnUiThread(new Runnable() {
                                     @Override
                                     public void run() {
                                         viewPager.setCurrentItem(1, false);
@@ -394,7 +392,7 @@ public class VideoFragment extends Fragment {
                             pagerAdapter.changeSate(hasnext, hasprev);
                             page.updateListView(data);
                             if (hasprev) {
-                                playerActivity.runOnUiThread(new Runnable() {
+                                getActivity().runOnUiThread(new Runnable() {
                                     @Override
                                     public void run() {
                                         viewPager.setCurrentItem(1, false);
@@ -445,10 +443,10 @@ public class VideoFragment extends Fragment {
     public void onResume() {
 
         if (context.getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            playerActivity.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
+            getActivity().getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
                     View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
         } else {
-            playerActivity.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
+            getActivity().getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
         }
         super.onResume();
     }
@@ -456,7 +454,7 @@ public class VideoFragment extends Fragment {
     @Override
     public void onStart() {
         super.onStart();
-        playerActivity.connect();
+//        playerActivity.connect();
         started = true;
 
 
@@ -465,8 +463,7 @@ public class VideoFragment extends Fragment {
     @Override
     public void onStop() {
         super.onStop();
-        playerActivity.disconnect();
-        connected = false;
+//        playerActivity.disconnect();
         started = false;
     }
 
@@ -476,14 +473,10 @@ public class VideoFragment extends Fragment {
         thread.quit();
     }
 
-    public void setActivity(PlayerActivity activity) {
-        this.playerActivity = activity;
-    }
-
     public void start(final DataHolder dataHolder) {
 
         currentData = dataHolder;
-        playerActivity.runOnUiThread(new Runnable() {
+        getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 playingTextView.setText(currentData.title);
@@ -541,7 +534,7 @@ public class VideoFragment extends Fragment {
 
     public void buffering(final boolean buff) {
         if (started) {
-            playerActivity.runOnUiThread(new Runnable() {
+            getActivity().runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
                     if (buff) {
@@ -558,7 +551,7 @@ public class VideoFragment extends Fragment {
 
     public void setSeekBarMax(final int max) {
         if (started) {
-            playerActivity.runOnUiThread(new Runnable() {
+            getActivity().runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
                     seekBar.setMax(max);
@@ -570,7 +563,7 @@ public class VideoFragment extends Fragment {
 
     public void updateSeekBar() {
         Log.d("VideoFragment", "updateSeekBar");
-        if (playerActivity != null && !seekbarUpdating && started) {
+        if (!seekbarUpdating && started) {
             seekHandler.post(new Runnable() {
                 @Override
                 public void run() {
@@ -594,7 +587,7 @@ public class VideoFragment extends Fragment {
             seekHandler.postDelayed(new Runnable() {
                 @Override
                 public void run() {
-                    playerActivity.runOnUiThread(new Runnable() {
+                    getActivity().runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
                             setButtonPlay(true);
@@ -610,18 +603,18 @@ public class VideoFragment extends Fragment {
     }
 
     public void changeToPortrait() {
-        if (vrelativeLayout != null && drelativeLayout != null && playerActivity != null) {
+        if (vrelativeLayout != null && drelativeLayout != null && getActivity() != null) {
             vrelativeLayout.setLayoutParams(portraitlayout);
             drelativeLayout.setVisibility(View.VISIBLE);
-            playerActivity.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
+            getActivity().getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
         }
     }
 
     public void changeToLandscape() {
-        if (vrelativeLayout != null && drelativeLayout != null && playerActivity != null) {
+        if (vrelativeLayout != null && drelativeLayout != null && getActivity() != null) {
             vrelativeLayout.setLayoutParams(landscapelayout);
             drelativeLayout.setVisibility(View.GONE);
-            playerActivity.getWindow().getDecorView().setSystemUiVisibility(
+            getActivity().getWindow().getDecorView().setSystemUiVisibility(
                     View.SYSTEM_UI_FLAG_FULLSCREEN |
                             View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
                             View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
@@ -630,7 +623,7 @@ public class VideoFragment extends Fragment {
     }
 
     public void showcontrols(final boolean show) {
-        playerActivity.runOnUiThread(new Runnable() {
+        getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 if (show) {
@@ -685,7 +678,7 @@ public class VideoFragment extends Fragment {
             if (currentData != null && mediaService.isPlaying()) {
 //            playerActivity.slidePanel.setPanelState(SlidingUpPanelLayout.PanelState.EXPANDED); //optional
                 loadRelatedVideos(currentData);
-                playerActivity.runOnUiThread(new Runnable() {
+                getActivity().runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
                         playingTextView.setText(currentData.title);
@@ -702,7 +695,7 @@ public class VideoFragment extends Fragment {
     }
 
     public void setButtonPlay(final boolean play) {
-        playerActivity.runOnUiThread(new Runnable() {
+        getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
 
@@ -716,7 +709,7 @@ public class VideoFragment extends Fragment {
     }
 
     public void setHeaderPlayButton(final boolean play) {
-        playerActivity.runOnUiThread(new Runnable() {
+        getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 if (play) {
@@ -733,7 +726,7 @@ public class VideoFragment extends Fragment {
         final DataHolder dataHolder = mediaService.watchedQueue.pollLast();
         if (dataHolder != null) {
             mediaService.previousVideo();
-            playerActivity.runOnUiThread(new Runnable() {
+            getActivity().runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
                     playingTextView.setText(dataHolder.title);
@@ -830,7 +823,7 @@ public class VideoFragment extends Fragment {
         }
 
         public void loading() {
-            playerActivity.runOnUiThread(new Runnable() {
+            getActivity().runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
                     if (!waiting) {
@@ -844,7 +837,7 @@ public class VideoFragment extends Fragment {
         }
 
         public void updateListView(final List<DataHolder> data) {
-            playerActivity.runOnUiThread(new Runnable() {
+            getActivity().runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
                     if (adapter == null) {
@@ -884,12 +877,11 @@ public class VideoFragment extends Fragment {
                         Toast toast = Toast.makeText(context, "Decrypting...", Toast.LENGTH_SHORT);
                         toast.show();
                         final DataHolder dataHolder = adapter.dataHolders.get(position - 1);
-                        videoRetriever.startExtracting(dataHolder.videoID, new VideoRetriever.YouTubeExtractorListener() {
+                        videoRetriever.getDataHolder(dataHolder, new VideoRetriever.YouTubeExtractorListener() {
+
                             @Override
-                            public void onSuccess(HashMap<Integer, String> result) {
-                                dataHolder.videoUris = result;
-                                start(dataHolder);
-                                //Log.d("search", ))
+                            public void onSuccess(DataHolder result) {
+                                start(result);
                             }
 
                             @Override
@@ -908,7 +900,7 @@ public class VideoFragment extends Fragment {
 
                 }
             });
-            listener.setSlidePanel(playerActivity.slidePanel);
+            listener.setSlidePanel(((PlayerActivity) getActivity()).slidePanel);
             recyclerView.addOnItemTouchListener(listener);
 
 
