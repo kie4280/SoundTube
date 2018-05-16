@@ -488,7 +488,7 @@ public class MediaPlayerService extends Service {
             @Override
             public void run() {
 
-                MediaSource videoSource = VideoRetriever.toMediaSource(dataHolder, quality, getApplicationContext());
+                MediaSource videoSource = VideoRetriever.toMediaSource(getApplicationContext(), dataHolder, quality);
 
                 if (videoSource != null) {
                     notContentView.setTextViewText(R.id.notPlayingTitle, dataHolder.title);
