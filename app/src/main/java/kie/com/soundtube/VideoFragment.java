@@ -470,7 +470,7 @@ public class VideoFragment extends Fragment {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        thread.quit();
+        thread.quitSafely();
     }
 
     public void start(final DataHolder dataHolder) {

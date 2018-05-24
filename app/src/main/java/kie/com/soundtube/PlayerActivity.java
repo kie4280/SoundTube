@@ -146,7 +146,46 @@ public class PlayerActivity extends AppCompatActivity implements SearchFragment.
 
     }
 
+    @Override
+    protected void onStart() {
+        super.onStart();
+        connect();
+        Log.d("activity", "onStart");
 
+    }
+
+    @Override
+    protected void onResume() {
+
+        super.onResume();
+        NetworkInfo info = connectmgr.getActiveNetworkInfo();
+        if (info != null && info.isAvailable() && info.isConnected()) {
+            netConncted = true;
+        } else {
+            Toast toast = Toast.makeText(getApplicationContext(), getString(R.string.needNetwork), Toast.LENGTH_SHORT);
+            toast.show();
+            netConncted = false;
+        }
+
+        Log.d("activity", "onResume");
+
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        disconnect();
+        Log.d("activity", "onStop");
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        Log.d("activity", "onDestroy");
+        mediaService = null;
+        workThread.quitSafely();
+
+    }
 
     private PanelSlideListener panelSlideListener = new PanelSlideListener() {
         @Override
@@ -250,46 +289,6 @@ public class PlayerActivity extends AppCompatActivity implements SearchFragment.
 
 
     @Override
-    protected void onStart() {
-        super.onStart();
-        connect();
-        Log.d("activity", "onStart");
-
-    }
-
-    @Override
-    protected void onResume() {
-
-        super.onResume();
-        NetworkInfo info = connectmgr.getActiveNetworkInfo();
-        if (info != null && info.isAvailable() && info.isConnected()) {
-            netConncted = true;
-        } else {
-            Toast toast = Toast.makeText(getApplicationContext(), getString(R.string.needNetwork), Toast.LENGTH_SHORT);
-            toast.show();
-            netConncted = false;
-        }
-
-        Log.d("activity", "onResume");
-
-    }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-        disconnect();
-        Log.d("activity", "onStop");
-    }
-
-    @Override
-    protected void onDestroy() {
-        Log.d("activity", "onDestroy");
-        mediaService = null;
-        workThread.quit();
-        super.onDestroy();
-    }
-
-    @Override
     public void onReturnSearchVideo(final DataHolder dataHolder) {
 
         runOnUiThread(new Runnable() {
@@ -315,6 +314,8 @@ public class PlayerActivity extends AppCompatActivity implements SearchFragment.
         switch (slidePanel.getPanelState()) {
             case HIDDEN:
             case COLLAPSED:
+                stopService(serviceIntent);
+                finish();
                 break;
             case EXPANDED:
                 videoFragment.previousVideo();

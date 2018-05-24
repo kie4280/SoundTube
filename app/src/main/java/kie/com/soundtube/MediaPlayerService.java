@@ -1,5 +1,6 @@
 package kie.com.soundtube;
 
+import android.app.DownloadManager;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -38,7 +39,6 @@ import com.google.android.exoplayer2.upstream.BandwidthMeter;
 import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
@@ -327,6 +327,10 @@ public class MediaPlayerService extends Service {
         serviceStarted = true;
         TelephonyManager telephonyManager = (TelephonyManager) getApplicationContext().getSystemService(Context.TELEPHONY_SERVICE);
         telephonyManager.listen(phoneStateListener, PhoneStateListener.LISTEN_CALL_STATE);
+        videoRetriever = new VideoRetriever(getApplicationContext(), networkHandler);
+        youtubeClient = new YoutubeClient(getApplicationContext(), networkHandler);
+        registerReceiver(videoRetriever.downloadReceiver, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
+
     }
 
     @Override
@@ -335,14 +339,17 @@ public class MediaPlayerService extends Service {
         exoPlayer.release();
         wifiLock.release();
         wakeLock.release();
-        playThread.quit();
+        playThread.quitSafely();
+        networkThread.quitSafely();
         updateSeekBar = false;
         Log.d("service", "onDestroy");
         stopForeground(true);
         unregisterReceiver(broadcastReceiver);
+        unregisterReceiver(videoRetriever.downloadReceiver);
         serviceStarted = false;
         notificationManager = null;
         prepared = false;
+
 
     }
 
@@ -479,7 +486,7 @@ public class MediaPlayerService extends Service {
     }
 
     public void prepare(final DataHolder dataHolder) {
-        prepare(dataHolder, VideoRetriever.YOUTUBE_VIDEO_QUALITY_AUTO);
+        prepare(dataHolder, VideoRetriever.YOUTUBE_AUTO);
     }
 
     public void prepare(final DataHolder dataHolder, final ArrayList<Integer> quality) {
@@ -488,7 +495,14 @@ public class MediaPlayerService extends Service {
             @Override
             public void run() {
 
-                MediaSource videoSource = VideoRetriever.toMediaSource(getApplicationContext(), dataHolder, quality);
+                MediaSource videoSource;
+                if (quality != VideoRetriever.YOUTUBE_AUTO &&
+                        videoRetriever.hasVideo(dataHolder.videoID, VideoRetriever.getAsString(quality))) {
+                    videoSource = videoRetriever.getMediaSource(dataHolder, quality, false);
+                } else {
+                    videoSource = videoRetriever.getMediaSource(dataHolder, quality, true);
+                }
+
 
                 if (videoSource != null) {
                     notContentView.setTextViewText(R.id.notPlayingTitle, dataHolder.title);
@@ -570,10 +584,7 @@ public class MediaPlayerService extends Service {
     }
 
     public void nextVideo() {
-        if (videoRetriever == null || youtubeClient == null) {
-            videoRetriever = new VideoRetriever(getApplicationContext(), networkHandler);
-            youtubeClient = new YoutubeClient(getApplicationContext(), networkHandler);
-        }
+
         if (!playList.isEmpty() && PLAYING_MODE == PLAY_FROM_PLAYLIST) {
             nextData = playList.pollFirst();
 
@@ -618,7 +629,7 @@ public class MediaPlayerService extends Service {
 
     public void setVideoQuality(int quality) {
         VIDEO_QUALITY = quality;
-        if (currentData.videoUris.containsKey(VIDEO_QUALITY)) {
+        if (currentData.onlineUris.containsKey(VIDEO_QUALITY)) {
             int pos = getCurrentPos();
             prepare(currentData);
             seekTo(pos);

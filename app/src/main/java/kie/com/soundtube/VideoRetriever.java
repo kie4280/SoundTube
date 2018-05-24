@@ -59,7 +59,7 @@ import static java.util.Arrays.asList;
  */
 public class VideoRetriever {
 
-    static final ArrayList<Integer> YOUTUBE_VIDEO_QUALITY_AUTO = new ArrayList<>(asList(-1));
+    static final ArrayList<Integer> YOUTUBE_AUTO = new ArrayList<>(asList(-1));
     static final ArrayList<Integer> YOUTUBE_144 = new ArrayList<>(asList(160, 278, 17));
     static final ArrayList<Integer> YOUTUBE_240 = new ArrayList<>(asList(133, 242, 5));
     static final ArrayList<Integer> YOUTUBE_360 = new ArrayList<>(asList(134, 243, 18, 43));
@@ -73,7 +73,7 @@ public class VideoRetriever {
     static final ArrayList<Integer> DASH_VIDEO_WEBM = new ArrayList<>(asList(278, 242, 243, 244, 247, 248, 271, 313, 302, 303, 308, 315));
     static final ArrayList<Integer> DASH_AUDIO_MP4 = new ArrayList<>(asList(139, 140, 141, 256, 258, 325, 328));
     static final ArrayList<Integer> DASH_AUDIO_WEBM = new ArrayList<>(asList(171, 172, 249, 250, 251));
-    static Integer PreferredAudioQualityIndex = 0;
+    static Integer defaultAudioQualityIndex = 0;
     Context context;
     BroadcastReceiver downloadReceiver;
 
@@ -100,7 +100,7 @@ public class VideoRetriever {
     public VideoRetriever(final Context context, Handler handler) {
         this.context = context;
         youtubeExtractorHandler = handler;
-        downloadCacheFileDir = new File(context.getExternalCacheDir(), "SoundTube");
+        downloadCacheFileDir = new File(context.getExternalCacheDir(), "downloaded");
         defaultMusicDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC), "SoundTube");
         downloadReceiver = new BroadcastReceiver() {
 
@@ -152,33 +152,61 @@ public class VideoRetriever {
 
             }
         };
+
     }
 
-    public static MediaSource toMediaSource(Context context, DataHolder dataHolder, ArrayList<Integer> preferredRes) {
-        HashMap<Integer, String> urls = dataHolder.videoUris;
+    private MediaSource getOfflineMediaSource(DataHolder dataHolder, ArrayList<Integer> preferredRes) {
 
+        DefaultBandwidthMeter bandwidthMeter = new DefaultBandwidthMeter();
+        DataSource.Factory dataSourceFactory = new DefaultDataSourceFactory(context,
+                Util.getUserAgent(context, "SoundTube"), bandwidthMeter);
+        if (preferredRes != YOUTUBE_AUTO) {
+            if (dataHolder.localUris.containsKey(preferredRes)) {
+                MediaSource source = new ExtractorMediaSource.Factory(dataSourceFactory).createMediaSource(
+                        Uri.parse(dataHolder.localUris.get(preferredRes)));
+                return source;
+            }
+        } else {
+            for (ArrayList<Integer> formats : VideoFormats) {
+                if (dataHolder.localUris.containsKey(formats)) {
+                    MediaSource source = new ExtractorMediaSource.Factory(dataSourceFactory).createMediaSource(
+                            Uri.parse(dataHolder.localUris.get(preferredRes)));
+                    return source;
+                }
+            }
+
+        }
+        return null;
+
+    }
+
+
+    private MediaSource getOnlineMediaSource(DataHolder dataHolder, ArrayList<Integer> preferredRes) {
+
+        HashMap<Integer, String> onlineUris = new HashMap<>(dataHolder.onlineUris);
         // Measures bandwidth during playback. Can be null if not required.
         DefaultBandwidthMeter bandwidthMeter = new DefaultBandwidthMeter();
 // Produces DataSource instances through which media data is loaded.
         DataSource.Factory dataSourceFactory = new DefaultDataSourceFactory(context,
                 Util.getUserAgent(context, "SoundTube"), bandwidthMeter);
 // This is the MediaSource representing the media to be played.
-        if (preferredRes != YOUTUBE_VIDEO_QUALITY_AUTO) {
+
+        if (preferredRes != YOUTUBE_AUTO) {
             for (Integer mpreferredRes : preferredRes) {
-                if (urls.containsKey(mpreferredRes)) {
+                if (onlineUris.containsKey(mpreferredRes)) {
                     ArrayList<Integer> dashes = filter(AND, filter(OR, DASH_VIDEO_MP4, DASH_VIDEO_WEBM), preferredRes);
-                    ArrayList<Integer> sound = new ArrayList<>(urls.keySet());
+                    ArrayList<Integer> sound = new ArrayList<>(onlineUris.keySet());
                     ArrayList<Integer> audios = filter(AND, filter(OR, DASH_AUDIO_MP4, DASH_AUDIO_WEBM), sound);
                     if (!dashes.isEmpty() && !audios.isEmpty()) {
                         MediaSource videoSource = new ExtractorMediaSource.Factory(dataSourceFactory)
-                                .createMediaSource(Uri.parse(urls.get(mpreferredRes)));
+                                .createMediaSource(Uri.parse(onlineUris.get(mpreferredRes)));
                         MediaSource audioSource = new ExtractorMediaSource.Factory(dataSourceFactory)
-                                .createMediaSource(Uri.parse(urls.get(audios.get(PreferredAudioQualityIndex))));
+                                .createMediaSource(Uri.parse(onlineUris.get(audios.get(defaultAudioQualityIndex))));
                         MediaSource mediaSource = new MergingMediaSource(videoSource, audioSource);
                         return mediaSource;
                     } else {
                         MediaSource mediaSource = new ExtractorMediaSource.Factory(dataSourceFactory)
-                                .createMediaSource(Uri.parse(urls.get(mpreferredRes)));
+                                .createMediaSource(Uri.parse(onlineUris.get(mpreferredRes)));
                         return mediaSource;
                     }
                 }
@@ -188,21 +216,21 @@ public class VideoRetriever {
             for (int a = available.size() - 1; a >= 0; a--) {
                 ArrayList<Integer> sameQuality = available.get(a);
                 for (Integer aSameQuality : sameQuality) {
-                    if (urls.containsKey(aSameQuality)) {
+                    if (onlineUris.containsKey(aSameQuality)) {
                         ArrayList<Integer> dashes = filter(AND, filter(OR, DASH_VIDEO_MP4, DASH_VIDEO_WEBM), sameQuality);
-                        ArrayList<Integer> sound = new ArrayList<>(urls.keySet());
+                        ArrayList<Integer> sound = new ArrayList<>(onlineUris.keySet());
                         ArrayList<Integer> audios = filter(AND, filter(OR, DASH_AUDIO_MP4, DASH_AUDIO_WEBM), sound);
                         if (!dashes.isEmpty() && !audios.isEmpty()) {
                             MediaSource videoSource = new ExtractorMediaSource.Factory(dataSourceFactory)
-                                    .createMediaSource(Uri.parse(urls.get(aSameQuality)));
+                                    .createMediaSource(Uri.parse(onlineUris.get(aSameQuality)));
                             MediaSource audioSource = new ExtractorMediaSource.Factory(dataSourceFactory)
-                                    .createMediaSource(Uri.parse(urls.get(audios.get(PreferredAudioQualityIndex))));
+                                    .createMediaSource(Uri.parse(onlineUris.get(audios.get(defaultAudioQualityIndex))));
                             MediaSource mediaSource = new MergingMediaSource(videoSource, audioSource);
                             return mediaSource;
 
                         } else {
                             MediaSource mediaSource = new ExtractorMediaSource.Factory(dataSourceFactory)
-                                    .createMediaSource(Uri.parse(urls.get(aSameQuality)));
+                                    .createMediaSource(Uri.parse(onlineUris.get(aSameQuality)));
                             return mediaSource;
                         }
                     }
@@ -213,11 +241,15 @@ public class VideoRetriever {
         return null;
     }
 
+    public MediaSource getMediaSource(DataHolder dataHolder, ArrayList<Integer> quality, boolean online) {
+        return online ? getOnlineMediaSource(dataHolder, quality) : getOfflineMediaSource(dataHolder, quality);
+    }
+
 
     public static ArrayList<Boolean> getAvailableFormatIndex(DataHolder dataHolder) {
         ArrayList<Boolean> available = new ArrayList<>(VideoFormats.size());
         Collections.fill(available, false);
-        HashMap<Integer, String> urls = dataHolder.videoUris;
+        HashMap<Integer, String> urls = dataHolder.onlineUris;
         for (int a = 0; a < VideoFormats.size(); a++) {
             ArrayList<Integer> b = VideoFormats.get(a);
             for (Integer format : b) {
@@ -232,7 +264,7 @@ public class VideoRetriever {
 
     public static ArrayList<String> getAvailableFormatString(DataHolder dataHolder) {
         ArrayList<String> available = new ArrayList<>();
-        HashMap<Integer, String> urls = dataHolder.videoUris;
+        HashMap<Integer, String> urls = dataHolder.onlineUris;
         for (int a = 0; a < VideoQualityStrings.size(); a++) {
             for (int q : VideoFormats.get(a)) {
                 if (urls.containsKey(q)) {
@@ -246,7 +278,7 @@ public class VideoRetriever {
 
     public static ArrayList<ArrayList<Integer>> getAvailableFormatType(DataHolder dataHolder) {
         ArrayList<ArrayList<Integer>> available = new ArrayList<>();
-        HashMap<Integer, String> urls = dataHolder.videoUris;
+        HashMap<Integer, String> urls = dataHolder.onlineUris;
         for (int a = 0; a < VideoFormats.size(); a++) {
             ArrayList<Integer> b = VideoFormats.get(a);
             for (Integer format : b) {
@@ -257,6 +289,14 @@ public class VideoRetriever {
             }
         }
         return available;
+    }
+
+    public static String getAsString(ArrayList<Integer> in) {
+        return VideoQualityStrings.get(VideoFormats.indexOf(in));
+    }
+
+    public static ArrayList<Integer> getAsFormat(String in) {
+        return VideoFormats.get(VideoQualityStrings.indexOf(in));
     }
 
     static final String NOT = "not";
@@ -550,9 +590,22 @@ public class VideoRetriever {
         youtubeExtractorHandler.post(new Runnable() {
             @Override
             public void run() {
-                final HashMap<Integer, String> result = getVideoUris("https://www.youtube" +
-                        ".com/watch?v=" + dataHolder.videoID);
-                dataHolder.videoUris = result;
+                File musicFolder = new File(currentMusicDir, "SoundTube/" + dataHolder.videoID);
+
+                if (musicFolder.exists()) {
+                    List<File> locals = asList(musicFolder.listFiles());
+                    HashMap<ArrayList<Integer>, String> local = new HashMap<>();
+                    for (File f : locals) {
+                        String name = f.getName();
+                        Integer index = VideoQualityStrings.indexOf(name);
+                        local.put(VideoFormats.get(index), f.toString());
+                    }
+                    dataHolder.localUris = local;
+                }
+                if (PlayerActivity.netConncted) {
+                    dataHolder.onlineUris = getVideoUris("https://www.youtube.com/watch?v=" + dataHolder.videoID);
+                }
+
                 youtubeExtractorHandler.post(new Runnable() {
                     @Override
                     public void run() {
@@ -574,13 +627,13 @@ public class VideoRetriever {
 
     public void downloadVideo(DataHolder dataHolder, ArrayList<Integer> preferredRes,
                               String resolution, File destinationDir) throws DownloadException {
-        HashMap<Integer, String> urls = dataHolder.videoUris;
+        HashMap<Integer, String> urls = dataHolder.onlineUris;
         DownloadManager manager = (DownloadManager) context.getSystemService(Context.DOWNLOAD_SERVICE);
         currentMusicDir = destinationDir;
 
         if (Environment.getExternalStorageState().contentEquals(Environment.MEDIA_MOUNTED)) {
 
-            if (preferredRes != YOUTUBE_VIDEO_QUALITY_AUTO && !hasVideo(dataHolder.videoID, resolution)) {
+            if (preferredRes != YOUTUBE_AUTO && !hasVideo(dataHolder.videoID, resolution)) {
                 for (Integer mpreferredRes : preferredRes) {
                     if (urls.containsKey(mpreferredRes)) {
                         ArrayList<Integer> dashes = filter(AND, filter(OR, DASH_VIDEO_MP4, DASH_VIDEO_WEBM), preferredRes);
@@ -588,7 +641,7 @@ public class VideoRetriever {
                         ArrayList<Integer> audios = filter(AND, filter(OR, DASH_AUDIO_MP4, DASH_AUDIO_WEBM), sound);
                         if (!dashes.isEmpty() && !audios.isEmpty()) {
                             DownloadManager.Request requestVideo = new DownloadManager.Request(Uri.parse(urls.get(mpreferredRes)));
-                            File video = new File(downloadCacheFileDir, "SoundTube/" + dataHolder.videoID + "/" + resolution + "Video");
+                            File video = new File(downloadCacheFileDir, dataHolder.videoID + "/" + resolution + "Video");
                             requestVideo.setDestinationUri(Uri.fromFile(video));
                             requestVideo.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE);
                             requestVideo.allowScanningByMediaScanner();
@@ -596,8 +649,8 @@ public class VideoRetriever {
                             long v = manager.enqueue(requestVideo);
 
                             DownloadManager.Request requestAudio = new DownloadManager.Request(Uri.parse(urls.get(
-                                    audios.get(PreferredAudioQualityIndex))));
-                            File audio = new File(downloadCacheFileDir, "SoundTube/" + dataHolder.videoID + "/" + resolution + "Audio");
+                                    audios.get(defaultAudioQualityIndex))));
+                            File audio = new File(downloadCacheFileDir, dataHolder.videoID + "/" + resolution + "Audio");
                             requestAudio.setDestinationUri(Uri.fromFile(audio));
                             requestAudio.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE);
                             requestAudio.allowScanningByMediaScanner();
@@ -608,7 +661,7 @@ public class VideoRetriever {
 
                         } else {
                             DownloadManager.Request request = new DownloadManager.Request(Uri.parse(urls.get(mpreferredRes)));
-                            File des = new File(destinationDir, "SoundTube/" + dataHolder.videoID + "/" + resolution + "Full");
+                            File des = new File(destinationDir, dataHolder.videoID + "/" + resolution + "Full");
                             request.setDestinationUri(Uri.fromFile(des));
                             request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE);
                             request.allowScanningByMediaScanner();
@@ -616,6 +669,7 @@ public class VideoRetriever {
                         }
 
                     }
+                    break;
                 }
             }
         } else {
@@ -624,25 +678,42 @@ public class VideoRetriever {
     }
 
     public boolean hasVideo(String videoID, String resolution) {
-        return false;
+//        if (!currentMusicDir.exists())
+//            return false;
+//        else {
+        File file = new File(currentMusicDir, videoID + "/" + resolution + ".mp4");
+        return file.exists();
+//        }
     }
 
-    public void generateMergedVideo(String videoID, String resolution, ArrayList<String> url) {
-        try {
-            Track video = MovieCreator.build(url.get(0)).getTracks().get(0);
-            Track audio = MovieCreator.build(url.get(1)).getTracks().get(0);
-            Movie movie = new Movie();
-            movie.addTrack(video);
-            movie.addTrack(audio);
-            Container mp4file = new DefaultMp4Builder().build(movie);
-            File file = new File(currentMusicDir,
-                    "SoundTube/" + videoID + "/" + resolution + ".mp4");
-            FileChannel channel = new FileOutputStream(file).getChannel();
-            mp4file.writeContainer(channel);
-            channel.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    public void generateMergedVideo(final String videoID, final String resolution, final ArrayList<String> url) {
+        youtubeExtractorHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Track video = MovieCreator.build(url.get(0)).getTracks().get(0);
+                    Track audio = MovieCreator.build(url.get(1)).getTracks().get(0);
+                    Movie movie = new Movie();
+                    movie.addTrack(video);
+                    movie.addTrack(audio);
+                    Container mp4file = new DefaultMp4Builder().build(movie);
+                    if (Environment.getExternalStorageState().contentEquals(Environment.MEDIA_MOUNTED)) {
+                        File file = new File(currentMusicDir,
+                                videoID + "/" + resolution + ".mp4");
+                        file.getParentFile().mkdirs();
+                        FileChannel channel = new FileOutputStream(file).getChannel();
+                        mp4file.writeContainer(channel);
+                        channel.close();
+                        File cache = new File(downloadCacheFileDir, videoID);
+                        cache.delete();
+                    }
+
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+
     }
 
 
