@@ -25,10 +25,10 @@ public class LogActivity extends AppCompatActivity implements LogFragment.Button
         thread = new HandlerThread("worker");
         thread.start();
         worker = new Handler(thread.getLooper());
-        error = getIntent().getStringExtra("error message");
+        error = getIntent().getStringExtra("onError message");
         error = "SoundTube version: " + BuildConfig.VERSION_CODE + "\n" + error;
 //        TextView message = (TextView) findViewById(R.id.logText);
-//        message.setText(error);
+//        message.setText(onError);
         FragmentManager manager = getFragmentManager();
         log = new LogFragment();
         Bundle bundle = new Bundle();

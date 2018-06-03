@@ -80,7 +80,7 @@ public class PlayerActivity extends AppCompatActivity implements SearchFragment.
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK
                         | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT);
                 String stack = Log.getStackTraceString(throwable);
-                intent.putExtra("error message", stack);
+                intent.putExtra("onError message", stack);
                 Log.d("Exception", "caught");
                 startActivity(intent);
 //                continue as normal
@@ -267,7 +267,7 @@ public class PlayerActivity extends AppCompatActivity implements SearchFragment.
             mediaService.videoFragment = null;
             videoFragment.mediaService = null;
             mediaService = null;
-            Log.w("activity", "service unbind due to error");
+            Log.w("activity", "service unbind due to onError");
         }
     };
 

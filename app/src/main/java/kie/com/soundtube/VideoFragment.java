@@ -811,7 +811,7 @@ public class VideoFragment extends Fragment {
         public ProgressBar progressBar;
         public RelativeLayout relativeLayout;
         boolean waiting = false;
-        String text = "error";
+        String text = "onError";
 
 
         public Page(View page) {
@@ -885,8 +885,8 @@ public class VideoFragment extends Fragment {
                             }
 
                             @Override
-                            public void onFailure(Error error) {
-                                Log.d("search", "error extracting");
+                            public void onFailure(String error) {
+                                Log.d("search", "onError extracting");
 
                             }
                         });

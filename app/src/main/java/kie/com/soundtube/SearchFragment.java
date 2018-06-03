@@ -695,8 +695,8 @@ public class SearchFragment extends Fragment {
                         }
 
                         @Override
-                        public void onFailure(Error error) {
-                            Log.d("search", "error extracting");
+                        public void onFailure(String error) {
+                            Log.d("search", "onError extracting");
 
                         }
                     });
@@ -724,8 +724,8 @@ public class SearchFragment extends Fragment {
                         }
 
                         @Override
-                        public void onFailure(Error error) {
-                            Log.d("download", "error extracting");
+                        public void onFailure(String error) {
+                            Log.d("download", "onError extracting");
 
                         }
                     });
@@ -777,7 +777,7 @@ public class SearchFragment extends Fragment {
                                     try {
                                         videoRetriever.downloadVideo(dataHolder, downloadType.get(a), res);
                                     } catch (VideoRetriever.DownloadException e) {
-                                        Toast toast = Toast.makeText(context, "Download error!!", Toast.LENGTH_SHORT);
+                                        Toast toast = Toast.makeText(context, "Download onError!!", Toast.LENGTH_SHORT);
                                         toast.show();
                                         e.printStackTrace();
                                     }

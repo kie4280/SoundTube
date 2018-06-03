@@ -1,12 +1,12 @@
 package kie.com.soundtube;
 
 import android.Manifest;
+import android.app.Activity;
 import android.app.DownloadManager;
 import android.app.DownloadManager.Request;
 import android.content.Context;
-import android.content.pm.PackageManager;
+import android.content.Intent;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -14,9 +14,10 @@ import android.os.HandlerThread;
 import android.preference.Preference;
 import android.preference.PreferenceFragment;
 import android.support.annotation.Nullable;
-import android.support.v4.app.ActivityCompat;
 import android.util.Log;
 import android.widget.Toast;
+
+import pub.devrel.easypermissions.EasyPermissions;
 
 public class SettingFragment extends PreferenceFragment {
 
@@ -27,6 +28,7 @@ public class SettingFragment extends PreferenceFragment {
     boolean downloaded = false;
     Toast toast = null;
     Github github;
+    final int REQUEST_WRITE_PERMISSION = 1001;
 
     private OnFragmentInteractionListener mListener;
 
@@ -52,14 +54,25 @@ public class SettingFragment extends PreferenceFragment {
         });
     }
 
+    private void SignIn() {
+
+
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+    }
+
     @Override
     public void onStop() {
+        super.onStop();
         if (toast != null) {
             toast.cancel();
         }
 
         Log.d("Setting", "onStop");
-        super.onStop();
+
     }
 
     @Override
@@ -68,48 +81,40 @@ public class SettingFragment extends PreferenceFragment {
         if (toast != null) {
             toast.cancel();
         }
-        thread.quit();
+        thread.quitSafely();
         thread = null;
     }
 
-    public void updateSoftware() {
+    private void updateSoftware() {
 
         if (!checkedLatest) {
             checkedLatest = true;
             worker.post(new Runnable() {
                 @Override
                 public void run() {
-
                     String in = github.getupdate();
-                    if (!in.contentEquals("latest")) {
-                        if (isStoragePermissionGranted()) {
-                            if (!downloaded) {
-                                showText(R.string.software_download);
-                                DownloadManager manager = (DownloadManager) context.getSystemService(Context.DOWNLOAD_SERVICE);
-                                Request request = new Request(Uri.parse(in));
-                                request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS,
-                                        "SoundTube" + github.versionName + ".apk");
-                                request.setNotificationVisibility(Request.VISIBILITY_VISIBLE);
-
-                                manager.enqueue(request);
-
-                                downloaded = true;
-                            } else {
-                                showText(R.string.already_download);
-                                Log.d("Setting", getString(R.string.already_download));
-                            }
-
-                        } else {
-                            showText(R.string.deny_write_permission);
-                            Log.d("Setting", getString(R.string.deny_write_permission));
-                        }
-
-                    } else {
+                    if (downloaded) {
+                        showText(R.string.already_download);
+                        Log.d("Setting", getString(R.string.already_download));
+                    } else if (!in.contentEquals("latest")) {
                         showText(R.string.software_latest);
-
                         Log.d("Setting", getString(R.string.software_latest));
-                    }
+                    } else if (EasyPermissions.hasPermissions(context, Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+                        EasyPermissions.requestPermissions(getActivity(), "This app needs to access your storage",
+                                REQUEST_WRITE_PERMISSION, Manifest.permission.WRITE_EXTERNAL_STORAGE);
+                    } else {
 
+                        showText(R.string.software_download);
+                        DownloadManager manager = (DownloadManager) context.getSystemService(Context.DOWNLOAD_SERVICE);
+                        Request request = new Request(Uri.parse(in));
+                        request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS,
+                                "SoundTube" + github.versionName + ".apk");
+                        request.setNotificationVisibility(Request.VISIBILITY_VISIBLE);
+
+                        manager.enqueue(request);
+
+                        downloaded = true;
+                    }
                 }
 
             });
@@ -137,25 +142,6 @@ public class SettingFragment extends PreferenceFragment {
         }
     }
 
-    public boolean isStoragePermissionGranted() {
-        if (Build.VERSION.SDK_INT >= 23) {
-            if (context.checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                    == PackageManager.PERMISSION_GRANTED) {
-                Log.v("SettingActivity", "Permission is granted");
-                return true;
-            } else {
-
-                Log.v("SettingActivity", "Permission is revoked");
-                ActivityCompat.requestPermissions(getActivity(),
-                        new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
-                return false;
-            }
-        } else { //permission is automatically granted on sdk<23 upon installation
-            Log.v("SettingActivity", "Permission is granted");
-            return true;
-        }
-    }
-
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
@@ -173,6 +159,27 @@ public class SettingFragment extends PreferenceFragment {
         mListener = null;
     }
 
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        switch (requestCode) {
+            case REQUEST_WRITE_PERMISSION:
+                if (resultCode != Activity.RESULT_OK) {
+                    showText(R.string.deny_write_permission);
+                    Log.d("Setting", getString(R.string.deny_write_permission));
+
+                } else if (!PlayerActivity.netConncted) {
+                    showText(R.string.no_network);
+                    Log.d("Setting", getString(R.string.no_network));
+                } else {
+                    updateSoftware();
+                }
+                break;
+            default:
+                break;
+        }
+
+    }
 
     public interface OnFragmentInteractionListener {
 

@@ -386,8 +386,9 @@ public class VideoRetriever {
         return response.toString();
     }
 
-    private HashMap<Integer, String> getVideoUris(String url) {
+    private HashMap<Integer, String> getVideoUris(String id) {
 
+        String url = "https://www.youtube.com/watch?v=" + id;
         String videoHTML = downloadWeb(url);
         String videoID = url.substring(url.indexOf("=") + 1);
         String language = "en";
@@ -396,7 +397,7 @@ public class VideoRetriever {
                 , videoID, language); //correct
 
 
-        HashMap<Integer, String> links = new HashMap<>();
+        HashMap<Integer, String> links = null;
         Document jsoup = Jsoup.parse(videoHTML);
         Elements q = jsoup.body().getElementsByTag("script");
         Elements j = q.eq(1);
@@ -406,61 +407,64 @@ public class VideoRetriever {
         int l = 0;
         int r = 0;
         String ytplayer = null;
-        for (int a = begin; a < part.length(); a++) {
-            char i = (char) part.codePointAt(a);
-            if (i == '{') {
-                l++;
-            } else if (i == '}') {
-                r++;
-            }
-            if (r == l && r != 0) {
-                ytplayer = part.substring(begin + 18, a + 1);
-                break;
-            }
-        }
-
-        jsonObj = new JsonParser().parse(ytplayer).getAsJsonObject();
-        basejsurl = "https://www.youtube.com" + jsonObj.getAsJsonObject("assets")
-                .get("js").getAsString().replaceAll("\"", "");
-        JsonObject videojson = jsonObj.getAsJsonObject("args");
-        JsonElement encoded_s = videojson.get("url_encoded_fmt_stream_map");
-        JsonElement adaptiveurl = videojson.get("adaptive_fmts");
-        List<String> videos = new LinkedList<>();
-        if (encoded_s != null && !encoded_s.getAsString().isEmpty()) {
-            videos.addAll(asList(encoded_s.getAsString().split(",")));
-        }
-        if (adaptiveurl != null && !adaptiveurl.getAsString().isEmpty()) {
-            videos.addAll(asList(adaptiveurl.getAsString().split(",")));
-        }
-        for (String e : videos) {
-            e = decode(e);
-            String[] fields = e.split("[&\\?;]");
-            HashMap<String, String> splitmap = new HashMap<>();
-            for (String i : fields) {
-                String[] pair = i.split("=");
-                if (pair.length == 2) {
-                    splitmap.put(pair[0], pair[1]);
+        if (begin >= 0) {
+            for (int a = begin; a < part.length(); a++) {
+                char i = (char) part.codePointAt(a);
+                if (i == '{') {
+                    l++;
+                } else if (i == '}') {
+                    r++;
+                }
+                if (r == l && r != 0) {
+                    ytplayer = part.substring(begin + 18, a + 1);
+                    break;
                 }
             }
-
-            String[] params = splitmap.get("sparams").split(",");
-            StringBuilder stringBuilder = new StringBuilder();
-            stringBuilder.append(splitmap.get("url") + "?" + "sparams=" + splitmap.get
-                    ("sparams") + "&key=" + splitmap.get("key"));
-            if (splitmap.containsKey("s")) {
-                String fake = splitmap.get("s");
-                stringBuilder.append("&signature=" + decipher(fake));
-
-            } else {
-                stringBuilder.append("&signature=" + splitmap.get("signature"));
-            }
-
-            for (String par : params) {
-                stringBuilder.append("&" + par + "=" + splitmap.get(par));
-            }
-
-            links.put(Integer.parseInt(splitmap.get("itag")), stringBuilder.toString());
         }
+        if (ytplayer != null) {
+            links = new HashMap<>();
+            jsonObj = new JsonParser().parse(ytplayer).getAsJsonObject();
+            basejsurl = "https://www.youtube.com" + jsonObj.getAsJsonObject("assets")
+                    .get("js").getAsString().replaceAll("\"", "");
+            JsonObject videojson = jsonObj.getAsJsonObject("args");
+            JsonElement encoded_s = videojson.get("url_encoded_fmt_stream_map");
+            JsonElement adaptiveurl = videojson.get("adaptive_fmts");
+            List<String> videos = new LinkedList<>();
+            if (encoded_s != null && !encoded_s.getAsString().isEmpty()) {
+                videos.addAll(asList(encoded_s.getAsString().split(",")));
+            }
+            if (adaptiveurl != null && !adaptiveurl.getAsString().isEmpty()) {
+                videos.addAll(asList(adaptiveurl.getAsString().split(",")));
+            }
+            for (String e : videos) {
+                e = decode(e);
+                String[] fields = e.split("[&\\?;]");
+                HashMap<String, String> splitmap = new HashMap<>();
+                for (String i : fields) {
+                    String[] pair = i.split("=");
+                    if (pair.length == 2) {
+                        splitmap.put(pair[0], pair[1]);
+                    }
+                }
+
+                String[] params = splitmap.get("sparams").split(",");
+                StringBuilder stringBuilder = new StringBuilder();
+                stringBuilder.append(splitmap.get("url") + "?" + "sparams=" + splitmap.get
+                        ("sparams") + "&key=" + splitmap.get("key"));
+                if (splitmap.containsKey("s")) {
+                    String fake = splitmap.get("s");
+                    stringBuilder.append("&signature=" + decipher(fake));
+
+                } else {
+                    stringBuilder.append("&signature=" + splitmap.get("signature"));
+                }
+
+                for (String par : params) {
+                    stringBuilder.append("&" + par + "=" + splitmap.get(par));
+                }
+
+                links.put(Integer.parseInt(splitmap.get("itag")), stringBuilder.toString());
+            }
 //        String getvideoinfo = downloadWeb(link);
 //        String[] infos = getvideoinfo.split("&");
 //        HashMap<String, String> videoinfomap = new HashMap<>();
@@ -478,6 +482,8 @@ public class VideoRetriever {
 //            List<String> videos = new LinkedList<>(asList(url_encoded_fmt.split(",")));
 ////            videos.addAll(asList(adaptive_fmt.split(",")));
 //        }
+        }
+
         return links;
     }
 
@@ -562,7 +568,7 @@ public class VideoRetriever {
                     @Override
                     public void handle(JSException exception) {
                         exception.printStackTrace();
-                        System.out.println("error");
+                        System.out.println("onError");
                     }
                 });
                 context.evaluateScript(input);
@@ -576,7 +582,7 @@ public class VideoRetriever {
                 @Override
                 public void handle(JSException exception) {
                     exception.printStackTrace();
-                    System.out.println("error");
+                    System.out.println("onError");
                 }
             });
             context.evaluateScript(input);
@@ -603,17 +609,16 @@ public class VideoRetriever {
                     dataHolder.localUris = local;
                 }
                 if (PlayerActivity.netConncted) {
-                    dataHolder.onlineUris = getVideoUris("https://www.youtube.com/watch?v=" + dataHolder.videoID);
+                    dataHolder.onlineUris = getVideoUris(dataHolder.videoID);
                 }
 
-                youtubeExtractorHandler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (listener != null) {
-                            listener.onSuccess(dataHolder);
-                        }
-                    }
-                });
+                if (!(dataHolder.onlineUris == null && dataHolder.localUris == null)) {
+                    listener.onSuccess(dataHolder);
+
+                } else {
+                    String error = "No data";
+                    listener.onFailure(error);
+                }
             }
         });
 
@@ -732,7 +737,7 @@ public class VideoRetriever {
     public interface YouTubeExtractorListener {
         void onSuccess(DataHolder result);
 
-        void onFailure(Error error);
+        void onFailure(String error);
     }
 
 

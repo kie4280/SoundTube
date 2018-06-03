@@ -14,6 +14,7 @@ import android.media.MediaCodec;
 import android.net.wifi.WifiManager;
 import android.os.Binder;
 import android.os.Build;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
@@ -114,7 +115,7 @@ public class MediaPlayerService extends Service {
         wakeLock.release();
         stopForeground(false);
         notContentView.setImageViewResource(R.id.ppButton, R.drawable.ic_play_arrow_black_36dp);
-        notBuilder.setContent(notContentView);
+        setContentView(notContentView);
         notificationManager.notify(NOTIFICATION_ID, notBuilder.build());
         updateSeekBar = false;
 
@@ -320,8 +321,9 @@ public class MediaPlayerService extends Service {
                 .setSmallIcon(R.drawable.icon)
                 .setOngoing(false)
                 .setContentTitle("SoundTube")
-                .setDeleteIntent(notRemoveIntent)
-                .setContent(notContentView);
+                .setDeleteIntent(notRemoveIntent);
+        setContentView(notContentView);
+
         not = notBuilder.build();
         Log.d("service", "created");
         serviceStarted = true;
@@ -351,6 +353,14 @@ public class MediaPlayerService extends Service {
         prepared = false;
 
 
+    }
+
+    void setContentView(RemoteViews contentView) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            notBuilder.setCustomContentView(contentView);
+        } else {
+            notBuilder.setContent(contentView);
+        }
     }
 
     public void newPlayer() {
@@ -417,7 +427,7 @@ public class MediaPlayerService extends Service {
                     wifiLock.acquire();
                     wakeLock.acquire();
                     notContentView.setImageViewResource(R.id.ppButton, R.drawable.ic_pause_black_36dp);
-//                notBuilder.setContent(notContentView);
+//                  setContentView(notContentView);
                     startForeground(NOTIFICATION_ID, notBuilder.build());
                     if (videoFragment != null) {
                         videoFragment.currentData = currentData;
@@ -443,7 +453,7 @@ public class MediaPlayerService extends Service {
                     wakeLock.release();
                     stopForeground(false);
                     notContentView.setImageViewResource(R.id.ppButton, R.drawable.ic_play_arrow_black_36dp);
-                    notBuilder.setContent(notContentView);
+                    setContentView(notContentView);
                     notificationManager.notify(NOTIFICATION_ID, notBuilder.build());
                     updateSeekBar = false;
                     if (videoFragment != null) {
@@ -605,8 +615,8 @@ public class MediaPlayerService extends Service {
                         }
 
                         @Override
-                        public void onFailure(Error error) {
-                            Log.d("search", "error extracting");
+                        public void onFailure(String error) {
+                            Log.d("search", "onError extracting");
 
                         }
                     });

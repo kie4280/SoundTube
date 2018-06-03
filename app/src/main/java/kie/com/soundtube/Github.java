@@ -42,14 +42,12 @@ public class Github {
             e.printStackTrace();
         }
         String t = properties.getProperty("github_access_token");
-        t = t.replaceAll("#813", "");
+        t = t.replaceAll("#813|#jkfAS", "");
         if (t != null) {
             return t;
         } else {
             return "Cannot read config file";
         }
-
-
     }
 
     public void report(String msg) {

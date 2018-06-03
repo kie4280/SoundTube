@@ -99,6 +99,7 @@
     <string name="software_latest">Software is already the latest</string>
     <string name="software_download">New version downloading</string>
     <string name="deny_write_permission">Deny external storage permission!</string>
+    <string name="no_network">There is no network connection!</string>
     <string name="already_download">Software already downloaded</string>
     <string name="submit_report">Submit report</string>
     <string name="submit_button">Submit</string>
