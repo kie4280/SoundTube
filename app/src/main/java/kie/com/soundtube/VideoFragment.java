@@ -360,7 +360,7 @@ public class VideoFragment extends Fragment {
                 if (index > previndex) {
                     youtubeClient.nextPage();
                     page.loading();
-                    youtubeClient.getResults(new YoutubeClient.YoutubeSearchResult() {
+                    youtubeClient.getSearchResults(new YoutubeClient.YoutubeSearchResult() {
                         @Override
                         public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
                             pagerAdapter.changeSate(hasnext, hasprev);
@@ -379,14 +379,16 @@ public class VideoFragment extends Fragment {
                         }
 
                         @Override
-                        public void noData() {
+                        public void onError(String error) {
 
                         }
+
+
                     });
                 } else if (index < previndex) {
                     youtubeClient.prevPage();
                     page.loading();
-                    youtubeClient.getResults(new YoutubeClient.YoutubeSearchResult() {
+                    youtubeClient.getSearchResults(new YoutubeClient.YoutubeSearchResult() {
                         @Override
                         public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
                             pagerAdapter.changeSate(hasnext, hasprev);
@@ -404,9 +406,11 @@ public class VideoFragment extends Fragment {
                         }
 
                         @Override
-                        public void noData() {
+                        public void onError(String error) {
 
                         }
+
+
                     });
                 } else if (index == previndex) {
                     bar1.setVisibility(View.GONE);
@@ -470,7 +474,7 @@ public class VideoFragment extends Fragment {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        thread.quit();
+        thread.quitSafely();
     }
 
     public void start(final DataHolder dataHolder) {
@@ -511,7 +515,7 @@ public class VideoFragment extends Fragment {
         if (youtubeClient != null) {
             youtubeClient.loadRelatedVideos(dataHolder.videoID);
             page.loading();
-            youtubeClient.getResults(new YoutubeClient.YoutubeSearchResult() {
+            youtubeClient.getSearchResults(new YoutubeClient.YoutubeSearchResult() {
                 @Override
                 public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
                     pagerAdapter.changeSate(hasnext, hasprev);
@@ -519,9 +523,11 @@ public class VideoFragment extends Fragment {
                 }
 
                 @Override
-                public void noData() {
+                public void onError(String error) {
 
                 }
+
+
             });
 
         }
@@ -811,7 +817,7 @@ public class VideoFragment extends Fragment {
         public ProgressBar progressBar;
         public RelativeLayout relativeLayout;
         boolean waiting = false;
-        String text = "error";
+        String text = "onError";
 
 
         public Page(View page) {
@@ -885,8 +891,8 @@ public class VideoFragment extends Fragment {
                             }
 
                             @Override
-                            public void onFailure(Error error) {
-                                Log.d("search", "error extracting");
+                            public void onFailure(String error) {
+                                Log.d("search", "onError extracting");
 
                             }
                         });

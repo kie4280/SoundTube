@@ -3,12 +3,9 @@ package kie.com.soundtube;
 import android.Manifest;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DownloadManager;
-import android.os.Environment;
-import android.support.v4.app.Fragment;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.IntentFilter;
@@ -25,6 +22,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.support.design.widget.AppBarLayout;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.Fragment;
 import android.support.v4.view.ViewPager;
 import android.support.v4.view.ViewPager.OnPageChangeListener;
 import android.support.v7.widget.DefaultItemAnimator;
@@ -59,18 +57,15 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 public class SearchFragment extends Fragment {
-
 
     private OnFragmentInteractionListener mListener;
     private View searchFragmentView = null;
@@ -85,7 +80,6 @@ public class SearchFragment extends Fragment {
     public SearchView searchView = null;
     public LinearLayout searchAreaView = null;
     ImageView blankspace;
-    PlayerActivity playerActivity;
     YoutubeClient youtubeClient;
     CustomPagerAdapter pagerAdapter;
     ArrayList<View> pageviews = new ArrayList<>(3);
@@ -105,7 +99,7 @@ public class SearchFragment extends Fragment {
         workHandler = PlayerActivity.workHandler;
         youtubeClient = new YoutubeClient(context, workHandler);
         videoRetriever = new VideoRetriever(context, workHandler);
-
+        context.registerReceiver(videoRetriever.downloadReceiver, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
     }
 
     @Override
@@ -145,6 +139,7 @@ public class SearchFragment extends Fragment {
     @Override
     public void onDestroy() {
         super.onDestroy();
+        context.unregisterReceiver(videoRetriever.downloadReceiver);
 
     }
 
@@ -173,7 +168,7 @@ public class SearchFragment extends Fragment {
                 if (index > previndex && user) {
                     youtubeClient.nextPage();
                     page.loading();
-                    youtubeClient.getResults(new YoutubeClient.YoutubeSearchResult() {
+                    youtubeClient.getSearchResults(new YoutubeClient.YoutubeSearchResult() {
                         @Override
                         public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
                             pagerAdapter.changeSate(hasnext, hasprev);
@@ -192,14 +187,16 @@ public class SearchFragment extends Fragment {
                         }
 
                         @Override
-                        public void noData() {
+                        public void onError(String error) {
 
                         }
+
+
                     });
                 } else if (index < previndex && user) {
                     youtubeClient.prevPage();
                     page.loading();
-                    youtubeClient.getResults(new YoutubeClient.YoutubeSearchResult() {
+                    youtubeClient.getSearchResults(new YoutubeClient.YoutubeSearchResult() {
                         @Override
                         public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
                             pagerAdapter.changeSate(hasnext, hasprev);
@@ -217,9 +214,11 @@ public class SearchFragment extends Fragment {
                         }
 
                         @Override
-                        public void noData() {
+                        public void onError(String error) {
 
                         }
+
+
                     });
                 } else if (index == previndex && user) {
                     bar1.setVisibility(View.GONE);
@@ -241,7 +240,7 @@ public class SearchFragment extends Fragment {
         youtubeClient.newSearch(term);
         page.loading();
 
-        youtubeClient.getResults(new YoutubeClient.YoutubeSearchResult() {
+        youtubeClient.getSearchResults(new YoutubeClient.YoutubeSearchResult() {
             @Override
             public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
 
@@ -251,9 +250,11 @@ public class SearchFragment extends Fragment {
             }
 
             @Override
-            public void noData() {
+            public void onError(String error) {
 
             }
+
+
         });
 
     }
@@ -700,8 +701,8 @@ public class SearchFragment extends Fragment {
                         }
 
                         @Override
-                        public void onFailure(Error error) {
-                            Log.d("search", "error extracting");
+                        public void onFailure(String error) {
+                            Log.d("search", "onError extracting");
 
                         }
                     });
@@ -729,8 +730,8 @@ public class SearchFragment extends Fragment {
                         }
 
                         @Override
-                        public void onFailure(Error error) {
-                            Log.d("download", "error extracting");
+                        public void onFailure(String error) {
+                            Log.d("download", "onError extracting");
 
                         }
                     });
@@ -744,10 +745,9 @@ public class SearchFragment extends Fragment {
         AlertDialog.Builder builder = null;
         AlertDialog dialog = null;
         boolean permission = false;
-        VideoManager videoManager;
 
         public OptionDialog() {
-            getActivity().registerReceiver(videoRetriever.downloadReceiver, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
+
 
         }
 
@@ -783,7 +783,7 @@ public class SearchFragment extends Fragment {
                                     try {
                                         videoRetriever.downloadVideo(dataHolder, downloadType.get(a), res);
                                     } catch (VideoRetriever.DownloadException e) {
-                                        Toast toast = Toast.makeText(context, "Download error!!", Toast.LENGTH_SHORT);
+                                        Toast toast = Toast.makeText(context, "Download onError!!", Toast.LENGTH_SHORT);
                                         toast.show();
                                         e.printStackTrace();
                                     }

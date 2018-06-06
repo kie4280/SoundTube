@@ -53,17 +53,17 @@
             android:launchMode="singleTop"
             android:parentActivityName=".PlayerActivity"
             android:screenOrientation="portrait" />
-        <activity
-            android:name=".AccountActivity"
-            android:label="AccountActivity"
-            android:launchMode="singleTop"
-            android:screenOrientation="portrait">
-            <intent-filter>
-                <action android:name="kie.com.soundtube.getAccount" />
+        <!--<activity-->
+        <!--android:name=".SignInActivity"-->
+        <!--android:label="SignInActivity"-->
+        <!--android:launchMode="singleTop"-->
+        <!--android:screenOrientation="portrait">-->
+        <!--<intent-filter>-->
+        <!--<action android:name="kie.com.soundtube.getAccount" />-->
 
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-        </activity>
+        <!--<category android:name="android.intent.category.DEFAULT" />-->
+        <!--</intent-filter>-->
+        <!--</activity>-->
         <activity android:name=".FolderChooserActivity">
             <intent-filter>
                 <action android:name="kie.com.soundtube.getFolder" />
@@ -71,6 +71,17 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".SignInActivity"
+            android:label="SignInActivity"
+            android:launchMode="singleTop"
+            android:screenOrientation="portrait">
+            <intent-filter>
+                <action android:name="android.intent.action.PICK_ACTIVITY" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
     </application>
 
 </manifest>

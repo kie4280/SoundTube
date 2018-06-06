@@ -1,5 +1,6 @@
 package kie.com.soundtube;
 
+import android.app.DownloadManager;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -18,6 +19,7 @@ import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.PowerManager;
 import android.os.Process;
+import android.support.v4.app.NotificationCompat;
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
 import android.util.Log;
@@ -38,7 +40,6 @@ import com.google.android.exoplayer2.upstream.BandwidthMeter;
 import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
@@ -50,6 +51,7 @@ public class MediaPlayerService extends Service {
     public static boolean autoplay = true;
     public static boolean serviceStarted = false;
     private static final int NOTIFICATION_ID = 1;
+    private static final String CHANNEL_ID = "channel 1";
     private static final String NOTIFICATION_REMOVED = "NOTIFICATION_REMOVED";
     private static final String NOTIFICATION_PLAY = "NOTIFICATION_PLAY";
     private static final String NOTIFICATION_NEXT = "NOTIFICATION_NEXT";
@@ -72,9 +74,9 @@ public class MediaPlayerService extends Service {
     NotificationManager notificationManager;
     LinkedList<DataHolder> playList = new LinkedList<>();
     ListIterator<DataHolder> playiterator = playList.listIterator();
-    Notification.Builder notBuilder;
+    NotificationCompat.Builder notBuilder;
     Notification not;
-    RemoteViews notContentView;
+    RemoteViews contentViewCollapsed, contentViewExpanded;
     YoutubeClient youtubeClient = null;
     VideoRetriever videoRetriever = null;
     LinkedList<DataHolder> watchedQueue = new LinkedList<>();
@@ -113,9 +115,9 @@ public class MediaPlayerService extends Service {
         wifiLock.release();
         wakeLock.release();
         stopForeground(false);
-        notContentView.setImageViewResource(R.id.ppButton, R.drawable.ic_play_arrow_black_36dp);
-        notBuilder.setContent(notContentView);
-        notificationManager.notify(NOTIFICATION_ID, notBuilder.build());
+        contentViewCollapsed.setImageViewResource(R.id.ppButton, R.drawable.ic_play_arrow_black_36dp);
+        contentViewExpanded.setImageViewResource(R.id.ppButton, R.drawable.ic_play_arrow_black_36dp);
+        notificationManager.notify(NOTIFICATION_ID, not);
         updateSeekBar = false;
 
         if (videoFragment != null) {
@@ -296,37 +298,66 @@ public class MediaPlayerService extends Service {
         registerReceiver(broadcastReceiver, new IntentFilter(NOTIFICATION_NEXT));
         registerReceiver(broadcastReceiver, new IntentFilter(NOTIFICATION_PREV));
         registerReceiver(broadcastReceiver, new IntentFilter(NOTIFICATION_PLAY));
-        notBuilder = new Notification.Builder(MediaPlayerService.this);
-        notContentView = new RemoteViews(getPackageName(), R.layout.notification_layout);
-        notContentView.setOnClickPendingIntent(R.id.ppButton, playIntent);
-        notContentView.setOnClickPendingIntent(R.id.nextButton, nextIntent);
-        notContentView.setOnClickPendingIntent(R.id.prevButton, prevIntent);
-        notContentView.setImageViewResource(R.id.ppButton, R.drawable.ic_play_arrow_black_36dp);
-        notContentView.setImageViewResource(R.id.nextButton, R.drawable.ic_skip_next_black_36dp);
-        notContentView.setImageViewResource(R.id.prevButton, R.drawable.ic_skip_previous_black_36dp);
+
+        contentViewCollapsed = new RemoteViews(getPackageName(), R.layout.notification_layout_collapsed);
+        contentViewCollapsed.setOnClickPendingIntent(R.id.ppButton, playIntent);
+        contentViewCollapsed.setOnClickPendingIntent(R.id.nextButton, nextIntent);
+        contentViewCollapsed.setOnClickPendingIntent(R.id.prevButton, prevIntent);
+        contentViewCollapsed.setImageViewResource(R.id.ppButton, R.drawable.ic_play_arrow_black_36dp);
+        contentViewCollapsed.setImageViewResource(R.id.nextButton, R.drawable.ic_skip_next_black_36dp);
+        contentViewCollapsed.setImageViewResource(R.id.prevButton, R.drawable.ic_skip_previous_black_36dp);
+
+        contentViewExpanded = new RemoteViews(getPackageName(), R.layout.notification_layout_expanded);
+        contentViewExpanded.setOnClickPendingIntent(R.id.ppButton, playIntent);
+        contentViewExpanded.setOnClickPendingIntent(R.id.nextButton, nextIntent);
+        contentViewExpanded.setOnClickPendingIntent(R.id.prevButton, prevIntent);
+        contentViewExpanded.setImageViewResource(R.id.ppButton, R.drawable.ic_play_arrow_black_36dp);
+        contentViewExpanded.setImageViewResource(R.id.nextButton, R.drawable.ic_skip_next_black_36dp);
+        contentViewExpanded.setImageViewResource(R.id.prevButton, R.drawable.ic_skip_previous_black_36dp);
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel mChannel = notificationManager.getNotificationChannel("MyChannel");
+            NotificationChannel mChannel = notificationManager.getNotificationChannel(CHANNEL_ID);
             if (mChannel == null) {
-                mChannel = new NotificationChannel("Not_1", "SoundTube", NotificationManager.IMPORTANCE_HIGH);
+                mChannel = new NotificationChannel(CHANNEL_ID, "SoundTube", NotificationManager.IMPORTANCE_LOW);
                 mChannel.setDescription("SoundTube_service");
-                mChannel.enableVibration(true);
-                mChannel.setVibrationPattern(new long[]{100, 200, 300, 400, 500, 400, 300, 200, 400});
+
+//                mChannel.enableVibration(true);
+
+//                mChannel.setVibrationPattern(new long[]{100, 200, 300, 400, 500, 400, 300, 200, 400});
                 notificationManager.createNotificationChannel(mChannel);
 
             }
+            notBuilder = new NotificationCompat.Builder(MediaPlayerService.this, CHANNEL_ID);
 
+        } else {
+            notBuilder = new NotificationCompat.Builder(MediaPlayerService.this, CHANNEL_ID);
+            notBuilder.setPriority(Notification.PRIORITY_HIGH);
         }
+
         notBuilder.setContentIntent(notAddIntent)
                 .setSmallIcon(R.drawable.icon)
                 .setOngoing(false)
-                .setContentTitle("SoundTube")
+
                 .setDeleteIntent(notRemoveIntent)
-                .setContent(notContentView);
+                .setStyle(new NotificationCompat.DecoratedCustomViewStyle());
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            notBuilder.setCustomContentView(contentViewCollapsed);
+            notBuilder.setCustomBigContentView(contentViewExpanded);
+        } else {
+            notBuilder.setContent(contentViewCollapsed);
+        }
+
+
         not = notBuilder.build();
         Log.d("service", "created");
         serviceStarted = true;
         TelephonyManager telephonyManager = (TelephonyManager) getApplicationContext().getSystemService(Context.TELEPHONY_SERVICE);
         telephonyManager.listen(phoneStateListener, PhoneStateListener.LISTEN_CALL_STATE);
+        videoRetriever = new VideoRetriever(getApplicationContext(), networkHandler);
+        youtubeClient = new YoutubeClient(getApplicationContext(), networkHandler);
+        registerReceiver(videoRetriever.downloadReceiver, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
+
     }
 
     @Override
@@ -335,14 +366,17 @@ public class MediaPlayerService extends Service {
         exoPlayer.release();
         wifiLock.release();
         wakeLock.release();
-        playThread.quit();
+        playThread.quitSafely();
+        networkThread.quitSafely();
         updateSeekBar = false;
         Log.d("service", "onDestroy");
         stopForeground(true);
         unregisterReceiver(broadcastReceiver);
+        unregisterReceiver(videoRetriever.downloadReceiver);
         serviceStarted = false;
         notificationManager = null;
         prepared = false;
+
 
     }
 
@@ -409,9 +443,11 @@ public class MediaPlayerService extends Service {
                     updateSeekBar = true;
                     wifiLock.acquire();
                     wakeLock.acquire();
-                    notContentView.setImageViewResource(R.id.ppButton, R.drawable.ic_pause_black_36dp);
-//                notBuilder.setContent(notContentView);
-                    startForeground(NOTIFICATION_ID, notBuilder.build());
+                    contentViewCollapsed.setImageViewResource(R.id.ppButton, R.drawable.ic_pause_black_36dp);
+                    contentViewExpanded.setImageViewResource(R.id.ppButton, R.drawable.ic_pause_black_36dp);
+//                  setContentView(notContentView);
+
+                    startForeground(NOTIFICATION_ID, not);
                     if (videoFragment != null) {
                         videoFragment.currentData = currentData;
                         videoFragment.updateSeekBar();
@@ -435,9 +471,9 @@ public class MediaPlayerService extends Service {
                     wifiLock.release();
                     wakeLock.release();
                     stopForeground(false);
-                    notContentView.setImageViewResource(R.id.ppButton, R.drawable.ic_play_arrow_black_36dp);
-                    notBuilder.setContent(notContentView);
-                    notificationManager.notify(NOTIFICATION_ID, notBuilder.build());
+                    contentViewCollapsed.setImageViewResource(R.id.ppButton, R.drawable.ic_play_arrow_black_36dp);
+                    contentViewExpanded.setImageViewResource(R.id.ppButton, R.drawable.ic_play_arrow_black_36dp);
+                    notificationManager.notify(NOTIFICATION_ID, not);
                     updateSeekBar = false;
                     if (videoFragment != null) {
                         videoFragment.setButtonPlay(true);
@@ -479,7 +515,7 @@ public class MediaPlayerService extends Service {
     }
 
     public void prepare(final DataHolder dataHolder) {
-        prepare(dataHolder, VideoRetriever.YOUTUBE_VIDEO_QUALITY_AUTO);
+        prepare(dataHolder, VideoRetriever.YOUTUBE_AUTO);
     }
 
     public void prepare(final DataHolder dataHolder, final ArrayList<Integer> quality) {
@@ -488,10 +524,19 @@ public class MediaPlayerService extends Service {
             @Override
             public void run() {
 
-                MediaSource videoSource = VideoRetriever.toMediaSource(getApplicationContext(), dataHolder, quality);
+                MediaSource videoSource;
+                if (quality != VideoRetriever.YOUTUBE_AUTO &&
+                        videoRetriever.hasVideo(dataHolder.videoID, VideoRetriever.getAsString(quality))) {
+                    videoSource = videoRetriever.getMediaSource(dataHolder, quality, false);
+                } else {
+                    videoSource = videoRetriever.getMediaSource(dataHolder, quality, true);
+                }
+
 
                 if (videoSource != null) {
-                    notContentView.setTextViewText(R.id.notPlayingTitle, dataHolder.title);
+                    contentViewCollapsed.setTextViewText(R.id.notPlayingTitle, dataHolder.title);
+                    contentViewExpanded.setTextViewText(R.id.notPlayingTitle, dataHolder.title);
+                    contentViewExpanded.setImageViewBitmap(R.id.notification_thumbnail, dataHolder.thumbnail);
                     prepared = false;
 
 // Prepare the player with the source.
@@ -570,17 +615,14 @@ public class MediaPlayerService extends Service {
     }
 
     public void nextVideo() {
-        if (videoRetriever == null || youtubeClient == null) {
-            videoRetriever = new VideoRetriever(getApplicationContext(), networkHandler);
-            youtubeClient = new YoutubeClient(getApplicationContext(), networkHandler);
-        }
+
         if (!playList.isEmpty() && PLAYING_MODE == PLAY_FROM_PLAYLIST) {
             nextData = playList.pollFirst();
 
         } else if (PLAYING_MODE == PLAY_FROM_RELATED_VIDEO && currentData != null) {
 
             youtubeClient.loadRelatedVideos(currentData.videoID);
-            youtubeClient.getResults(new YoutubeClient.YoutubeSearchResult() {
+            youtubeClient.getSearchResults(new YoutubeClient.YoutubeSearchResult() {
                 @Override
                 public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
                     final DataHolder target = data.get(0);
@@ -594,17 +636,18 @@ public class MediaPlayerService extends Service {
                         }
 
                         @Override
-                        public void onFailure(Error error) {
-                            Log.d("search", "error extracting");
+                        public void onFailure(String error) {
+                            Log.d("search", "onError extracting");
 
                         }
                     });
                 }
 
                 @Override
-                public void noData() {
-                    Log.d("search", "noData");
+                public void onError(String error) {
+
                 }
+
             });
 
 
@@ -618,7 +661,7 @@ public class MediaPlayerService extends Service {
 
     public void setVideoQuality(int quality) {
         VIDEO_QUALITY = quality;
-        if (currentData.videoUris.containsKey(VIDEO_QUALITY)) {
+        if (currentData.onlineUris.containsKey(VIDEO_QUALITY)) {
             int pos = getCurrentPos();
             prepare(currentData);
             seekTo(pos);

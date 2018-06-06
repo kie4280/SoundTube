@@ -1,4 +1,3 @@
-
 package kie.com.soundtube;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -31,12 +30,9 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.text.TextUtils;
-import android.text.method.ScrollingMovementMethod;
-import android.view.View;
-import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -46,7 +42,7 @@ import java.util.List;
 import pub.devrel.easypermissions.AfterPermissionGranted;
 import pub.devrel.easypermissions.EasyPermissions;
 
-public class AccountActivity extends Activity
+public class SignInActivity extends Activity
         implements EasyPermissions.PermissionCallbacks {
     GoogleAccountCredential mCredential;
     private TextView mOutputText;
@@ -60,7 +56,8 @@ public class AccountActivity extends Activity
 
     private static final String BUTTON_TEXT = "Call YouTube Data API";
     private static final String PREF_ACCOUNT_NAME = "accountName";
-    private static final String[] SCOPES = {YouTubeScopes.YOUTUBE_READONLY};
+    private static final String YOUTUBE_CLIENT_PREFERENCES = BuildConfig.APPLICATION_ID + ".youtubePreferences";
+    private static final String[] SCOPES = {YouTubeScopes.YOUTUBEPARTNER, YouTubeScopes.YOUTUBE_READONLY};
 
     /**
      * Create the main activity.
@@ -70,49 +67,16 @@ public class AccountActivity extends Activity
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        LinearLayout activityLayout = new LinearLayout(this);
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.MATCH_PARENT);
-        activityLayout.setLayoutParams(lp);
-        activityLayout.setOrientation(LinearLayout.VERTICAL);
-        activityLayout.setPadding(16, 16, 16, 16);
 
-        ViewGroup.LayoutParams tlp = new ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT);
-
-        mCallApiButton = new Button(this);
-        mCallApiButton.setText(BUTTON_TEXT);
-        mCallApiButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                mCallApiButton.setEnabled(false);
-                mOutputText.setText("");
-                getResultsFromApi();
-                mCallApiButton.setEnabled(true);
-            }
-        });
-        activityLayout.addView(mCallApiButton);
-
-        mOutputText = new TextView(this);
-        mOutputText.setLayoutParams(tlp);
-        mOutputText.setPadding(16, 16, 16, 16);
-        mOutputText.setVerticalScrollBarEnabled(true);
-        mOutputText.setMovementMethod(new ScrollingMovementMethod());
-        mOutputText.setText(
-                "Click the \'" + BUTTON_TEXT + "\' button to test the API.");
-        activityLayout.addView(mOutputText);
 
         mProgress = new ProgressDialog(this);
         mProgress.setMessage("Calling YouTube Data API ...");
-
-        setContentView(activityLayout);
 
         // Initialize credentials and service object.
         mCredential = GoogleAccountCredential.usingOAuth2(
                 getApplicationContext(), Arrays.asList(SCOPES))
                 .setBackOff(new ExponentialBackOff());
+        signIn();
     }
 
 
@@ -123,15 +87,15 @@ public class AccountActivity extends Activity
      * of the preconditions are not satisfied, the app will prompt the user as
      * appropriate.
      */
-    private void getResultsFromApi() {
+    private void signIn() {
         if (!isGooglePlayServicesAvailable()) {
             acquireGooglePlayServices();
         } else if (mCredential.getSelectedAccountName() == null) {
             chooseAccount();
         } else if (!isDeviceOnline()) {
-            mOutputText.setText("No network connection available!");
-        } else {
-            new MakeRequestTask(mCredential).execute();
+            Toast toast = Toast.makeText(getApplicationContext(),
+                    "No network connection available.", Toast.LENGTH_SHORT);
+            toast.show();
         }
     }
 
@@ -149,11 +113,11 @@ public class AccountActivity extends Activity
     private void chooseAccount() {
         if (EasyPermissions.hasPermissions(
                 this, Manifest.permission.GET_ACCOUNTS)) {
-            String accountName = getPreferences(Context.MODE_PRIVATE)
+            String accountName = getSharedPreferences(YOUTUBE_CLIENT_PREFERENCES, Context.MODE_PRIVATE)
                     .getString(PREF_ACCOUNT_NAME, null);
             if (accountName != null) {
                 mCredential.setSelectedAccountName(accountName);
-                getResultsFromApi();
+                signIn();
             } else {
                 // Start a dialog from which the user can choose an account
                 startActivityForResult(
@@ -192,7 +156,7 @@ public class AccountActivity extends Activity
                             "This app requires Google Play Services. Please install " +
                                     "Google Play Services on your device and relaunch this app.");
                 } else {
-                    getResultsFromApi();
+                    signIn();
                 }
                 break;
             case REQUEST_ACCOUNT_PICKER:
@@ -202,18 +166,18 @@ public class AccountActivity extends Activity
                             data.getStringExtra(AccountManager.KEY_ACCOUNT_NAME);
                     if (accountName != null) {
                         SharedPreferences settings =
-                                getPreferences(Context.MODE_PRIVATE);
+                                getSharedPreferences(YOUTUBE_CLIENT_PREFERENCES, Context.MODE_PRIVATE);
                         SharedPreferences.Editor editor = settings.edit();
                         editor.putString(PREF_ACCOUNT_NAME, accountName);
                         editor.apply();
                         mCredential.setSelectedAccountName(accountName);
-                        getResultsFromApi();
+                        signIn();
                     }
                 }
                 break;
             case REQUEST_AUTHORIZATION:
                 if (resultCode == RESULT_OK) {
-                    getResultsFromApi();
+                    signIn();
                 }
                 break;
         }
@@ -315,7 +279,7 @@ public class AccountActivity extends Activity
             final int connectionStatusCode) {
         GoogleApiAvailability apiAvailability = GoogleApiAvailability.getInstance();
         Dialog dialog = apiAvailability.getErrorDialog(
-                AccountActivity.this,
+                SignInActivity.this,
                 connectionStatusCode,
                 REQUEST_GOOGLE_PLAY_SERVICES);
         dialog.show();
@@ -334,7 +298,7 @@ public class AccountActivity extends Activity
             JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
             mService = new com.google.api.services.youtube.YouTube.Builder(
                     transport, jsonFactory, credential)
-                    .setApplicationName("SoundTube")
+                    .setApplicationName("YouTube Data API Android Quickstart")
                     .build();
         }
 
@@ -369,7 +333,7 @@ public class AccountActivity extends Activity
             List<Channel> channels = result.getItems();
             if (channels != null) {
                 Channel channel = channels.get(0);
-                channelInfo.add("This channel's ID is " + channel.getId() + " " +
+                channelInfo.add("This channel's ID is " + channel.getId() + ". " +
                         "Its title is '" + channel.getSnippet().getTitle() + ", " +
                         "and it has " + channel.getStatistics().getViewCount() + " views.");
             }
@@ -405,7 +369,7 @@ public class AccountActivity extends Activity
                 } else if (mLastError instanceof UserRecoverableAuthIOException) {
                     startActivityForResult(
                             ((UserRecoverableAuthIOException) mLastError).getIntent(),
-                            AccountActivity.REQUEST_AUTHORIZATION);
+                            REQUEST_AUTHORIZATION);
                 } else {
                     mOutputText.setText("The following onError occurred:\n"
                             + mLastError.getMessage());

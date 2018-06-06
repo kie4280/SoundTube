@@ -2,6 +2,7 @@ package kie.com.soundtube;
 
 import android.graphics.Bitmap;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
 /**
@@ -13,6 +14,6 @@ public class DataHolder {
     String publishdate;
     String videoID;
     String videolength;
-    HashMap<Integer, String> videoUris;
-    HashMap<Integer, String> localUris;
+    HashMap<Integer, String> onlineUris = null;
+    HashMap<ArrayList<Integer>, String> localUris = null;
 }

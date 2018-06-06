@@ -80,7 +80,7 @@ public class PlayerActivity extends AppCompatActivity implements SearchFragment.
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK
                         | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT);
                 String stack = Log.getStackTraceString(throwable);
-                intent.putExtra("error message", stack);
+                intent.putExtra("onError message", stack);
                 Log.d("Exception", "caught");
                 startActivity(intent);
 //                continue as normal
@@ -146,7 +146,46 @@ public class PlayerActivity extends AppCompatActivity implements SearchFragment.
 
     }
 
+    @Override
+    protected void onStart() {
+        super.onStart();
+        connect();
+        Log.d("activity", "onStart");
 
+    }
+
+    @Override
+    protected void onResume() {
+
+        super.onResume();
+        NetworkInfo info = connectmgr.getActiveNetworkInfo();
+        if (info != null && info.isAvailable() && info.isConnected()) {
+            netConncted = true;
+        } else {
+            Toast toast = Toast.makeText(getApplicationContext(), getString(R.string.needNetwork), Toast.LENGTH_SHORT);
+            toast.show();
+            netConncted = false;
+        }
+
+        Log.d("activity", "onResume");
+
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        disconnect();
+        Log.d("activity", "onStop");
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        Log.d("activity", "onDestroy");
+        mediaService = null;
+        workThread.quitSafely();
+
+    }
 
     private PanelSlideListener panelSlideListener = new PanelSlideListener() {
         @Override
@@ -228,7 +267,7 @@ public class PlayerActivity extends AppCompatActivity implements SearchFragment.
             mediaService.videoFragment = null;
             videoFragment.mediaService = null;
             mediaService = null;
-            Log.w("activity", "service unbind due to error");
+            Log.w("activity", "service unbind due to onError");
         }
     };
 
@@ -248,46 +287,6 @@ public class PlayerActivity extends AppCompatActivity implements SearchFragment.
         }
     }
 
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-        connect();
-        Log.d("activity", "onStart");
-
-    }
-
-    @Override
-    protected void onResume() {
-
-        super.onResume();
-        NetworkInfo info = connectmgr.getActiveNetworkInfo();
-        if (info != null && info.isAvailable() && info.isConnected()) {
-            netConncted = true;
-        } else {
-            Toast toast = Toast.makeText(getApplicationContext(), getString(R.string.needNetwork), Toast.LENGTH_SHORT);
-            toast.show();
-            netConncted = false;
-        }
-
-        Log.d("activity", "onResume");
-
-    }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-        disconnect();
-        Log.d("activity", "onStop");
-    }
-
-    @Override
-    protected void onDestroy() {
-        Log.d("activity", "onDestroy");
-        mediaService = null;
-        workThread.quit();
-        super.onDestroy();
-    }
 
     @Override
     public void onReturnSearchVideo(final DataHolder dataHolder) {
@@ -315,6 +314,8 @@ public class PlayerActivity extends AppCompatActivity implements SearchFragment.
         switch (slidePanel.getPanelState()) {
             case HIDDEN:
             case COLLAPSED:
+                stopService(serviceIntent);
+                finish();
                 break;
             case EXPANDED:
                 videoFragment.previousVideo();
