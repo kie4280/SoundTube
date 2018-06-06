@@ -72,7 +72,7 @@ public class VideoFragment extends Fragment {
     private Handler seekHandler;
     private HandlerThread thread;
     private RecyclerView recyclerView;
-    private ViewPager viewPager;
+    private CustomViewPager viewPager;
     public VideoRetriever videoRetriever;
     public SurfaceHolder surfaceHolder;
     public DataHolder currentData;
@@ -143,7 +143,7 @@ public class VideoFragment extends Fragment {
             header = (RelativeLayout) videoFragmentView.findViewById(R.id.headerView);
             headerPlayButton = (ImageView) videoFragmentView.findViewById(R.id.headerPlayButton);
             videoSettingButton = (ImageView) videoFragmentView.findViewById(R.id.videoSettingButton);
-            viewPager = (ViewPager) videoFragmentView.findViewById(R.id.videoViewPager);
+            viewPager = (CustomViewPager) videoFragmentView.findViewById(R.id.videoViewPager);
             headersize = Tools.convertDpToPixel(HeaderDP, context);
             playbutton = (Button) videoFragmentView.findViewById(R.id.playbutton);
             progressBar = (ProgressBar) videoFragmentView.findViewById(R.id.bufferProgressBar);
@@ -906,9 +906,10 @@ public class VideoFragment extends Fragment {
 
                 }
             });
-            listener.setSlidePanel(((PlayerActivity) getActivity()).slidePanel);
+            CustomSlideUpPanel slideUpPanel = ((PlayerActivity) getActivity()).slidePanel;
+            viewPager.setSlidePanel(slideUpPanel);
+            listener.setSlidePanel(slideUpPanel);
             recyclerView.addOnItemTouchListener(listener);
-
 
         }
 

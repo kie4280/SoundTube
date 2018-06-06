@@ -67,7 +67,10 @@ public class RecyclerTouchListener implements RecyclerView.OnItemTouchListener {
                     View child = rv.findChildViewUnder(motionEvent.getX(), motionEvent.getY());
                     if (child != null) {
                         Rect rect = new Rect();
-                        child.findViewById(R.id.video_option).getGlobalVisibleRect(rect);
+                        View c = child.findViewById(R.id.video_option);
+                        if (c != null) {
+                            c.getGlobalVisibleRect(rect);
+                        }
                         boolean handled = rect.contains((int) motionEvent.getRawX(), (int) motionEvent.getRawY());
                         if (listener != null && !handled)
                             clickListener.onLongClick(child, rv.getChildAdapterPosition(child));

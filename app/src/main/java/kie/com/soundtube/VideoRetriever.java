@@ -103,7 +103,6 @@ public class VideoRetriever {
         downloadCacheFileDir = new File(context.getExternalCacheDir(), "downloaded");
         defaultMusicDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC), "SoundTube");
         downloadReceiver = new BroadcastReceiver() {
-
             DownloadManager downloadManager = (DownloadManager) context.getSystemService(Service.DOWNLOAD_SERVICE);
 
             @Override

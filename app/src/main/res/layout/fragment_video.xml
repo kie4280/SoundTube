@@ -107,14 +107,14 @@
         android:layout_below="@+id/videoRelativeLayout"
         android:animateLayoutChanges="false">
 
-        <android.support.v4.view.ViewPager
+        <kie.com.soundtube.CustomViewPager
             android:id="@+id/videoViewPager"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
 
             >
 
-        </android.support.v4.view.ViewPager>
+        </kie.com.soundtube.CustomViewPager>
 
     </RelativeLayout>
 </RelativeLayout>
