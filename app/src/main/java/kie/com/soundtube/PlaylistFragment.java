@@ -4,6 +4,8 @@ import android.content.Context;
 import android.net.Uri;
 import android.os.Bundle;
 import android.app.Fragment;
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
@@ -17,9 +19,13 @@ import android.view.ViewGroup;
 public class PlaylistFragment extends Fragment {
 
 
-    PlaylistActivity playlistActivity;
+
     RecyclerView recyclerView;
     private OnFragmentInteractionListener mListener;
+    YoutubeClient youtubeClient;
+    Handler netHandler;
+    HandlerThread thread;
+    PlayListManager playListManager;
 
     public PlaylistFragment() {
         // Required empty public constructor
@@ -29,8 +35,13 @@ public class PlaylistFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+        thread = new HandlerThread("playListNetworking");
+        thread.start();
+        netHandler = new Handler(thread.getLooper());
         View playlistview = inflater.inflate(R.layout.playlist_layout, container, false);
         recyclerView = playlistview.findViewById(R.id.playListRecycler);
+        youtubeClient = new YoutubeClient(getActivity(), netHandler);
+        playListManager = PlayListManager.getInstance(getActivity());
         return playlistview;
     }
 
@@ -57,10 +68,11 @@ public class PlaylistFragment extends Fragment {
         mListener = null;
     }
 
-    public void setActivity(PlaylistActivity playlistActivity) {
-        this.playlistActivity = playlistActivity;
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        playListManager.write();
     }
-
 
     public interface OnFragmentInteractionListener {
 

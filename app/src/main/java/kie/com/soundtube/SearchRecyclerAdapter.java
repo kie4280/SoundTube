@@ -31,9 +31,9 @@ public class SearchRecyclerAdapter extends RecyclerView.Adapter<SearchRecyclerAd
 //                    ViewGroup.LayoutParams.MATCH_PARENT, Tools.convertDpToPixel(56, parent.getContext())));
 //            view = relativeLayout;
 //        } else {
-//            view = LayoutInflater.from(parent.getContext()).inflate(R.layout.video_thumnail, parent, false);
+//            view = LayoutInflater.from(parent.getContext()).inflate(R.layout.video_thumbnail, parent, false);
 //        }
-        view = LayoutInflater.from(parent.getContext()).inflate(R.layout.video_thumnail, parent, false);
+        view = LayoutInflater.from(parent.getContext()).inflate(R.layout.video_thumbnail, parent, false);
         return new ViewHolder(view);
     }
 

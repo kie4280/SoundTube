@@ -30,7 +30,7 @@ public class VideoRecyclerAdapter extends RecyclerView.Adapter<RecyclerView.View
             header = LayoutInflater.from(parent.getContext()).inflate(R.layout.related_video_header, parent, false);
             return new HeaderHolder(header);
         } else {
-            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.video_thumnail, parent, false);
+            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.video_thumbnail, parent, false);
             return new VideoHolder(view);
         }
 

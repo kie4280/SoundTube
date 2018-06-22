@@ -24,14 +24,14 @@
             <android.support.v7.widget.Toolbar
                 android:id="@+id/playerToolbar"
                 android:layout_width="match_parent"
-                android:layout_height="?attr/actionBarSize"
+                android:layout_height="?android:attr/actionBarSize"
                 android:layout_alignParentStart="false"
                 android:layout_alignParentTop="false"
                 android:layout_weight="1"
                 android:background="@android:color/holo_blue_light"
                 android:elevation="1dp"
                 android:focusableInTouchMode="false"
-                android:minHeight="?attr/actionBarSize"
+                android:minHeight="?android:attr/actionBarSize"
                 app:layout_scrollFlags="scroll|enterAlways|snap">
 
                 <LinearLayout

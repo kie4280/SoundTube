@@ -168,7 +168,7 @@ public class SettingFragment extends PreferenceFragment {
                     showText(R.string.deny_write_permission);
                     Log.d("Setting", getString(R.string.deny_write_permission));
 
-                } else if (!PlayerActivity.netConncted) {
+                } else if (!SearchActivity.netConncted) {
                     showText(R.string.no_network);
                     Log.d("Setting", getString(R.string.no_network));
                 } else {

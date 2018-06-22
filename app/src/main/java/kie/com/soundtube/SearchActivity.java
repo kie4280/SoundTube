@@ -38,7 +38,7 @@ import com.sothree.slidinguppanel.SlidingUpPanelLayout.PanelState;
 
 import kie.com.soundtube.MediaPlayerService.MusicBinder;
 
-public class PlayerActivity extends AppCompatActivity implements SearchFragment.OnFragmentInteractionListener,
+public class SearchActivity extends AppCompatActivity implements SearchFragment.OnFragmentInteractionListener,
         VideoFragment.OnFragmentInteractionListener {
 
     public static Handler workHandler;
@@ -64,11 +64,10 @@ public class PlayerActivity extends AppCompatActivity implements SearchFragment.
     ConnectivityManager connectmgr;
 
 
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_search);
         context = getApplicationContext();
         Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
             Thread.UncaughtExceptionHandler defualtexception = Thread.getDefaultUncaughtExceptionHandler();
@@ -236,9 +235,18 @@ public class PlayerActivity extends AppCompatActivity implements SearchFragment.
 
                             Intent settingintent = new Intent(context, SettingActivity.class);
                             settingintent.setFlags(Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT
-                                    | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                                    | Intent.FLAG_ACTIVITY_CLEAR_TOP
+                                    | Intent.FLAG_ACTIVITY_SINGLE_TOP);
                             startActivity(settingintent);
 
+                            break;
+
+                        case R.id.sign_in_action:
+                            Intent signInintent = new Intent(context, SignInActivity.class);
+                            signInintent.setFlags(Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT
+                                    | Intent.FLAG_ACTIVITY_CLEAR_TOP
+                                    | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                            startActivity(signInintent);
                             break;
                         default:
                             break;
@@ -310,7 +318,7 @@ public class PlayerActivity extends AppCompatActivity implements SearchFragment.
 
     @Override
     public void onBackPressed() {
-        Log.d("PlayerActivity", "activity back");
+        Log.d("SearchActivity", "activity back");
         switch (slidePanel.getPanelState()) {
             case HIDDEN:
             case COLLAPSED:

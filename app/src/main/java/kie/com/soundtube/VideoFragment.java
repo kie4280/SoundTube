@@ -71,7 +71,7 @@ public class VideoFragment extends Fragment {
 
     private Handler seekHandler;
     private HandlerThread thread;
-    private RecyclerView recyclerView;
+
     private CustomViewPager viewPager;
     public VideoRetriever videoRetriever;
     public SurfaceHolder surfaceHolder;
@@ -98,8 +98,8 @@ public class VideoFragment extends Fragment {
         super.onCreate(savedInstanceState);
         context = getActivity().getApplicationContext();
 
-        youtubeClient = new YoutubeClient(context, PlayerActivity.workHandler);
-        videoRetriever = new VideoRetriever(context, PlayerActivity.workHandler);
+        youtubeClient = new YoutubeClient(context, SearchActivity.workHandler);
+        videoRetriever = new VideoRetriever(context, SearchActivity.workHandler);
         displayMetrics = context.getResources().getDisplayMetrics();
         thread = new HandlerThread("seek");
         thread.setPriority(Process.THREAD_PRIORITY_BACKGROUND);
@@ -152,7 +152,6 @@ public class VideoFragment extends Fragment {
             bar1 = (ProgressBar) r1.findViewById(R.id.pageLoadingBar);
             bar2 = (ProgressBar) r2.findViewById(R.id.pageLoadingBar);
             View pageview = inflater.inflate(R.layout.related_video_layout, null);
-            recyclerView = (RecyclerView) pageview.findViewById(R.id.searchrecyclerView);
             pageviews.add(r1);
             pageviews.add(pageview);
             pageviews.add(r2);
@@ -358,9 +357,9 @@ public class VideoFragment extends Fragment {
                 final int index = viewPager.getCurrentItem();
                 Log.d("viewpager", Integer.toString(index));
                 if (index > previndex) {
-                    youtubeClient.nextPage();
+                    youtubeClient.nextVideoPage();
                     page.loading();
-                    youtubeClient.getSearchResults(new YoutubeClient.YoutubeSearchResult() {
+                    youtubeClient.getVideoSearchResults(new YoutubeClient.YoutubeVideoSearchResult() {
                         @Override
                         public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
                             pagerAdapter.changeSate(hasnext, hasprev);
@@ -386,9 +385,9 @@ public class VideoFragment extends Fragment {
 
                     });
                 } else if (index < previndex) {
-                    youtubeClient.prevPage();
+                    youtubeClient.prevVideoPage();
                     page.loading();
-                    youtubeClient.getSearchResults(new YoutubeClient.YoutubeSearchResult() {
+                    youtubeClient.getVideoSearchResults(new YoutubeClient.YoutubeVideoSearchResult() {
                         @Override
                         public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
                             pagerAdapter.changeSate(hasnext, hasprev);
@@ -515,7 +514,7 @@ public class VideoFragment extends Fragment {
         if (youtubeClient != null) {
             youtubeClient.loadRelatedVideos(dataHolder.videoID);
             page.loading();
-            youtubeClient.getSearchResults(new YoutubeClient.YoutubeSearchResult() {
+            youtubeClient.getVideoSearchResults(new YoutubeClient.YoutubeVideoSearchResult() {
                 @Override
                 public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
                     pagerAdapter.changeSate(hasnext, hasprev);
@@ -906,7 +905,7 @@ public class VideoFragment extends Fragment {
 
                 }
             });
-            CustomSlideUpPanel slideUpPanel = ((PlayerActivity) getActivity()).slidePanel;
+            CustomSlideUpPanel slideUpPanel = ((SearchActivity) getActivity()).slidePanel;
             viewPager.setSlidePanel(slideUpPanel);
             listener.setSlidePanel(slideUpPanel);
             recyclerView.addOnItemTouchListener(listener);

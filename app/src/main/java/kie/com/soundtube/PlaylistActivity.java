@@ -43,7 +43,6 @@ public class PlaylistActivity extends AppCompatActivity implements PlaylistFragm
         actionBar.setDisplayHomeAsUpEnabled(true);
 
         playlistFragment = new PlaylistFragment();
-        playlistFragment.setActivity(this);
         fragmentManager = getFragmentManager();
 //        fragmentManager.beginTransaction()
 //                .add(R.id.mainRelativeLayout, playlistFragment, "playlistFragment")

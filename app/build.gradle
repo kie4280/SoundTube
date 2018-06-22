@@ -1,8 +1,10 @@
 apply plugin: 'com.android.application'
 android {
     configurations {
-        all { exclude module: 'common-logging'
-        exclude module: 'httpclient'}
+        all {
+            exclude module: 'common-logging'
+            exclude module: 'httpclient'
+        }
 
     }
     signingConfigs {
@@ -14,7 +16,7 @@ android {
         }
     }
     compileSdkVersion 27
-    buildToolsVersion '27.0.3'
+    buildToolsVersion '28.0.0'
     defaultConfig {
         applicationId "kie.com.soundtube"
         minSdkVersion 19

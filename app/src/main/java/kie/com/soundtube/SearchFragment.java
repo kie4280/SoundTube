@@ -96,7 +96,7 @@ public class SearchFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
-        workHandler = PlayerActivity.workHandler;
+        workHandler = SearchActivity.workHandler;
         youtubeClient = new YoutubeClient(context, workHandler);
         videoRetriever = new VideoRetriever(context, workHandler);
         context.registerReceiver(videoRetriever.downloadReceiver, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
@@ -166,9 +166,9 @@ public class SearchFragment extends Fragment {
                 final int index = viewPager.getCurrentItem();
                 Log.d("viewpager", Integer.toString(index));
                 if (index > previndex && user) {
-                    youtubeClient.nextPage();
+                    youtubeClient.nextVideoPage();
                     page.loading();
-                    youtubeClient.getSearchResults(new YoutubeClient.YoutubeSearchResult() {
+                    youtubeClient.getVideoSearchResults(new YoutubeClient.YoutubeVideoSearchResult() {
                         @Override
                         public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
                             pagerAdapter.changeSate(hasnext, hasprev);
@@ -194,9 +194,9 @@ public class SearchFragment extends Fragment {
 
                     });
                 } else if (index < previndex && user) {
-                    youtubeClient.prevPage();
+                    youtubeClient.prevVideoPage();
                     page.loading();
-                    youtubeClient.getSearchResults(new YoutubeClient.YoutubeSearchResult() {
+                    youtubeClient.getVideoSearchResults(new YoutubeClient.YoutubeVideoSearchResult() {
                         @Override
                         public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
                             pagerAdapter.changeSate(hasnext, hasprev);
@@ -237,10 +237,10 @@ public class SearchFragment extends Fragment {
     };
 
     public void search(String term) {
-        youtubeClient.newSearch(term);
+        youtubeClient.newVideoSearch(term);
         page.loading();
 
-        youtubeClient.getSearchResults(new YoutubeClient.YoutubeSearchResult() {
+        youtubeClient.getVideoSearchResults(new YoutubeClient.YoutubeVideoSearchResult() {
             @Override
             public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
 
@@ -313,7 +313,7 @@ public class SearchFragment extends Fragment {
                 public boolean onQueryTextSubmit(String query) {
                     System.out.println("submit");
                     if (query != null) {
-                        if (PlayerActivity.netConncted) {
+                        if (SearchActivity.netConncted) {
                             search(query);
                             Log.d("search", query);
 
@@ -334,7 +334,7 @@ public class SearchFragment extends Fragment {
                         @Override
                         public void run() {
                             Log.d("searchFragment", "text changed");
-                            if (PlayerActivity.netConncted && newText.length() != 0) {
+                            if (SearchActivity.netConncted && newText.length() != 0) {
                                 StringBuilder response = new StringBuilder();
                                 try {
                                     URL url = new URL(queryUrl + URLEncoder.encode(newText, "UTF-8"));
