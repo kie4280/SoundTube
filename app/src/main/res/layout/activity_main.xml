@@ -1,47 +1,94 @@
 <?xml version="1.0" encoding="utf-8"?>
+
 <android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/mainWindow"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainActivity">
+    android:orientation="vertical">
 
-    <android.support.design.widget.CoordinatorLayout
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+    <kie.com.soundtube.CustomSlideUpPanel
+        android:id="@+id/slidePanel"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="bottom"
+        tools:context=".MainActivity">
 
-        <android.support.design.widget.AppBarLayout
+        <android.support.constraint.ConstraintLayout
+            android:id="@+id/slidePanelBase"
             android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:background="#d6d6d6">
+            android:layout_height="match_parent"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar">
 
             <android.support.design.widget.TabLayout
+                android:id="@+id/tabLayout"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent">
+                android:layout_height="50dp"
+                android:background="#d9d9d9">
 
                 <android.support.design.widget.TabItem
+                    android:id="@+id/homeTab"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Left" />
+                    android:icon="@drawable/baseline_home_black_48dp" />
 
                 <android.support.design.widget.TabItem
+                    android:id="@+id/playlistTab"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Center" />
+                    android:icon="@drawable/baseline_queue_music_black_48dp" />
 
                 <android.support.design.widget.TabItem
+                    android:id="@+id/settingTab"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Right" />
+                    android:icon="@drawable/baseline_settings_black_48dp" />
             </android.support.design.widget.TabLayout>
 
-        </android.support.design.widget.AppBarLayout>
+            <FrameLayout
+                android:id="@+id/bottomFragment"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/tabLayout">
 
-    </android.support.design.widget.CoordinatorLayout>
+            </FrameLayout>
+        </android.support.constraint.ConstraintLayout>
 
+        <FrameLayout
+            android:id="@+id/videoPanel"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+
+    </kie.com.soundtube.CustomSlideUpPanel>
+
+    <!--android:layout_marginTop="-50dp"-->
+    <ImageView
+        android:id="@+id/blankspace"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:alpha="0.7"
+        android:background="@android:color/black"
+        android:elevation="3dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="@+id/slidePanel"
+        app:layout_constraintTop_toBottomOf="@+id/searchview" />
+
+    <SearchView
+        android:id="@+id/searchview"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@android:color/white"
+        android:elevation="3dp"
+        android:iconifiedByDefault="false"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+    </SearchView>
 </android.support.constraint.ConstraintLayout>
+
+
+

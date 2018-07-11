@@ -2,8 +2,7 @@
 
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:layout_marginTop="50dp">
+    android:layout_height="match_parent">
 
     <android.support.design.widget.CoordinatorLayout
         android:id="@+id/coordinatorLayout"
@@ -122,25 +121,29 @@
             android:id="@+id/searchview"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="-50dp"
+
             android:background="@android:color/white"
+            android:elevation="3dp"
             android:visibility="visible"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent">
 
         </SearchView>
-
+        <!--android:layout_marginTop="-50dp"-->
         <ImageView
             android:id="@+id/blankspace"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:alpha="0.7"
             android:background="@android:color/black"
+            android:elevation="3dp"
             android:visibility="visible" />
     </LinearLayout>
 
 
 </android.support.constraint.ConstraintLayout>
+
+
 
 

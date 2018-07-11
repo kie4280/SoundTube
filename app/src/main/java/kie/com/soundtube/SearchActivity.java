@@ -45,11 +45,9 @@ public class SearchActivity extends AppCompatActivity implements SearchFragment.
     public HandlerThread workThread;
     public static boolean servicebound = false;
     private Intent serviceIntent;
-    public Toolbar playerToolbar;
     public LinearLayout searchArea;
     public DrawerLayout drawerLayout;
     public RelativeLayout mainRelativeLayout;
-    public AppBarLayout appBarLayout;
     public CustomSlideUpPanel slidePanel;
     public static boolean netConncted = false;
 
@@ -92,8 +90,7 @@ public class SearchActivity extends AppCompatActivity implements SearchFragment.
 
         mainRelativeLayout = (RelativeLayout) findViewById(R.id.mainRelativeLayout);
         View view = LayoutInflater.from(context).inflate(R.layout.slide_layout, mainRelativeLayout);
-        playerToolbar = (Toolbar) findViewById(R.id.playerToolbar);
-        appBarLayout = (AppBarLayout) findViewById(R.id.appBarLayout);
+
         searchArea = (LinearLayout) findViewById(R.id.searchArea);
         serviceIntent = new Intent(this, MediaPlayerService.class);
         connectmgr = (ConnectivityManager) getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
@@ -110,39 +107,11 @@ public class SearchActivity extends AppCompatActivity implements SearchFragment.
         FragmentTransaction transaction = fragmentManager.beginTransaction();
         transaction
                 .add(R.id.videoPanel, videoFragment, "videoFragment")
-                .add(R.id.searchPanel, searchFragment, "searchFragment")
+                .add(R.id.slidePanelBase, searchFragment, "searchFragment")
                 .commit();
         slidePanel.addPanelSlideListener(panelSlideListener);
 //        slidePanel.setPanelState(PanelState.HIDDEN);           //should not be commented when building app
         drawerLayout = (DrawerLayout) findViewById(R.id.drawerLayout);
-        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this
-                , drawerLayout, playerToolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close) {
-            @Override
-            public void onDrawerOpened(View drawerView) {
-                super.onDrawerOpened(drawerView);
-                drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED);
-            }
-
-            @Override
-            public void onDrawerClosed(View drawerView) {
-                super.onDrawerClosed(drawerView);
-                drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
-            }
-        };
-        playerToolbar.setNavigationOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-
-                drawerLayout.openDrawer(GravityCompat.START);
-            }
-        });
-
-        drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
-        drawerLayout.addDrawerListener(toggle);
-        toggle.syncState();
-        NavigationView navView = (NavigationView) findViewById(R.id.navigationView);
-        navView.setNavigationItemSelectedListener(navigationItemSelectedListener);
-
     }
 
     @Override

@@ -9,7 +9,6 @@ import android.app.DownloadManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.IntentFilter;
-import android.content.pm.PackageManager;
 import android.database.MatrixCursor;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -20,36 +19,30 @@ import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
-import android.support.design.widget.AppBarLayout;
-import android.support.v4.app.ActivityCompat;
+import android.support.annotation.NonNull;
+import android.support.constraint.ConstraintLayout;
 import android.support.v4.app.Fragment;
-import android.support.v4.view.ViewPager;
-import android.support.v4.view.ViewPager.OnPageChangeListener;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewAnimationUtils;
+import android.view.View.OnTouchListener;
 import android.view.ViewGroup;
 import android.view.WindowManager;
-import android.view.animation.AlphaAnimation;
-import android.view.animation.Animation;
-import android.view.animation.AnimationSet;
-import android.view.animation.TranslateAnimation;
 import android.widget.AutoCompleteTextView;
-import android.widget.Button;
 import android.widget.CursorAdapter;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
-import android.widget.RelativeLayout;
 import android.widget.SearchView;
 import android.widget.SimpleCursorAdapter;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.gson.JsonArray;
@@ -65,27 +58,31 @@ import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
 
+import pub.devrel.easypermissions.EasyPermissions;
+
 public class SearchFragment extends Fragment {
 
     private OnFragmentInteractionListener mListener;
+    private static final int REQUEST_WRITE_PERMISSION = 1007;
     private View searchFragmentView = null;
     private Handler workHandler = null;
     private Context context;
+    private RecyclerView recyclerView;
     public VideoRetriever videoRetriever;
-    private ViewPager viewPager;
-    private ProgressBar bar1, bar2;
-    public Button searchButton;
-    public Toolbar playerToolbar;
-    public AppBarLayout appBarLayout = null;
-    public SearchView searchView = null;
-    public LinearLayout searchAreaView = null;
-    ImageView blankspace;
+    SearchView searchView = null;
+    ConstraintLayout mainWindow = null;
+    SearchRecyclerAdapter adapter = null;
+    OptionDialog downloadOptionDialog;
+    ImageView blankspace, nextPageTab, prevPageTab;
+    TextView searchTextView;
+    ProgressBar progressBar;
     YoutubeClient youtubeClient;
-    CustomPagerAdapter pagerAdapter;
-    ArrayList<View> pageviews = new ArrayList<>(3);
+
     ArrayList<String> suggests;
-    Page page;
     String queryUrl = "http://suggestqueries.google.com/complete/search?client=youtube&ds=yt&client=firefox&q=";
+    boolean waiting = false;
+    boolean m_hasNext = false;
+    boolean m_hasPrev = false;
 
     public SearchFragment() {
         // Required empty public constructor
@@ -95,10 +92,11 @@ public class SearchFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setHasOptionsMenu(true);
-        workHandler = SearchActivity.workHandler;
+        setHasOptionsMenu(false);
+        workHandler = MainActivity.workHandler;
         youtubeClient = new YoutubeClient(context, workHandler);
         videoRetriever = new VideoRetriever(context, workHandler);
+        downloadOptionDialog = new OptionDialog();
         context.registerReceiver(videoRetriever.downloadReceiver, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
     }
 
@@ -110,20 +108,13 @@ public class SearchFragment extends Fragment {
         if (searchFragmentView == null) {
 
             searchFragmentView = inflater.inflate(R.layout.fragment_search, container, false);
-            playerToolbar = getActivity().findViewById(R.id.playerToolbar);
             Log.d("searchfragment", "createview");
-            View r1 = inflater.inflate(R.layout.blank_loading, null);
-            View r2 = inflater.inflate(R.layout.blank_loading, null);
-            bar1 = (ProgressBar) r1.findViewById(R.id.pageLoadingBar);
-            bar2 = (ProgressBar) r2.findViewById(R.id.pageLoadingBar);
-            pageviews.add(r1);
-            pageviews.add(inflater.inflate(R.layout.related_video_layout, null));
-            pageviews.add(r2);
-            page = new Page(pageviews.get(1));
-            viewPager = (ViewPager) searchFragmentView.findViewById(R.id.searchViewPager);
-            pagerAdapter = new CustomPagerAdapter(pageviews);
-            viewPager.setAdapter(pagerAdapter);
-            viewPager.addOnPageChangeListener(onPageChangeListener);
+            nextPageTab = (ImageView) searchFragmentView.findViewById(R.id.nextPageTab);
+            prevPageTab = (ImageView) searchFragmentView.findViewById(R.id.prevPageTab);
+            recyclerView = (RecyclerView) searchFragmentView.findViewById(R.id.searchRecyclerView);
+            progressBar = (ProgressBar) searchFragmentView.findViewById(R.id.loadingProgress);
+            searchTextView = (TextView) searchFragmentView.findViewById(R.id.searchTerm);
+            nextPageTab.setOnTouchListener(nextPageTouchListener);
             createSearchView();
         }
 
@@ -140,127 +131,28 @@ public class SearchFragment extends Fragment {
     public void onDestroy() {
         super.onDestroy();
         context.unregisterReceiver(videoRetriever.downloadReceiver);
-
     }
 
-
-    private OnPageChangeListener onPageChangeListener = new OnPageChangeListener() {
-        int previndex = 0;
-        boolean user = false;
-
-        @Override
-        public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
-
-        }
-
-        @Override
-        public void onPageSelected(int position) {
-            previndex = position;
-        }
-
-        @Override
-        public void onPageScrollStateChanged(int state) {
-
-            if (state == ViewPager.SCROLL_STATE_SETTLING) {
-
-                final int index = viewPager.getCurrentItem();
-                Log.d("viewpager", Integer.toString(index));
-                if (index > previndex && user) {
-                    youtubeClient.nextVideoPage();
-                    page.loading();
-                    youtubeClient.getVideoSearchResults(new YoutubeClient.YoutubeVideoSearchResult() {
-                        @Override
-                        public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
-                            pagerAdapter.changeSate(hasnext, hasprev);
-                            page.updateListView(data);
-
-                            if (hasnext) {
-                                getActivity().runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        viewPager.setCurrentItem(1, false);
-                                        bar1.setVisibility(View.GONE);
-                                        bar2.setVisibility(View.GONE);
-                                    }
-                                });
-                            }
-                        }
-
-                        @Override
-                        public void onError(String error) {
-
-                        }
-
-
-                    });
-                } else if (index < previndex && user) {
-                    youtubeClient.prevVideoPage();
-                    page.loading();
-                    youtubeClient.getVideoSearchResults(new YoutubeClient.YoutubeVideoSearchResult() {
-                        @Override
-                        public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
-                            pagerAdapter.changeSate(hasnext, hasprev);
-                            page.updateListView(data);
-                            if (hasprev) {
-                                getActivity().runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        viewPager.setCurrentItem(1, false);
-                                        bar1.setVisibility(View.GONE);
-                                        bar2.setVisibility(View.GONE);
-                                    }
-                                });
-                            }
-                        }
-
-                        @Override
-                        public void onError(String error) {
-
-                        }
-
-
-                    });
-                } else if (index == previndex && user) {
-                    bar1.setVisibility(View.GONE);
-                    bar2.setVisibility(View.GONE);
-                }
-
-                user = false;
-
-            } else if (state == ViewPager.SCROLL_STATE_DRAGGING) {
-                bar1.setVisibility(View.VISIBLE);
-                bar2.setVisibility(View.VISIBLE);
-                user = true;
-
-            }
-        }
-    };
-
-    public void search(String term) {
-        youtubeClient.newVideoSearch(term);
-        page.loading();
-
-        youtubeClient.getVideoSearchResults(new YoutubeClient.YoutubeVideoSearchResult() {
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        EasyPermissions.onRequestPermissionsResult(requestCode, permissions, grantResults, new EasyPermissions.PermissionCallbacks() {
             @Override
-            public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
+            public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
 
-                pagerAdapter.changeSate(hasnext, hasprev);
-                page.updateListView(data);
-                Log.d("searchFragment", "found");
             }
 
             @Override
-            public void onError(String error) {
-
+            public void onPermissionsGranted(int requestCode, List<String> perms) {
+                downloadOptionDialog.show();
             }
 
-
+            @Override
+            public void onPermissionsDenied(int requestCode, List<String> perms) {
+                Log.v("SearchFragment", "Permission is revoked");
+                Toast.makeText(context, "Permission is denied", Toast.LENGTH_SHORT).show();
+            }
         });
-
-    }
-
-    public boolean previousSearch() {
-        return true;
     }
 
     @Override
@@ -282,38 +174,172 @@ public class SearchFragment extends Fragment {
         Log.d("SearchFragment", "onDetach");
     }
 
-    public interface OnFragmentInteractionListener {
+//    private OnPageChangeListener onPageChangeListener = new OnPageChangeListener() {
+//        int previndex = 0;
+//        boolean user = false;
+//
+//        @Override
+//        public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+//
+//        }
+//
+//        @Override
+//        public void onPageSelected(int position) {
+//            previndex = position;
+//        }
+//
+//        @Override
+//        public void onPageScrollStateChanged(int state) {
+//
+//            if (state == ViewPager.SCROLL_STATE_SETTLING) {
+//
+//                final int index = viewPager.getCurrentItem();
+//                Log.d("viewpager", Integer.toString(index));
+//                if (index > previndex && user) {
+//                    youtubeClient.nextVideoPage();
+//                    page.loading();
+//                    youtubeClient.getVideoSearchResults(new YoutubeClient.YoutubeVideoSearchResult() {
+//                        @Override
+//                        public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
+//                            pagerAdapter.changeSate(hasnext, hasprev);
+//                            page.updateListView(data);
+//
+//                            if (hasnext) {
+//                                getActivity().runOnUiThread(new Runnable() {
+//                                    @Override
+//                                    public void run() {
+//                                        viewPager.setCurrentItem(1, false);
+//                                        bar1.setVisibility(View.GONE);
+//                                        bar2.setVisibility(View.GONE);
+//                                    }
+//                                });
+//                            }
+//                        }
+//
+//                        @Override
+//                        public void onError(String error) {
+//
+//                        }
+//
+//
+//                    });
+//                } else if (index < previndex && user) {
+//                    youtubeClient.prevVideoPage();
+//                    page.loading();
+//                    youtubeClient.getVideoSearchResults(new YoutubeClient.YoutubeVideoSearchResult() {
+//                        @Override
+//                        public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
+//                            pagerAdapter.changeSate(hasnext, hasprev);
+//                            page.updateListView(data);
+//                            if (hasprev) {
+//                                getActivity().runOnUiThread(new Runnable() {
+//                                    @Override
+//                                    public void run() {
+//                                        viewPager.setCurrentItem(1, false);
+//                                        bar1.setVisibility(View.GONE);
+//                                        bar2.setVisibility(View.GONE);
+//                                    }
+//                                });
+//                            }
+//                        }
+//
+//                        @Override
+//                        public void onError(String error) {
+//
+//                        }
+//
+//
+//                    });
+//                } else if (index == previndex && user) {
+//                    bar1.setVisibility(View.GONE);
+//                    bar2.setVisibility(View.GONE);
+//                }
+//
+//                user = false;
+//
+//            } else if (state == ViewPager.SCROLL_STATE_DRAGGING) {
+//                bar1.setVisibility(View.VISIBLE);
+//                bar2.setVisibility(View.VISIBLE);
+//                user = true;
+//
+//            }
+//        }
+//    };
 
-        void onReturnSearchVideo(DataHolder dataHolder);
+    private OnTouchListener nextPageTouchListener = new OnTouchListener() {
+        @Override
+        public boolean onTouch(View v, MotionEvent event) {
+            nextPageTab.setX(event.getX());
+            return true;
+        }
+    };
+
+    private OnTouchListener prevPageTouchListsner = new OnTouchListener() {
+        @Override
+        public boolean onTouch(View v, MotionEvent event) {
+            return true;
+        }
+    };
+
+    public void search(String term) {
+        youtubeClient.newVideoSearch(term);
+        loading();
+
+        youtubeClient.getVideoSearchResults(new YoutubeClient.YoutubeVideoSearchResult() {
+            @Override
+            public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
+
+                changeSate(hasnext, hasprev);
+                updateListView(data);
+                Log.d("searchFragment", "found");
+            }
+
+            @Override
+            public void onError(String error) {
+
+            }
+
+        });
+
+    }
+
+    public boolean previousSearch() {
+        return true;
+    }
+
+
+    public void changeSate(boolean hasNext, boolean hasPrev) {
+        if (hasNext != m_hasNext) {
+            nextPageTab.setImageResource(hasNext ? R.drawable.page_tab_enabled : R.drawable.page_tab_disabled);
+            m_hasNext = hasNext;
+        }
+        if (hasPrev != m_hasPrev) {
+            prevPageTab.setImageResource(hasPrev ? R.drawable.page_tab_enabled : R.drawable.page_tab_disabled);
+            m_hasPrev = hasPrev;
+        }
     }
 
     public void createSearchView() {
-        if (searchAreaView == null) {
-            searchAreaView = getActivity().findViewById(R.id.searchArea);
-            appBarLayout = getActivity().findViewById(R.id.appBarLayout);
-            blankspace = searchAreaView.findViewById(R.id.blankspace);
-            searchView = searchAreaView.findViewById(R.id.searchview);
+        if (mainWindow == null) {
+            mainWindow = ((MainActivity) context).findViewById(R.id.mainWindow);
+            blankspace = mainWindow.findViewById(R.id.blankspace);
+            searchView = mainWindow.findViewById(R.id.searchview);
             int autoCompleteTextViewID = getResources().getIdentifier("android:id/search_src_text", null, null);
             final AutoCompleteTextView searchAutoCompleteTextView = (AutoCompleteTextView) searchView.findViewById(autoCompleteTextViewID);
             searchAutoCompleteTextView.setThreshold(1);
-
-            blankspace.setOnTouchListener(new View.OnTouchListener() {
+            blankspace.setOnClickListener(new View.OnClickListener() {
 
                 @Override
-                public boolean onTouch(View view, MotionEvent motionEvent) {
-                    if (motionEvent.getAction() == MotionEvent.ACTION_UP) {
-                        animateSearchArea(false);
-                    }
-                    return true;
+                public void onClick(View v) {
+                    animateSearchArea(false);
                 }
             });
-
             searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
                 @Override
                 public boolean onQueryTextSubmit(String query) {
                     System.out.println("submit");
                     if (query != null) {
-                        if (SearchActivity.netConncted) {
+                        if (MainActivity.netConncted) {
                             search(query);
                             Log.d("search", query);
 
@@ -334,7 +360,7 @@ public class SearchFragment extends Fragment {
                         @Override
                         public void run() {
                             Log.d("searchFragment", "text changed");
-                            if (SearchActivity.netConncted && newText.length() != 0) {
+                            if (MainActivity.netConncted && newText.length() != 0) {
                                 StringBuilder response = new StringBuilder();
                                 try {
                                     URL url = new URL(queryUrl + URLEncoder.encode(newText, "UTF-8"));
@@ -399,6 +425,7 @@ public class SearchFragment extends Fragment {
                 public void onFocusChange(View v, boolean hasFocus) {
 //                InputMethodManager imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
 //                imm.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), InputMethodManager.RESULT_UNCHANGED_SHOWN);
+                    Log.d("SearchView", "Focus change");
                     if (getActivity().getCurrentFocus() != null) {
                         Log.d("focus", getActivity().getCurrentFocus().toString());
                     }
@@ -435,14 +462,9 @@ public class SearchFragment extends Fragment {
             });
 
 
-            searchButton = playerToolbar.findViewById(R.id.searchButton);
-
-            searchButton.setOnClickListener(new View.OnClickListener() {
+            searchTextView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-
-                    searchView.requestFocus();
-                    searchView.setIconified(false);
                     animateSearchArea(true);
                 }
             });
@@ -451,33 +473,33 @@ public class SearchFragment extends Fragment {
 //            searchView.setMinimumHeight(Integer.MAX_VALUE);
 //        searchView.setQueryHint("Search");
 
-//            int rightMarginFrame = 0;
-//            View frame = searchView.findViewById(getResources().getIdentifier("android:id/search_edit_frame", null, null));
-//            if (frame != null) {
-//                LinearLayout.LayoutParams frameParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
-//                rightMarginFrame = ((LinearLayout.LayoutParams) frame.getLayoutParams()).rightMargin;
-//                frameParams.setMargins(0, 0, 0, 0);
-//                frame.setLayoutParams(frameParams);
-//            }
-//
-//            View plate = searchView.findViewById(getResources().getIdentifier("android:id/search_plate", null, null));
-//            if (plate != null) {
-//                plate.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-//                plate.setPadding(0, 0, rightMarginFrame, 0);
-//                plate.setBackgroundColor(Color.TRANSPARENT);
-//            }
-//
-//            int autoCompleteId = getResources().getIdentifier("android:id/search_src_text", null, null);
-//            if (searchView.findViewById(autoCompleteId) != null) {
-//                EditText autoComplete = (EditText) searchView.findViewById(autoCompleteId);
-//                LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, Tools.convertDpToPixel(36, context));
-//                params.weight = 1;
-//                params.gravity = Gravity.CENTER_VERTICAL;
-//                params.leftMargin = rightMarginFrame;
-//                autoComplete.setLayoutParams(params);
-//                autoComplete.setTextSize(16f);
-//            }
-//
+            int rightMarginFrame = 0;
+            View frame = searchView.findViewById(getResources().getIdentifier("android:id/search_edit_frame", null, null));
+            if (frame != null) {
+                LinearLayout.LayoutParams frameParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+                rightMarginFrame = ((LinearLayout.LayoutParams) frame.getLayoutParams()).rightMargin;
+                frameParams.setMargins(0, 0, 0, 0);
+                frame.setLayoutParams(frameParams);
+            }
+
+            View plate = searchView.findViewById(getResources().getIdentifier("android:id/search_plate", null, null));
+            if (plate != null) {
+                plate.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+                plate.setPadding(0, 0, rightMarginFrame, 0);
+                plate.setBackgroundColor(Color.TRANSPARENT);
+            }
+
+            int autoCompleteId = getResources().getIdentifier("android:id/search_src_text", null, null);
+            if (searchView.findViewById(autoCompleteId) != null) {
+                EditText autoComplete = (EditText) searchView.findViewById(autoCompleteId);
+                LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, Tools.convertDpToPixel(36, context));
+                params.weight = 1;
+                params.gravity = Gravity.CENTER_VERTICAL;
+                params.leftMargin = rightMarginFrame;
+                autoComplete.setLayoutParams(params);
+                autoComplete.setTextSize(16f);
+            }
+
 //            int searchMagId = getResources().getIdentifier("android:id/search_mag_icon", null, null);
 //            if (searchView.findViewById(searchMagId) != null) {
 //                ImageView v = (ImageView) searchView.findViewById(searchMagId);
@@ -487,104 +509,140 @@ public class SearchFragment extends Fragment {
 //                params.setMargins(0, 0, 0, 0);
 //                v.setLayoutParams(params);
 //            }
-//            playerToolbar.setContentInsetsAbsolute(0, 0);
+
         }
     }
 
     public void animateSearchArea(boolean show) {
 //        playerToolbar.setBackgroundColor(Color.WHITE);
         if (show) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                int width = searchView.getWidth();
-                Animator createCircularReveal = ViewAnimationUtils.createCircularReveal(searchView,
-                        (int) searchButton.getX() + Tools.convertDpToPixel(12.5f, context), searchView.getHeight() / 2, 0.0f, (float) width);
-                createCircularReveal.setDuration(220);
-                createCircularReveal.addListener(new AnimatorListenerAdapter() {
-                    @Override
-                    public void onAnimationEnd(Animator animation) {
-                        super.onAnimationEnd(animation);
-                        appBarLayout.setVisibility(View.INVISIBLE);
-                        blankspace.setVisibility(View.VISIBLE);
+            Animator.AnimatorListener listener = new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    super.onAnimationEnd(animation);
+                    searchTextView.setVisibility(View.GONE);
+                    searchTextView.setTranslationY(0f);
+                    blankspace.setVisibility(View.VISIBLE);
+                    searchView.setVisibility(View.VISIBLE);
+                    searchView.requestFocus();
+                }
+            };
+            searchTextView.clearAnimation();
+            searchTextView.animate().translationY(-100f).setDuration(100).setListener(listener).start();
 
-                    }
-                });
-                searchAreaView.setVisibility(View.VISIBLE);
-                searchView.setVisibility(View.VISIBLE);
-
-                createCircularReveal.start();
-            } else {
-                TranslateAnimation translateAnimation = new TranslateAnimation(0.0f, 0.0f, (float) (-appBarLayout.getHeight()), 0.0f);
-                translateAnimation.setDuration(220);
-                translateAnimation.setAnimationListener(new Animation.AnimationListener() {
-                    @Override
-                    public void onAnimationStart(Animation animation) {
-
-                    }
-
-                    @Override
-                    public void onAnimationEnd(Animation animation) {
-                        searchAreaView.setVisibility(View.VISIBLE);
-                    }
-
-                    @Override
-                    public void onAnimationRepeat(Animation animation) {
-
-                    }
-                });
-                appBarLayout.clearAnimation();
-                appBarLayout.setVisibility(View.GONE);
-
-                appBarLayout.startAnimation(translateAnimation);
-            }
         } else {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                int width = searchView.getWidth();
+            Animator.AnimatorListener listener = new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    super.onAnimationEnd(animation);
+                    blankspace.setVisibility(View.GONE);
+                    searchView.setVisibility(View.GONE);
+                    searchView.setTranslationY(0f);
+                    searchView.clearFocus();
+                    searchTextView.setVisibility(View.VISIBLE);
+                }
+            };
 
-                Animator createCircularReveal = ViewAnimationUtils.createCircularReveal(searchView,
-                        (int) searchButton.getX() + Tools.convertDpToPixel(12.5f, context), searchView.getHeight() / 2, (float) width, 0.0f);
+            searchView.clearAnimation();
+            searchView.animate().translationY(100f).setDuration(100).setListener(listener).start();
 
-                createCircularReveal.setDuration(220);
-                createCircularReveal.addListener(new AnimatorListenerAdapter() {
-                    @Override
-                    public void onAnimationEnd(Animator animation) {
-                        super.onAnimationEnd(animation);
-                        searchView.setVisibility(View.INVISIBLE);
-                        blankspace.setVisibility(View.INVISIBLE);
-                    }
-                });
-
-                appBarLayout.setVisibility(View.VISIBLE);
-                createCircularReveal.start();
-            } else {
-                AlphaAnimation alphaAnimation = new AlphaAnimation(1.0f, 0.0f);
-                Animation translateAnimation = new TranslateAnimation(0.0f, 0.0f, 0.0f, (float) (-appBarLayout.getHeight()));
-                AnimationSet animationSet = new AnimationSet(true);
-                animationSet.addAnimation(alphaAnimation);
-                animationSet.addAnimation(translateAnimation);
-                animationSet.setDuration(220);
-                animationSet.setAnimationListener(new Animation.AnimationListener() {
-                    @Override
-                    public void onAnimationStart(Animation animation) {
-
-                    }
-
-                    @Override
-                    public void onAnimationEnd(Animation animation) {
-//                        appBarLayout.setBackgroundColor();
-                        appBarLayout.setBackgroundColor(getResources().getColor(android.R.color.holo_blue_light));
-                    }
-
-                    @Override
-                    public void onAnimationRepeat(Animation animation) {
-
-                    }
-                });
-                searchAreaView.setVisibility(View.GONE);
-                appBarLayout.setVisibility(View.VISIBLE);
-                appBarLayout.startAnimation(animationSet);
-            }
 
         }
+    }
+
+    public void loading() {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (!waiting) {
+                    waiting = true;
+                    recyclerView.setVisibility(View.GONE);
+                    progressBar.setVisibility(View.VISIBLE);
+                }
+            }
+        });
+
+    }
+
+    public void updateListView(final List<DataHolder> data) {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (adapter == null) {
+                    createListView(recyclerView, data);
+                } else {
+                    adapter.dataHolders = data;
+                    adapter.notifyDataSetChanged();
+                }
+                recyclerView.scrollToPosition(0);
+                if (waiting) {
+                    waiting = false;
+                    recyclerView.setVisibility(View.VISIBLE);
+                    progressBar.setVisibility(View.GONE);
+                }
+            }
+        });
+
+    }
+
+    private void createListView(final RecyclerView recyclerView, final List<DataHolder> data) {
+
+//        Log.d("createlist", "create");
+        adapter = new SearchRecyclerAdapter(data);
+        DividerItemDecoration decoration = new DividerItemDecoration(context, DividerItemDecoration.VERTICAL);
+        recyclerView.addItemDecoration(decoration);
+        recyclerView.setLayoutManager(new LinearLayoutManager(context));
+        recyclerView.setItemAnimator(new DefaultItemAnimator());
+        recyclerView.setAdapter(adapter);
+        RecyclerTouchListener listener = new RecyclerTouchListener(context, recyclerView, new OnItemClicked() {
+            @Override
+            public void onClick(View view, int position) {
+                System.out.println("clicked" + position);
+                Toast toast = Toast.makeText(context, "Decrypting...", Toast.LENGTH_SHORT);
+                toast.show();
+                final DataHolder dataHolder = adapter.dataHolders.get(position);
+                videoRetriever.getDataHolder(dataHolder, new VideoRetriever.YouTubeExtractorListener() {
+                    @Override
+                    public void onSuccess(DataHolder result) {
+                        mListener.onReturnSearchVideo(result);
+                    }
+
+                    @Override
+                    public void onFailure(String error) {
+                        Log.d("search", "onError extracting");
+
+                    }
+                });
+            }
+
+            @Override
+            public void onLongClick(View view, int position) {
+                Log.d("searchFragment", "Long click");
+            }
+        });
+        recyclerView.addOnItemTouchListener(listener);
+        adapter.menuActionListener = new SearchRecyclerAdapter.MenuActionListener() {
+
+            @Override
+            public void onDownload(int pos) {
+                final DataHolder dataHolder = adapter.dataHolders.get(pos);
+                videoRetriever.getDataHolder(dataHolder, new VideoRetriever.YouTubeExtractorListener() {
+
+                    @Override
+                    public void onSuccess(DataHolder result) {
+                        downloadOptionDialog.createDialog(result);
+                        downloadOptionDialog.setShow();
+                        downloadOptionDialog.show();
+                    }
+
+                    @Override
+                    public void onFailure(String error) {
+                        Log.d("download", "onError extracting");
+
+                    }
+                });
+            }
+        };
     }
 
     private class TextDrawable extends Drawable {
@@ -626,125 +684,11 @@ public class SearchFragment extends Fragment {
         }
     }
 
-    private class Page {
-
-        public SearchRecyclerAdapter adapter = null;
-        public RecyclerView recyclerView;
-        public ProgressBar progressBar;
-        public RelativeLayout relativeLayout;
-        boolean waiting = false;
-
-
-        public Page(View page) {
-            recyclerView = (RecyclerView) page.findViewById(R.id.searchrecyclerView);
-            progressBar = (ProgressBar) page.findViewById(R.id.pageprogressBar);
-            relativeLayout = (RelativeLayout) page.findViewById(R.id.pageRL);
-
-//            relativeLayout.setBackground(new TextDrawable());
-        }
-
-        public void loading() {
-            getActivity().runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    if (!waiting) {
-                        waiting = true;
-                        recyclerView.setVisibility(View.GONE);
-                        progressBar.setVisibility(View.VISIBLE);
-                    }
-                }
-            });
-
-        }
-
-        public void updateListView(final List<DataHolder> data) {
-            getActivity().runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    if (adapter == null) {
-                        createListView(recyclerView, data);
-                    } else {
-                        adapter.dataHolders = data;
-                        adapter.notifyDataSetChanged();
-                    }
-                    recyclerView.scrollToPosition(0);
-                    if (waiting) {
-                        waiting = false;
-                        recyclerView.setVisibility(View.VISIBLE);
-                        progressBar.setVisibility(View.GONE);
-                    }
-                }
-            });
-
-        }
-
-        private void createListView(final RecyclerView recyclerView, final List<DataHolder> data) {
-
-//        Log.d("createlist", "create");
-            adapter = new SearchRecyclerAdapter(data);
-            DividerItemDecoration decoration = new DividerItemDecoration(context, DividerItemDecoration.VERTICAL);
-            recyclerView.addItemDecoration(decoration);
-            recyclerView.setLayoutManager(new LinearLayoutManager(context));
-            recyclerView.setItemAnimator(new DefaultItemAnimator());
-            recyclerView.setAdapter(adapter);
-            RecyclerTouchListener listener = new RecyclerTouchListener(context, recyclerView, new OnItemClicked() {
-                @Override
-                public void onClick(View view, int position) {
-                    System.out.println("clicked" + position);
-                    Toast toast = Toast.makeText(context, "Decrypting...", Toast.LENGTH_SHORT);
-                    toast.show();
-                    final DataHolder dataHolder = adapter.dataHolders.get(position);
-                    videoRetriever.getDataHolder(dataHolder, new VideoRetriever.YouTubeExtractorListener() {
-                        @Override
-                        public void onSuccess(DataHolder result) {
-                            mListener.onReturnSearchVideo(result);
-                        }
-
-                        @Override
-                        public void onFailure(String error) {
-                            Log.d("search", "onError extracting");
-
-                        }
-                    });
-                }
-
-                @Override
-                public void onLongClick(View view, int position) {
-                    Log.d("searchFragment", "Long click");
-                }
-            });
-            recyclerView.addOnItemTouchListener(listener);
-            adapter.menuActionListener = new SearchRecyclerAdapter.MenuActionListener() {
-
-                @Override
-                public void onDownload(int pos) {
-                    final DataHolder dataHolder = adapter.dataHolders.get(pos);
-                    videoRetriever.getDataHolder(dataHolder, new VideoRetriever.YouTubeExtractorListener() {
-
-                        @Override
-                        public void onSuccess(DataHolder result) {
-
-                            OptionDialog optionDialog = new OptionDialog();
-                            optionDialog.createDialog(result);
-                            optionDialog.show();
-                        }
-
-                        @Override
-                        public void onFailure(String error) {
-                            Log.d("download", "onError extracting");
-
-                        }
-                    });
-                }
-            };
-        }
-    }
-
     private class OptionDialog {
 
         AlertDialog.Builder builder = null;
         AlertDialog dialog = null;
-        boolean permission = false;
+        boolean show = false;
 
         public OptionDialog() {
 
@@ -756,7 +700,7 @@ public class SearchFragment extends Fragment {
             final ArrayList<ArrayList<Integer>> res = VideoRetriever.getAvailableFormatType(dataHolder);
             final ArrayList<ArrayList<Integer>> downloadType = new ArrayList<>();
             final ArrayList<Integer> downloadIndex = new ArrayList<>();
-            permission = isStoragePermissionGranted();
+
             builder = new AlertDialog.Builder(getActivity());
             builder.setTitle("Download options")
                     .setMultiChoiceItems(items.toArray(new String[items.size()]), null,
@@ -779,7 +723,7 @@ public class SearchFragment extends Fragment {
 
                             for (int a = 0; a < downloadIndex.size(); a++) {
                                 String res = items.get(downloadIndex.get(a));
-                                if (permission) {
+                                if (show) {
                                     try {
                                         videoRetriever.downloadVideo(dataHolder, downloadType.get(a), res);
                                     } catch (VideoRetriever.DownloadException e) {
@@ -799,28 +743,24 @@ public class SearchFragment extends Fragment {
         }
 
         public void show() {
-            if (dialog != null) {
-                if (permission) {
-                    dialog.show();
-                } else {
-                    Toast toast = Toast.makeText(context, "Haven't granted permission yet", Toast.LENGTH_SHORT);
-                    toast.show();
-                }
+            if (dialog != null && show && isStoragePermissionGranted()) {
+                dialog.show();
 
             }
         }
 
+        public void setShow() {
+            show = true;
+        }
+
         public boolean isStoragePermissionGranted() {
             if (Build.VERSION.SDK_INT >= 23) {
-                if (context.checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                        == PackageManager.PERMISSION_GRANTED) {
+                if (EasyPermissions.hasPermissions(context, android.Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
                     Log.v("SearchFragment", "Permission is granted");
                     return true;
                 } else {
-
-                    Log.v("SearchFragment", "Permission is revoked");
-                    ActivityCompat.requestPermissions(getActivity(),
-                            new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
+                    EasyPermissions.requestPermissions(getActivity(), "Need write permission",
+                            REQUEST_WRITE_PERMISSION, Manifest.permission.WRITE_EXTERNAL_STORAGE);
                     return false;
                 }
             } else { //permission is automatically granted on sdk<23 upon installation
@@ -829,6 +769,11 @@ public class SearchFragment extends Fragment {
             }
         }
 
+    }
+
+    public interface OnFragmentInteractionListener {
+
+        void onReturnSearchVideo(DataHolder dataHolder);
     }
 
 }

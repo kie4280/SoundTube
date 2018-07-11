@@ -14,6 +14,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Process;
+import android.support.constraint.ConstraintLayout;
 import android.support.v4.app.Fragment;
 import android.support.v4.view.ViewPager;
 import android.support.v7.widget.DefaultItemAnimator;
@@ -46,16 +47,14 @@ public class VideoFragment extends Fragment {
     public float Displayratio = 16f / 9f;
     public float Videoratio = 16f / 9f;
     private float scaleFactor = 1f;
-    private int HeaderDP = 70;
+    private int HeaderDP = 55;
     private float headersize = 0;
     public boolean prepared = false;
     boolean controlshow = false;
     boolean seekbarUpdating = false;
     private Button playbutton;
     private SurfaceView surfaceView;
-    private RelativeLayout vrelativeLayout;
-    private RelativeLayout drelativeLayout;
-    private RelativeLayout header;
+    private ConstraintLayout header, relatedVideoLayout, videoPlayerLayout;
     private View videoFragmentView = null;
     private SeekBar seekBar;
     private ProgressBar progressBar;
@@ -66,7 +65,7 @@ public class VideoFragment extends Fragment {
     private ScaleGestureDetector scaleGestureDetector;
     private DisplayMetrics displayMetrics;
     private Context context;
-    private RelativeLayout.LayoutParams portraitlayout;
+    private ConstraintLayout.LayoutParams portraitlayout;
     private RelativeLayout.LayoutParams landscapelayout;
 
     private Handler seekHandler;
@@ -140,7 +139,7 @@ public class VideoFragment extends Fragment {
             playingTextView = (TextView) videoFragmentView.findViewById(R.id.playingTextView);
             currentTime = (TextView) videoFragmentView.findViewById(R.id.currentTime);
             totalTime = (TextView) videoFragmentView.findViewById(R.id.totalTime);
-            header = (RelativeLayout) videoFragmentView.findViewById(R.id.headerView);
+            header = (ConstraintLayout) videoFragmentView.findViewById(R.id.headerView);
             headerPlayButton = (ImageView) videoFragmentView.findViewById(R.id.headerPlayButton);
             videoSettingButton = (ImageView) videoFragmentView.findViewById(R.id.videoSettingButton);
             viewPager = (CustomViewPager) videoFragmentView.findViewById(R.id.videoViewPager);
@@ -160,22 +159,20 @@ public class VideoFragment extends Fragment {
             viewPager.setAdapter(pagerAdapter);
             viewPager.addOnPageChangeListener(onPageChangeListener);
 
-            vrelativeLayout = (RelativeLayout) videoFragmentView.findViewById(R.id.videoRelativeLayout);
-            drelativeLayout = (RelativeLayout) videoFragmentView.findViewById(R.id.RelatedVideoLayout);
-            RelativeLayout.LayoutParams orig = (RelativeLayout.LayoutParams) vrelativeLayout.getLayoutParams();
-            orig.height = RelativeLayout.LayoutParams.MATCH_PARENT;
+            videoPlayerLayout = (ConstraintLayout) videoFragmentView.findViewById(R.id.videoPlayerLayout);
+            relatedVideoLayout = (ConstraintLayout) videoFragmentView.findViewById(R.id.RelatedVideoLayout);
+            ConstraintLayout.LayoutParams orig = (ConstraintLayout.LayoutParams) videoPlayerLayout.getLayoutParams();
+            orig.height = ConstraintLayout.LayoutParams.MATCH_PARENT;
             landscapelayout = new RelativeLayout.LayoutParams(orig);
 
             if (context.getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
-                int w = (int) (displayMetrics.heightPixels / Displayratio);
-                orig.height = w;
-                portraitlayout = new RelativeLayout.LayoutParams(orig);
+                orig.height = (int) (displayMetrics.heightPixels / Displayratio);
+                portraitlayout = new ConstraintLayout.LayoutParams(orig);
                 changeToLandscape();
 
             } else {
-                int w = (int) (displayMetrics.widthPixels / Displayratio);
-                orig.height = w;
-                portraitlayout = new RelativeLayout.LayoutParams(orig);
+                orig.height = (int) (displayMetrics.widthPixels / Displayratio);
+                portraitlayout = new ConstraintLayout.LayoutParams(orig);
                 changeToPortrait();
             }
 
@@ -208,7 +205,7 @@ public class VideoFragment extends Fragment {
                 }
             });
             playbutton.setOnTouchListener(buttonTouchListener);
-            vrelativeLayout.setOnTouchListener(videoTouchListener);
+            videoPlayerLayout.setOnTouchListener(videoTouchListener);
             seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
                 @Override
                 public void onProgressChanged(SeekBar seekBar, final int progress, boolean fromUser) {
@@ -608,17 +605,17 @@ public class VideoFragment extends Fragment {
     }
 
     public void changeToPortrait() {
-        if (vrelativeLayout != null && drelativeLayout != null && getActivity() != null) {
-            vrelativeLayout.setLayoutParams(portraitlayout);
-            drelativeLayout.setVisibility(View.VISIBLE);
+        if (videoPlayerLayout != null && relatedVideoLayout != null && getActivity() != null) {
+            videoPlayerLayout.setLayoutParams(portraitlayout);
+            relatedVideoLayout.setVisibility(View.VISIBLE);
             getActivity().getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
         }
     }
 
     public void changeToLandscape() {
-        if (vrelativeLayout != null && drelativeLayout != null && getActivity() != null) {
-            vrelativeLayout.setLayoutParams(landscapelayout);
-            drelativeLayout.setVisibility(View.GONE);
+        if (videoPlayerLayout != null && relatedVideoLayout != null && getActivity() != null) {
+            videoPlayerLayout.setLayoutParams(landscapelayout);
+            relatedVideoLayout.setVisibility(View.GONE);
             getActivity().getWindow().getDecorView().setSystemUiVisibility(
                     View.SYSTEM_UI_FLAG_FULLSCREEN |
                             View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
@@ -649,8 +646,8 @@ public class VideoFragment extends Fragment {
     public void setHeaderPos(float alpha) {
 //        header.animate().alpha(1 - alpha).withLayer();
         float offset = headersize * (1 - alpha);
-        vrelativeLayout.setTranslationY(offset);
-        drelativeLayout.setTranslationY(offset);
+        videoPlayerLayout.setTranslationY(offset);
+        relatedVideoLayout.setTranslationY(offset);
     }
 
     public void setHeaderVisible(boolean visible) {

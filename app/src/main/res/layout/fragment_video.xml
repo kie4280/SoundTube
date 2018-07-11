@@ -1,46 +1,54 @@
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <!-- TODO: Update blank fragment layout -->
 
-    <RelativeLayout
-            android:layout_width="match_parent"
-            android:id="@+id/headerView"
-            android:animateLayoutChanges="false" android:layout_height="70dp" android:translationY="0dp"
-            android:layout_alignParentTop="false">
+    <android.support.constraint.ConstraintLayout
+        android:id="@+id/headerView"
+        android:layout_width="match_parent"
+        android:layout_height="55dp"
+        android:layout_alignParentTop="false"
+        android:animateLayoutChanges="false"
+        android:translationY="0dp">
 
         <TextView
             android:id="@+id/playingTextView"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_alignParentTop="true"
-            android:layout_marginEnd="10dp"
-            android:layout_toStartOf="@+id/headerPlayButton"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_alignParentTop="false"
+            android:layout_marginEnd="8dp"
             android:ellipsize="end"
             android:gravity="start"
             android:singleLine="true"
             android:textAlignment="viewStart"
-            android:textSize="20sp" />
+            android:textSize="20sp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/headerPlayButton"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
         <ImageView
             android:id="@+id/headerPlayButton"
-            android:layout_width="50dp"
-            android:layout_height="50dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
             android:layout_alignParentEnd="true"
             android:layout_centerVertical="true"
-            android:layout_marginEnd="10dp"
-            android:layout_marginTop="18dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginTop="8dp"
             android:scaleType="centerCrop"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
             app:srcCompat="@drawable/pause" />
 
-    </RelativeLayout>
-    <RelativeLayout
-            android:layout_width="match_parent"
-            android:id="@+id/videoRelativeLayout" android:layout_height="200dp"
-            android:animateLayoutChanges="false"
-            android:translationY="70dp">
+    </android.support.constraint.ConstraintLayout>
+
+    <android.support.constraint.ConstraintLayout
+        android:id="@+id/videoPlayerLayout"
+        android:layout_width="match_parent"
+        android:layout_height="200dp"
+        android:animateLayoutChanges="false"
+        android:translationY="55dp">
 
         <SurfaceView
             android:id="@+id/surfaceView"
@@ -70,41 +78,51 @@
             app:srcCompat="@drawable/ic_settings_white_24dp" />
 
         <ProgressBar
-                style="@android:style/Widget.ProgressBar.Large"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
             android:id="@+id/bufferProgressBar"
-            android:alpha="0.8"
+            style="@android:style/Widget.ProgressBar.Large"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
             android:layout_centerVertical="true"
-                android:layout_centerHorizontal="true" android:visibility="gone"/>
-        <Button
-                android:layout_width="50dp"
-                android:layout_height="50dp"
-                android:id="@+id/playbutton" android:alpha="0.8"
-                android:background="@drawable/pause"
-                android:layout_centerVertical="true" android:layout_centerHorizontal="true" android:visibility="gone"/>
-        <TextView
-                android:text="TextView"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:id="@+id/totalTime"
-                android:layout_above="@+id/seekBar" android:layout_alignParentEnd="true" android:visibility="gone"/>
-        <TextView
-                android:text="TextView"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:id="@+id/currentTime" android:layout_above="@+id/seekBar"
-            android:layout_toEndOf="@+id/bufferProgressBar"
+            android:alpha="0.8"
             android:visibility="gone" />
 
-    </RelativeLayout>
+        <Button
+            android:id="@+id/playbutton"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_centerHorizontal="true"
+            android:layout_centerVertical="true"
+            android:alpha="0.8"
+            android:background="@drawable/pause"
+            android:visibility="gone" />
 
-    <RelativeLayout
+        <TextView
+            android:id="@+id/totalTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_above="@+id/seekBar"
+            android:layout_alignParentEnd="true"
+            android:text="TextView"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/currentTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_above="@+id/seekBar"
+            android:layout_toEndOf="@+id/bufferProgressBar"
+            android:text="TextView"
+            android:visibility="gone" />
+
+    </android.support.constraint.ConstraintLayout>
+
+    <android.support.constraint.ConstraintLayout
         android:id="@+id/RelatedVideoLayout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_alignParentBottom="true"
-        android:layout_below="@+id/videoRelativeLayout"
+        android:layout_below="@+id/videoPlayerLayout"
         android:animateLayoutChanges="false">
 
         <kie.com.soundtube.CustomViewPager
@@ -116,5 +134,5 @@
 
         </kie.com.soundtube.CustomViewPager>
 
-    </RelativeLayout>
-</RelativeLayout>
+    </android.support.constraint.ConstraintLayout>
+</android.support.constraint.ConstraintLayout>
