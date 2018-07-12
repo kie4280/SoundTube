@@ -245,7 +245,7 @@ public class MediaPlayerService extends Service {
     public boolean onUnbind(Intent intent) {
 
         updateSeekBar = false;
-        SearchActivity.servicebound = false;
+        MainActivity.servicebound = false;
         videoFragment.serviceDisconnected();
         videoFragment = null;
         Log.d("service", "onUnbind");
@@ -278,7 +278,7 @@ public class MediaPlayerService extends Service {
         newPlayer();
 
         notificationManager = (NotificationManager) getSystemService(Service.NOTIFICATION_SERVICE);
-        Intent app = new Intent(getApplicationContext(), SearchActivity.class);
+        Intent app = new Intent(getApplicationContext(), MainActivity.class);
         app.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         Intent destroy = new Intent(NOTIFICATION_REMOVED);
         Intent play = new Intent(NOTIFICATION_PLAY);

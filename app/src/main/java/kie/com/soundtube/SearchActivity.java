@@ -14,27 +14,22 @@ import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Process;
 import android.support.annotation.NonNull;
-import android.support.design.widget.AppBarLayout;
+import android.support.constraint.ConstraintLayout;
 import android.support.design.widget.NavigationView;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
-import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
-
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import com.sothree.slidinguppanel.SlidingUpPanelLayout.PanelSlideListener;
 import com.sothree.slidinguppanel.SlidingUpPanelLayout.PanelState;
-
 
 import kie.com.soundtube.MediaPlayerService.MusicBinder;
 
@@ -45,7 +40,7 @@ public class SearchActivity extends AppCompatActivity implements SearchFragment.
     public HandlerThread workThread;
     public static boolean servicebound = false;
     private Intent serviceIntent;
-    public LinearLayout searchArea;
+    public ConstraintLayout searchArea;
     public DrawerLayout drawerLayout;
     public RelativeLayout mainRelativeLayout;
     public CustomSlideUpPanel slidePanel;
@@ -91,7 +86,7 @@ public class SearchActivity extends AppCompatActivity implements SearchFragment.
         mainRelativeLayout = (RelativeLayout) findViewById(R.id.mainRelativeLayout);
         View view = LayoutInflater.from(context).inflate(R.layout.slide_layout, mainRelativeLayout);
 
-        searchArea = (LinearLayout) findViewById(R.id.searchArea);
+        searchArea = (ConstraintLayout) findViewById(R.id.mainWindow);
         serviceIntent = new Intent(this, MediaPlayerService.class);
         connectmgr = (ConnectivityManager) getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
 

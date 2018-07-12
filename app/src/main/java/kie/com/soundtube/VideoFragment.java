@@ -95,10 +95,8 @@ public class VideoFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        context = getActivity().getApplicationContext();
-
-        youtubeClient = new YoutubeClient(context, SearchActivity.workHandler);
-        videoRetriever = new VideoRetriever(context, SearchActivity.workHandler);
+        youtubeClient = new YoutubeClient(context, MainActivity.workHandler);
+        videoRetriever = new VideoRetriever(context, MainActivity.workHandler);
         displayMetrics = context.getResources().getDisplayMetrics();
         thread = new HandlerThread("seek");
         thread.setPriority(Process.THREAD_PRIORITY_BACKGROUND);
@@ -425,6 +423,7 @@ public class VideoFragment extends Fragment {
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
+        this.context = context;
         if (context instanceof OnFragmentInteractionListener) {
             mListener = (OnFragmentInteractionListener) context;
         } else {
@@ -902,7 +901,7 @@ public class VideoFragment extends Fragment {
 
                 }
             });
-            CustomSlideUpPanel slideUpPanel = ((SearchActivity) getActivity()).slidePanel;
+            CustomSlideUpPanel slideUpPanel = ((MainActivity) context).slidePanel;
             viewPager.setSlidePanel(slideUpPanel);
             listener.setSlidePanel(slideUpPanel);
             recyclerView.addOnItemTouchListener(listener);

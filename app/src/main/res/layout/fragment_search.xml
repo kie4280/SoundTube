@@ -2,8 +2,7 @@
 
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:layout_marginTop="50dp">
+    android:layout_height="match_parent">
 
     <android.support.design.widget.CoordinatorLayout
         android:id="@+id/coordinatorLayout"
@@ -111,36 +110,11 @@
         android:layout_height="match_parent"
         app:layout_constraintEnd_toStartOf="@id/prevPageTab" />
 
-    <LinearLayout
-        android:id="@+id/searchArea"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:visibility="gone">
 
-        <SearchView
-            android:id="@+id/searchview"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="-50dp"
-            android:background="@android:color/white"
-            android:visibility="visible"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent">
-
-        </SearchView>
-
-        <ImageView
-            android:id="@+id/blankspace"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:alpha="0.7"
-            android:background="@android:color/black"
-            android:visibility="visible" />
-    </LinearLayout>
 
 
 </android.support.constraint.ConstraintLayout>
+
+
 
 

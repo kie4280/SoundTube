@@ -607,7 +607,7 @@ public class VideoRetriever {
                     }
                     dataHolder.localUris = local;
                 }
-                if (SearchActivity.netConncted) {
+                if (MainActivity.netConncted) {
                     dataHolder.onlineUris = getVideoUris(dataHolder.videoID);
                 }
 

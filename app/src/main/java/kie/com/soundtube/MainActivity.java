@@ -8,32 +8,23 @@ import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Process;
 import android.support.annotation.NonNull;
-import android.support.design.widget.AppBarLayout;
 import android.support.design.widget.NavigationView;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
-import android.support.v4.view.GravityCompat;
-import android.support.v4.widget.DrawerLayout;
-import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
-import android.support.v7.widget.Toolbar;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.LinearLayout;
-import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import com.sothree.slidinguppanel.SlidingUpPanelLayout;
-import com.sothree.slidinguppanel.SlidingUpPanelLayout.PanelState;
 
 public class MainActivity extends AppCompatActivity implements SearchFragment.OnFragmentInteractionListener,
         VideoFragment.OnFragmentInteractionListener {
@@ -112,7 +103,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     @Override
     protected void onStart() {
         super.onStart();
-//        connect();
+        connect();
         Log.d("activity", "onStart");
 
     }
@@ -267,7 +258,6 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
             @Override
             public void run() {
                 slidePanel.setPanelState(SlidingUpPanelLayout.PanelState.EXPANDED);
-
             }
         });
         mediaService.watchedQueue.clear();

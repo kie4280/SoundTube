@@ -34,6 +34,7 @@ import android.view.View;
 import android.view.View.OnTouchListener;
 import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.AutoCompleteTextView;
 import android.widget.CursorAdapter;
 import android.widget.EditText;
@@ -269,7 +270,7 @@ public class SearchFragment extends Fragment {
     private OnTouchListener nextPageTouchListener = new OnTouchListener() {
         @Override
         public boolean onTouch(View v, MotionEvent event) {
-            nextPageTab.setX(event.getX());
+            nextPageTab.setX(event.getRawX());
             return true;
         }
     };
@@ -423,17 +424,18 @@ public class SearchFragment extends Fragment {
             searchView.setOnQueryTextFocusChangeListener(new View.OnFocusChangeListener() {
                 @Override
                 public void onFocusChange(View v, boolean hasFocus) {
-//                InputMethodManager imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
-//                imm.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), InputMethodManager.RESULT_UNCHANGED_SHOWN);
+                    InputMethodManager imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
+
                     Log.d("SearchView", "Focus change");
                     if (getActivity().getCurrentFocus() != null) {
                         Log.d("focus", getActivity().getCurrentFocus().toString());
                     }
 
-                    if (!hasFocus) {
-                        getActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
+                    if (hasFocus) {
+                        getActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+                        imm.toggleSoftInput(InputMethodManager.SHOW_FORCED, InputMethodManager.RESULT_UNCHANGED_SHOWN);
                     } else {
-
+                        getActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
                     }
                 }
             });
@@ -528,6 +530,7 @@ public class SearchFragment extends Fragment {
                 }
             };
             searchTextView.clearAnimation();
+
             searchTextView.animate().translationY(-100f).setDuration(100).setListener(listener).start();
 
         } else {
@@ -609,7 +612,7 @@ public class SearchFragment extends Fragment {
 
                     @Override
                     public void onFailure(String error) {
-                        Log.d("search", "onError extracting");
+                        Log.d("search", "onError extracting" + error);
 
                     }
                 });
