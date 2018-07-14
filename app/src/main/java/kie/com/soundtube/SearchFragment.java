@@ -71,19 +71,19 @@ public class SearchFragment extends Fragment {
     private RecyclerView recyclerView;
     public VideoRetriever videoRetriever;
     SearchView searchView = null;
-    ConstraintLayout mainWindow = null;
+    ConstraintLayout mainWindow = null, nextPage, prevPage;
     SearchRecyclerAdapter adapter = null;
     OptionDialog downloadOptionDialog;
-    ImageView blankspace, nextPageTab, prevPageTab;
+    ImageView blankspace, nextPageTab, prevPageTab, nextPageImg, prevPageImg;
     TextView searchTextView;
     ProgressBar progressBar;
     YoutubeClient youtubeClient;
-
     ArrayList<String> suggests;
     String queryUrl = "http://suggestqueries.google.com/complete/search?client=youtube&ds=yt&client=firefox&q=";
     boolean waiting = false;
-    boolean m_hasNext = false;
-    boolean m_hasPrev = false;
+    boolean m_hasNext = true;
+    boolean m_hasPrev = true;
+    int widthPixels;
 
     public SearchFragment() {
         // Required empty public constructor
@@ -115,8 +115,20 @@ public class SearchFragment extends Fragment {
             recyclerView = (RecyclerView) searchFragmentView.findViewById(R.id.searchRecyclerView);
             progressBar = (ProgressBar) searchFragmentView.findViewById(R.id.loadingProgress);
             searchTextView = (TextView) searchFragmentView.findViewById(R.id.searchTerm);
+            nextPageImg = (ImageView) searchFragmentView.findViewById(R.id.nextPageImage);
+            prevPageImg = (ImageView) searchFragmentView.findViewById(R.id.prevPageImage);
+            nextPage = (ConstraintLayout) searchFragmentView.findViewById(R.id.nextPage);
+            prevPage = (ConstraintLayout) searchFragmentView.findViewById(R.id.prevPage);
+
+            widthPixels = context.getResources().getDisplayMetrics().widthPixels;
+            nextPage.setX(widthPixels);
+            prevPage.setX(-widthPixels);
             nextPageTab.setOnTouchListener(nextPageTouchListener);
+            prevPageTab.setOnTouchListener(prevPageTouchListsner);
+            nextPageImg.setImageDrawable(new TextDrawable("3"));
+
             createSearchView();
+
         }
 
         return searchFragmentView;
@@ -268,16 +280,92 @@ public class SearchFragment extends Fragment {
 //    };
 
     private OnTouchListener nextPageTouchListener = new OnTouchListener() {
+        float OrgX;
+        float d;
+
         @Override
         public boolean onTouch(View v, MotionEvent event) {
-            nextPageTab.setX(event.getRawX());
+
+            switch (event.getAction()) {
+                case MotionEvent.ACTION_UP:
+                    float delta = widthPixels / 2;
+                    if (nextPageTab.getX() <= delta) {
+                        nextPageTab.animate().x(0).setDuration(100).start();
+                        nextPage.animate().x(OrgX + d * 2).setDuration(100).start();
+                        youtubeClient.nextVideoPage();
+                        loading();
+                    } else {
+                        nextPageTab.animate().x(OrgX).setDuration(100).start();
+                        nextPage.animate().x(OrgX + d * 2).setDuration(100).start();
+                    }
+
+                    break;
+
+                case MotionEvent.ACTION_DOWN:
+                    OrgX = nextPageTab.getX();
+                    d = nextPageTab.getWidth() / 2;
+                    nextPageTab.clearAnimation();
+                    nextPage.clearAnimation();
+                case MotionEvent.ACTION_MOVE:
+                    float x = event.getRawX();
+                    if ((x + d) < widthPixels) {
+                        nextPageTab.setX(x - d);
+                    }
+                    nextPage.setX(x + d);
+                    break;
+
+            }
+
             return true;
         }
     };
 
     private OnTouchListener prevPageTouchListsner = new OnTouchListener() {
+        float OrgX;
+        float d;
+
+        AnimatorListenerAdapter prevListener = new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                super.onAnimationEnd(animation);
+            }
+        };
+
         @Override
         public boolean onTouch(View v, MotionEvent event) {
+
+            switch (event.getAction()) {
+                case MotionEvent.ACTION_UP:
+                    float delta = widthPixels / 2;
+                    if (prevPageTab.getX() >= delta) {
+                        prevPageTab.animate().x(widthPixels).setDuration(100).start();
+                        prevPage.animate().x(0).setDuration(100).setListener(prevListener).start();
+
+                        youtubeClient.nextVideoPage();
+                        loading();
+                    } else {
+                        prevPageTab.animate().x(OrgX).setDuration(100).start();
+                        prevPage.animate().x(-widthPixels).setDuration(100).start();
+                    }
+
+                    break;
+
+                case MotionEvent.ACTION_DOWN:
+
+                    OrgX = prevPageTab.getX();
+                    d = prevPageTab.getWidth() / 2;
+                    prevPageTab.clearAnimation();
+                    prevPage.clearAnimation();
+                case MotionEvent.ACTION_MOVE:
+                    float x = event.getRawX();
+                    if ((x - d) > 0) {
+                        prevPageTab.setX(x - d);
+                    }
+                    prevPage.setX(-widthPixels + x - d);
+                    break;
+
+            }
+
             return true;
         }
     };
@@ -338,8 +426,9 @@ public class SearchFragment extends Fragment {
             searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
                 @Override
                 public boolean onQueryTextSubmit(String query) {
-                    System.out.println("submit");
+                    System.out.println("submit: " + query);
                     if (query != null) {
+                        searchTextView.setText(query);
                         if (MainActivity.netConncted) {
                             search(query);
                             Log.d("search", query);
@@ -522,32 +611,30 @@ public class SearchFragment extends Fragment {
                 @Override
                 public void onAnimationEnd(Animator animation) {
                     super.onAnimationEnd(animation);
-                    searchTextView.setVisibility(View.GONE);
-                    searchTextView.setTranslationY(0f);
-                    blankspace.setVisibility(View.VISIBLE);
-                    searchView.setVisibility(View.VISIBLE);
                     searchView.requestFocus();
                 }
             };
-            searchTextView.clearAnimation();
+            searchView.clearAnimation();
+            searchView.setTranslationY(searchTextView.getY() + searchTextView.getHeight());
+            blankspace.setVisibility(View.VISIBLE);
+            searchView.setVisibility(View.VISIBLE);
 
-            searchTextView.animate().translationY(-100f).setDuration(100).setListener(listener).start();
+            searchView.animate().translationY(0f).setDuration(100).setListener(listener).start();
 
         } else {
             Animator.AnimatorListener listener = new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animation) {
                     super.onAnimationEnd(animation);
-                    blankspace.setVisibility(View.GONE);
                     searchView.setVisibility(View.GONE);
-                    searchView.setTranslationY(0f);
+                    searchView.setAlpha(1f);
                     searchView.clearFocus();
-                    searchTextView.setVisibility(View.VISIBLE);
                 }
             };
 
             searchView.clearAnimation();
-            searchView.animate().translationY(100f).setDuration(100).setListener(listener).start();
+            blankspace.setVisibility(View.GONE);
+            searchView.animate().alpha(0f).setDuration(100).setListener(listener).start();
 
 
         }
@@ -658,7 +745,7 @@ public class SearchFragment extends Fragment {
             this.text = text;
             this.paint = new Paint();
             paint.setColor(Color.WHITE);
-            paint.setTextSize(22f);
+            paint.setTextSize(220f);
             paint.setAntiAlias(true);
             paint.setFakeBoldText(true);
             paint.setShadowLayer(6f, 0, 0, Color.BLACK);
@@ -668,7 +755,7 @@ public class SearchFragment extends Fragment {
 
         @Override
         public void draw(Canvas canvas) {
-            canvas.drawText(text, 0, 0, paint);
+            canvas.drawText(text, 170, 200, paint);
         }
 
         @Override
@@ -692,11 +779,6 @@ public class SearchFragment extends Fragment {
         AlertDialog.Builder builder = null;
         AlertDialog dialog = null;
         boolean show = false;
-
-        public OptionDialog() {
-
-
-        }
 
         public Dialog createDialog(final DataHolder dataHolder) {
             final ArrayList<String> items = VideoRetriever.getAvailableFormatString(dataHolder);
