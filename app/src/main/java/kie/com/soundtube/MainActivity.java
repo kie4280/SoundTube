@@ -36,6 +36,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     public TabLayout tabLayout;
     public CustomSlideUpPanel slidePanel;
     public static boolean netConncted = false;
+    private int HeaderDP = 55;
 
     //    public CustomViewPager viewPager;
     VideoFragment videoFragment;
@@ -96,6 +97,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
                 .add(R.id.bottomFragment, searchFragment, "searchFragment")
                 .commit();
         slidePanel.addPanelSlideListener(panelSlideListener);
+        slidePanel.setPanelHeight(Tools.convertDpToPixel(HeaderDP, context));
 //        slidePanel.setPanelState(PanelState.HIDDEN);           //should not be commented when building app
 
     }

@@ -281,37 +281,53 @@ public class SearchFragment extends Fragment {
 
     private OnTouchListener nextPageTouchListener = new OnTouchListener() {
         float OrgX;
-        float d;
+        float half;
 
         @Override
         public boolean onTouch(View v, MotionEvent event) {
 
             switch (event.getAction()) {
                 case MotionEvent.ACTION_UP:
-                    float delta = widthPixels / 2;
+                    float delta = widthPixels / 5 * 2;
+
                     if (nextPageTab.getX() <= delta) {
-                        nextPageTab.animate().x(0).setDuration(100).start();
-                        nextPage.animate().x(OrgX + d * 2).setDuration(100).start();
+                        nextPageTab.setX(OrgX);
+                        nextPage.animate().x(0).setDuration(200).setListener(new AnimatorListenerAdapter() {
+                            @Override
+                            public void onAnimationEnd(Animator animation) {
+                                super.onAnimationEnd(animation);
+                                nextPage.animate().alpha(0).setDuration(200)
+                                        .setListener(new AnimatorListenerAdapter() {
+                                            @Override
+                                            public void onAnimationEnd(Animator animation) {
+                                                super.onAnimationEnd(animation);
+                                                nextPage.setX(widthPixels);
+                                                nextPage.setAlpha(1);
+                                            }
+                                        });
+                            }
+                        });
+
                         youtubeClient.nextVideoPage();
                         loading();
                     } else {
-                        nextPageTab.animate().x(OrgX).setDuration(100).start();
-                        nextPage.animate().x(OrgX + d * 2).setDuration(100).start();
+                        nextPageTab.animate().x(OrgX).setDuration(100);
+                        nextPage.animate().x(widthPixels).setDuration(100);
                     }
 
                     break;
 
                 case MotionEvent.ACTION_DOWN:
-                    OrgX = nextPageTab.getX();
-                    d = nextPageTab.getWidth() / 2;
+                    half = nextPageTab.getWidth() / 2;
+                    OrgX = widthPixels - half * 2;
                     nextPageTab.clearAnimation();
                     nextPage.clearAnimation();
                 case MotionEvent.ACTION_MOVE:
                     float x = event.getRawX();
-                    if ((x + d) < widthPixels) {
-                        nextPageTab.setX(x - d);
+                    if ((x + half) < widthPixels) {
+                        nextPageTab.setX(x - half);
                     }
-                    nextPage.setX(x + d);
+                    nextPage.setX(x + half);
                     break;
 
             }
@@ -322,30 +338,39 @@ public class SearchFragment extends Fragment {
 
     private OnTouchListener prevPageTouchListsner = new OnTouchListener() {
         float OrgX;
-        float d;
-
-        AnimatorListenerAdapter prevListener = new AnimatorListenerAdapter() {
-            @Override
-            public void onAnimationEnd(Animator animation) {
-                super.onAnimationEnd(animation);
-            }
-        };
+        float half;
 
         @Override
         public boolean onTouch(View v, MotionEvent event) {
 
             switch (event.getAction()) {
                 case MotionEvent.ACTION_UP:
-                    float delta = widthPixels / 2;
+                    float delta = widthPixels / 5 * 3;
                     if (prevPageTab.getX() >= delta) {
-                        prevPageTab.animate().x(widthPixels).setDuration(100).start();
-                        prevPage.animate().x(0).setDuration(100).setListener(prevListener).start();
+                        prevPageTab.setX(OrgX);
+                        prevPage.animate().x(0).setDuration(200).setListener(new AnimatorListenerAdapter() {
+                            @Override
+                            public void onAnimationEnd(Animator animation) {
+                                super.onAnimationEnd(animation);
+                                prevPage.animate().alpha(0).setDuration(200)
+                                        .setListener(new AnimatorListenerAdapter() {
+                                            @Override
+                                            public void onAnimationEnd(Animator animation) {
+                                                super.onAnimationEnd(animation);
+                                                prevPage.setX(-widthPixels);
+                                                prevPage.setAlpha(1);
+
+                                            }
+                                        });
+                            }
+                        });
+
 
                         youtubeClient.nextVideoPage();
                         loading();
                     } else {
-                        prevPageTab.animate().x(OrgX).setDuration(100).start();
-                        prevPage.animate().x(-widthPixels).setDuration(100).start();
+                        prevPageTab.animate().x(OrgX).setDuration(100);
+                        prevPage.animate().x(-widthPixels).setDuration(100);
                     }
 
                     break;
@@ -353,15 +378,15 @@ public class SearchFragment extends Fragment {
                 case MotionEvent.ACTION_DOWN:
 
                     OrgX = prevPageTab.getX();
-                    d = prevPageTab.getWidth() / 2;
+                    half = prevPageTab.getWidth() / 2;
                     prevPageTab.clearAnimation();
                     prevPage.clearAnimation();
                 case MotionEvent.ACTION_MOVE:
                     float x = event.getRawX();
-                    if ((x - d) > 0) {
-                        prevPageTab.setX(x - d);
+                    if ((x - half) > 0) {
+                        prevPageTab.setX(x - half);
                     }
-                    prevPage.setX(-widthPixels + x - d);
+                    prevPage.setX(-widthPixels + x - half);
                     break;
 
             }
