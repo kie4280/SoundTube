@@ -6,8 +6,8 @@
         <shape android:shape="rectangle">
             <solid android:color="#c7c7c7" />
             <size
-                android:width="16dp"
-                android:height="100dp" />
+                android:width="15dp"
+                android:height="80dp" />
             <corners
                 android:bottomLeftRadius="10dp"
                 android:topLeftRadius="10dp" />
@@ -17,10 +17,9 @@
         <inset
             android:drawable="@drawable/triangle_gray"
             android:insetLeft="5dp"
-            android:insetTop="45dp"
-            android:insetBottom="45dp"
+            android:insetTop="35dp"
+            android:insetBottom="35dp"
             android:insetRight="3dp" />
-
     </item>
 
 </layer-list>

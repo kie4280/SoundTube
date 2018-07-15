@@ -83,7 +83,7 @@ public class SearchFragment extends Fragment {
     boolean waiting = false;
     boolean m_hasNext = true;
     boolean m_hasPrev = true;
-    int widthPixels;
+    int widthPixels, index;
 
     public SearchFragment() {
         // Required empty public constructor
@@ -187,97 +187,6 @@ public class SearchFragment extends Fragment {
         Log.d("SearchFragment", "onDetach");
     }
 
-//    private OnPageChangeListener onPageChangeListener = new OnPageChangeListener() {
-//        int previndex = 0;
-//        boolean user = false;
-//
-//        @Override
-//        public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
-//
-//        }
-//
-//        @Override
-//        public void onPageSelected(int position) {
-//            previndex = position;
-//        }
-//
-//        @Override
-//        public void onPageScrollStateChanged(int state) {
-//
-//            if (state == ViewPager.SCROLL_STATE_SETTLING) {
-//
-//                final int index = viewPager.getCurrentItem();
-//                Log.d("viewpager", Integer.toString(index));
-//                if (index > previndex && user) {
-//                    youtubeClient.nextVideoPage();
-//                    page.loading();
-//                    youtubeClient.getVideoSearchResults(new YoutubeClient.YoutubeVideoSearchResult() {
-//                        @Override
-//                        public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
-//                            pagerAdapter.changeSate(hasnext, hasprev);
-//                            page.updateListView(data);
-//
-//                            if (hasnext) {
-//                                getActivity().runOnUiThread(new Runnable() {
-//                                    @Override
-//                                    public void run() {
-//                                        viewPager.setCurrentItem(1, false);
-//                                        bar1.setVisibility(View.GONE);
-//                                        bar2.setVisibility(View.GONE);
-//                                    }
-//                                });
-//                            }
-//                        }
-//
-//                        @Override
-//                        public void onError(String error) {
-//
-//                        }
-//
-//
-//                    });
-//                } else if (index < previndex && user) {
-//                    youtubeClient.prevVideoPage();
-//                    page.loading();
-//                    youtubeClient.getVideoSearchResults(new YoutubeClient.YoutubeVideoSearchResult() {
-//                        @Override
-//                        public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
-//                            pagerAdapter.changeSate(hasnext, hasprev);
-//                            page.updateListView(data);
-//                            if (hasprev) {
-//                                getActivity().runOnUiThread(new Runnable() {
-//                                    @Override
-//                                    public void run() {
-//                                        viewPager.setCurrentItem(1, false);
-//                                        bar1.setVisibility(View.GONE);
-//                                        bar2.setVisibility(View.GONE);
-//                                    }
-//                                });
-//                            }
-//                        }
-//
-//                        @Override
-//                        public void onError(String error) {
-//
-//                        }
-//
-//
-//                    });
-//                } else if (index == previndex && user) {
-//                    bar1.setVisibility(View.GONE);
-//                    bar2.setVisibility(View.GONE);
-//                }
-//
-//                user = false;
-//
-//            } else if (state == ViewPager.SCROLL_STATE_DRAGGING) {
-//                bar1.setVisibility(View.VISIBLE);
-//                bar2.setVisibility(View.VISIBLE);
-//                user = true;
-//
-//            }
-//        }
-//    };
 
     private OnTouchListener nextPageTouchListener = new OnTouchListener() {
         float OrgX;
@@ -291,6 +200,7 @@ public class SearchFragment extends Fragment {
                     float delta = widthPixels / 5 * 2;
 
                     if (nextPageTab.getX() <= delta) {
+                        index++;
                         nextPageTab.setX(OrgX);
                         nextPage.animate().x(0).setDuration(200).setListener(new AnimatorListenerAdapter() {
                             @Override
@@ -303,6 +213,8 @@ public class SearchFragment extends Fragment {
                                                 super.onAnimationEnd(animation);
                                                 nextPage.setX(widthPixels);
                                                 nextPage.setAlpha(1);
+                                                nextPageImg.setImageDrawable(new TextDrawable(Integer.toString(index + 1)));
+                                                prevPageImg.setImageDrawable(new TextDrawable(Integer.toString(index - 1)));
                                             }
                                         });
                             }
@@ -310,6 +222,7 @@ public class SearchFragment extends Fragment {
 
                         youtubeClient.nextVideoPage();
                         loading();
+                        getSearchResult();
                     } else {
                         nextPageTab.animate().x(OrgX).setDuration(100);
                         nextPage.animate().x(widthPixels).setDuration(100);
@@ -347,6 +260,7 @@ public class SearchFragment extends Fragment {
                 case MotionEvent.ACTION_UP:
                     float delta = widthPixels / 5 * 3;
                     if (prevPageTab.getX() >= delta) {
+                        index = index - 1 > 1 ? index - 1 : 1;
                         prevPageTab.setX(OrgX);
                         prevPage.animate().x(0).setDuration(200).setListener(new AnimatorListenerAdapter() {
                             @Override
@@ -359,6 +273,8 @@ public class SearchFragment extends Fragment {
                                                 super.onAnimationEnd(animation);
                                                 prevPage.setX(-widthPixels);
                                                 prevPage.setAlpha(1);
+                                                nextPageImg.setImageDrawable(new TextDrawable(Integer.toString(index + 1)));
+                                                prevPageImg.setImageDrawable(new TextDrawable(Integer.toString(index - 1)));
 
                                             }
                                         });
@@ -366,8 +282,9 @@ public class SearchFragment extends Fragment {
                         });
 
 
-                        youtubeClient.nextVideoPage();
+                        youtubeClient.prevVideoPage();
                         loading();
+                        getSearchResult();
                     } else {
                         prevPageTab.animate().x(OrgX).setDuration(100);
                         prevPage.animate().x(-widthPixels).setDuration(100);
@@ -395,10 +312,29 @@ public class SearchFragment extends Fragment {
         }
     };
 
+    public void getSearchResult() {
+
+        youtubeClient.getVideoSearchResults(new YoutubeClient.YoutubeVideoSearchResult() {
+            @Override
+            public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
+                changeSate(hasnext, hasprev);
+                updateListView(data);
+            }
+
+            @Override
+            public void onError(String error) {
+                Log.d("SearchFramgent", "error: " + error);
+
+            }
+
+        });
+    }
+
     public void search(String term) {
         youtubeClient.newVideoSearch(term);
         loading();
-
+        index = 1;
+        nextPageImg.setImageDrawable(new TextDrawable(Integer.toString(index + 1)));
         youtubeClient.getVideoSearchResults(new YoutubeClient.YoutubeVideoSearchResult() {
             @Override
             public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
@@ -421,14 +357,24 @@ public class SearchFragment extends Fragment {
         return true;
     }
 
+    public void nextPageEnabled(boolean enable) {
+        nextPageTab.setImageResource(enable ? R.drawable.page_tab_enabled : R.drawable.page_tab_disabled);
+        nextPageTab.setEnabled(enable);
+    }
+
+    public void prevPageEnabled(boolean enable) {
+        prevPageTab.setImageResource(enable ? R.drawable.page_tab_enabled : R.drawable.page_tab_disabled);
+        prevPageTab.setEnabled(enable);
+    }
+
 
     public void changeSate(boolean hasNext, boolean hasPrev) {
         if (hasNext != m_hasNext) {
-            nextPageTab.setImageResource(hasNext ? R.drawable.page_tab_enabled : R.drawable.page_tab_disabled);
+            nextPageEnabled(hasNext);
             m_hasNext = hasNext;
         }
         if (hasPrev != m_hasPrev) {
-            prevPageTab.setImageResource(hasPrev ? R.drawable.page_tab_enabled : R.drawable.page_tab_disabled);
+            prevPageEnabled(hasPrev);
             m_hasPrev = hasPrev;
         }
     }
