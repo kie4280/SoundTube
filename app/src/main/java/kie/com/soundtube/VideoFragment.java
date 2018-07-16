@@ -66,7 +66,7 @@ public class VideoFragment extends Fragment {
     private DisplayMetrics displayMetrics;
     private Context context;
     private ConstraintLayout.LayoutParams portraitlayout;
-    private RelativeLayout.LayoutParams landscapelayout;
+    private ConstraintLayout.LayoutParams landscapelayout;
 
     private Handler seekHandler;
     private HandlerThread thread;
@@ -161,7 +161,7 @@ public class VideoFragment extends Fragment {
             relatedVideoLayout = (ConstraintLayout) videoFragmentView.findViewById(R.id.RelatedVideoLayout);
             ConstraintLayout.LayoutParams orig = (ConstraintLayout.LayoutParams) videoPlayerLayout.getLayoutParams();
             orig.height = ConstraintLayout.LayoutParams.MATCH_PARENT;
-            landscapelayout = new RelativeLayout.LayoutParams(orig);
+            landscapelayout = new ConstraintLayout.LayoutParams(orig);
 
             if (context.getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
                 orig.height = (int) (displayMetrics.heightPixels / Displayratio);

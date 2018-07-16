@@ -357,14 +357,26 @@ public class SearchFragment extends Fragment {
         return true;
     }
 
-    public void nextPageEnabled(boolean enable) {
-        nextPageTab.setImageResource(enable ? R.drawable.page_tab_enabled : R.drawable.page_tab_disabled);
-        nextPageTab.setEnabled(enable);
+    public void nextPageEnabled(final boolean enable) {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                nextPageTab.setImageResource(enable ? R.drawable.page_tab_enabled : R.drawable.page_tab_disabled);
+                nextPageTab.setEnabled(enable);
+            }
+        });
+
     }
 
-    public void prevPageEnabled(boolean enable) {
-        prevPageTab.setImageResource(enable ? R.drawable.page_tab_enabled : R.drawable.page_tab_disabled);
-        prevPageTab.setEnabled(enable);
+    public void prevPageEnabled(final boolean enable) {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                prevPageTab.setImageResource(enable ? R.drawable.page_tab_enabled : R.drawable.page_tab_disabled);
+                prevPageTab.setEnabled(enable);
+            }
+        });
+
     }
 
 
@@ -562,15 +574,20 @@ public class SearchFragment extends Fragment {
                 autoComplete.setTextSize(16f);
             }
 
-//            int searchMagId = getResources().getIdentifier("android:id/search_mag_icon", null, null);
-//            if (searchView.findViewById(searchMagId) != null) {
-//                ImageView v = (ImageView) searchView.findViewById(searchMagId);
-//                v.setImageDrawable(null);
-//                v.setPadding(0, 0, 0, 0);
-//                LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-//                params.setMargins(0, 0, 0, 0);
-//                v.setLayoutParams(params);
-//            }
+            int searchMagId = getResources().getIdentifier("android:id/search_mag_icon", null, null);
+            ImageView v = (ImageView) searchView.findViewById(searchMagId);
+            if (v != null) {
+                v.setImageResource(R.drawable.baseline_arrow_back_black_48dp);
+                v.setClickable(true);
+                int pixels = Tools.convertDpToPixel(5, context);
+                v.setPadding(pixels, pixels, pixels, pixels);
+                v.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        animateSearchArea(false);
+                    }
+                });
+            }
 
         }
     }
