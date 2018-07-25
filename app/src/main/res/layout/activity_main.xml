@@ -13,49 +13,13 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:gravity="bottom"
-        tools:context=".MainActivity"
-        app:umanoPanelHeight="55dp">
+        app:umanoPanelHeight="105dp"
+        tools:context=".MainActivity">
 
-        <android.support.constraint.ConstraintLayout
-            android:id="@+id/slidePanelBase"
+        <FrameLayout
+            android:id="@+id/bottomFragment"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:theme="@style/Theme.AppCompat.Light.NoActionBar">
-
-            <android.support.design.widget.TabLayout
-                android:id="@+id/tabLayout"
-                android:layout_width="match_parent"
-                android:layout_height="50dp"
-                android:background="#d9d9d9">
-
-                <android.support.design.widget.TabItem
-                    android:id="@+id/homeTab"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:icon="@drawable/baseline_home_black_48dp" />
-
-                <android.support.design.widget.TabItem
-                    android:id="@+id/playlistTab"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:icon="@drawable/baseline_queue_music_black_48dp" />
-
-                <android.support.design.widget.TabItem
-                    android:id="@+id/settingTab"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:icon="@drawable/baseline_settings_black_48dp" />
-            </android.support.design.widget.TabLayout>
-
-            <FrameLayout
-                android:id="@+id/bottomFragment"
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/tabLayout">
-
-            </FrameLayout>
-        </android.support.constraint.ConstraintLayout>
+            android:layout_height="match_parent" />
 
         <FrameLayout
             android:id="@+id/videoPanel"
@@ -65,7 +29,33 @@
 
     </kie.com.soundtube.CustomSlideUpPanel>
 
-    <!--android:layout_marginTop="-50dp"-->
+    <android.support.design.widget.TabLayout
+        android:id="@+id/tabLayout"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:background="#d9d9d9"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <android.support.design.widget.TabItem
+            android:id="@+id/homeTab"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:icon="@drawable/baseline_home_black_48dp" />
+
+        <android.support.design.widget.TabItem
+            android:id="@+id/playlistTab"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:icon="@drawable/baseline_queue_music_black_48dp" />
+
+        <android.support.design.widget.TabItem
+            android:id="@+id/settingTab"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:icon="@drawable/baseline_settings_black_48dp" />
+    </android.support.design.widget.TabLayout>
+
+
     <ImageView
         android:id="@+id/blankspace"
         android:layout_width="match_parent"
@@ -89,6 +79,7 @@
         app:layout_constraintStart_toStartOf="parent">
 
     </SearchView>
+
 </android.support.constraint.ConstraintLayout>
 
 

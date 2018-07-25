@@ -29,24 +29,22 @@ import com.sothree.slidinguppanel.SlidingUpPanelLayout;
 public class MainActivity extends AppCompatActivity implements SearchFragment.OnFragmentInteractionListener,
         VideoFragment.OnFragmentInteractionListener {
 
-    public static Handler workHandler;
+    public Handler workHandler;
     public HandlerThread workThread;
     public static boolean servicebound = false;
     private Intent serviceIntent;
     public TabLayout tabLayout;
     public CustomSlideUpPanel slidePanel;
     public static boolean netConncted = false;
-    private int HeaderDP = 55;
-
-    //    public CustomViewPager viewPager;
     VideoFragment videoFragment;
     SearchFragment searchFragment;
-    //    SettingFragment settingFragment;
-//    PlaylistFragment playlistFragment;
+    SettingFragment settingFragment;
+    PlaylistFragment playlistFragment;
     FragmentManager fragmentManager;
     MediaPlayerService mediaService;
     Context context;
     ConnectivityManager connectmgr;
+    int tabHeight;
 
 
     @Override
@@ -74,11 +72,11 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
 
             }
         });
-
-//        mainRelativeLayout = (RelativeLayout) findViewById(R.id.mainRelativeLayout);
-//        View view = LayoutInflater.from(context).inflate(R.layout.slide_layout, mainRelativeLayout);
         tabLayout = (TabLayout) findViewById(R.id.tabLayout);
-
+        tabHeight = Tools.convertDpToPixel(50, context);
+        slidePanel = (CustomSlideUpPanel) findViewById(R.id.slidePanel);
+        slidePanel.addPanelSlideListener(panelSlideListener);
+//        slidePanel.setPanelState(SlidingUpPanelLayout.PanelState.HIDDEN);           //should not be commented when building app
         serviceIntent = new Intent(this, MediaPlayerService.class);
         connectmgr = (ConnectivityManager) getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
 
@@ -89,15 +87,14 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
         workHandler = new Handler(workThread.getLooper());
         videoFragment = new VideoFragment();
         searchFragment = new SearchFragment();
-        slidePanel = (CustomSlideUpPanel) findViewById(R.id.slidePanel);
+
         fragmentManager = getSupportFragmentManager();
         FragmentTransaction transaction = fragmentManager.beginTransaction();
         transaction
                 .add(R.id.videoPanel, videoFragment, "videoFragment")
                 .add(R.id.bottomFragment, searchFragment, "searchFragment")
                 .commit();
-        slidePanel.addPanelSlideListener(panelSlideListener);
-//        slidePanel.setPanelState(PanelState.HIDDEN);           //should not be commented when building app
+
 
     }
 
@@ -147,6 +144,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
         public void onPanelSlide(View panel, float slideOffset) {
 //            Log.d("panel", Float.toString(slideOffset));
             videoFragment.setHeaderPos(slideOffset);
+            tabLayout.setTranslationY(slideOffset * tabHeight);
 
         }
 

@@ -17,7 +17,7 @@
             <android.support.v7.widget.Toolbar
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                app:layout_scrollFlags="enterAlways|scroll">
+                app:layout_scrollFlags="enterAlways|scroll|snap">
 
                 <android.support.constraint.ConstraintLayout
                     android:layout_width="match_parent"
@@ -64,6 +64,7 @@
 
         </android.support.v7.widget.RecyclerView>
 
+
     </android.support.design.widget.CoordinatorLayout>
 
     <ProgressBar
@@ -88,7 +89,7 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.498"
+        app:layout_constraintVertical_bias="0.6"
         app:srcCompat="@drawable/page_tab_enabled" />
 
     <ImageView
@@ -99,22 +100,43 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.498"
+        app:layout_constraintVertical_bias="0.6"
         app:srcCompat="@drawable/page_tab_enabled" />
 
-    <ImageView
-        android:id="@+id/nextPageImage"
+    <android.support.constraint.ConstraintLayout
+        android:id="@+id/nextPage"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        app:layout_constraintStart_toEndOf="@id/nextPageTab" />
+        android:background="@android:color/darker_gray">
 
-    <ImageView
-        android:id="@+id/prevPageImage"
+        <ImageView
+            android:id="@+id/nextPageImage"
+            android:layout_width="140dp"
+            android:layout_height="80dp"
+
+            android:scaleType="centerCrop"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+    </android.support.constraint.ConstraintLayout>
+
+    <android.support.constraint.ConstraintLayout
+        android:id="@+id/prevPage"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        app:layout_constraintEnd_toStartOf="@id/prevPageTab" />
+        android:background="@android:color/darker_gray">
 
+        <ImageView
+            android:id="@+id/prevPageImage"
+            android:layout_width="140dp"
+            android:layout_height="80dp"
 
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+    </android.support.constraint.ConstraintLayout>
 
 
 </android.support.constraint.ConstraintLayout>

@@ -1,5 +1,7 @@
 package kie.com.soundtube;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.graphics.Canvas;
@@ -16,7 +18,6 @@ import android.os.HandlerThread;
 import android.os.Process;
 import android.support.constraint.ConstraintLayout;
 import android.support.v4.app.Fragment;
-import android.support.v4.view.ViewPager;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
@@ -33,12 +34,10 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
-import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class VideoFragment extends Fragment {
@@ -54,37 +53,34 @@ public class VideoFragment extends Fragment {
     boolean seekbarUpdating = false;
     private Button playbutton;
     private SurfaceView surfaceView;
-    private ConstraintLayout header, relatedVideoLayout, videoPlayerLayout;
+    private ConstraintLayout header, relatedVideoLayout, videoPlayerLayout, nextPage, prevPage;
     private View videoFragmentView = null;
     private SeekBar seekBar;
-    private ProgressBar progressBar;
+    private ProgressBar videoBufferProgress, relatedBufferProgress;
     private TextView currentTime;
     private TextView totalTime;
-    public ImageView headerPlayButton, videoSettingButton;
+    private RecyclerView recyclerView;
+    public ImageView headerPlayButton, videoSettingButton, nextPageTab, prevPageTab, nextPageImg, prevPageImg;
     public TextView playingTextView;
     private ScaleGestureDetector scaleGestureDetector;
     private DisplayMetrics displayMetrics;
     private Context context;
     private ConstraintLayout.LayoutParams portraitlayout;
     private ConstraintLayout.LayoutParams landscapelayout;
-
-    private Handler seekHandler;
+    private Handler seekHandler, workHandler;
     private HandlerThread thread;
-
-    private CustomViewPager viewPager;
     public VideoRetriever videoRetriever;
     public SurfaceHolder surfaceHolder;
     public DataHolder currentData;
-    private CustomPagerAdapter pagerAdapter;
-    private ProgressBar bar1;
-    private ProgressBar bar2;
     private boolean started = false;
-
+    boolean waiting = false;
+    boolean m_hasNext = true;
+    boolean m_hasPrev = true;
+    int index;
+    VideoRecyclerAdapter videoAdapter;
     MediaPlayerService mediaService;
-
-    Page page;
     YoutubeClient youtubeClient = null;
-    ArrayList<View> pageviews = new ArrayList<>(3);
+    String text = "onError";
 
 
     public VideoFragment() {
@@ -95,8 +91,9 @@ public class VideoFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        youtubeClient = new YoutubeClient(context, MainActivity.workHandler);
-        videoRetriever = new VideoRetriever(context, MainActivity.workHandler);
+        workHandler = ((MainActivity) context).workHandler;
+        youtubeClient = new YoutubeClient(context, workHandler);
+        videoRetriever = new VideoRetriever(context, workHandler);
         displayMetrics = context.getResources().getDisplayMetrics();
         thread = new HandlerThread("seek");
         thread.setPriority(Process.THREAD_PRIORITY_BACKGROUND);
@@ -140,22 +137,24 @@ public class VideoFragment extends Fragment {
             header = (ConstraintLayout) videoFragmentView.findViewById(R.id.headerView);
             headerPlayButton = (ImageView) videoFragmentView.findViewById(R.id.headerPlayButton);
             videoSettingButton = (ImageView) videoFragmentView.findViewById(R.id.videoSettingButton);
-            viewPager = (CustomViewPager) videoFragmentView.findViewById(R.id.videoViewPager);
+            recyclerView = (RecyclerView) videoFragmentView.findViewById(R.id.videoRecyclerView);
             headersize = Tools.convertDpToPixel(HeaderDP, context);
             playbutton = (Button) videoFragmentView.findViewById(R.id.playbutton);
-            progressBar = (ProgressBar) videoFragmentView.findViewById(R.id.bufferProgressBar);
-            View r1 = inflater.inflate(R.layout.blank_loading, null);
-            View r2 = inflater.inflate(R.layout.blank_loading, null);
-            bar1 = (ProgressBar) r1.findViewById(R.id.pageLoadingBar);
-            bar2 = (ProgressBar) r2.findViewById(R.id.pageLoadingBar);
-            View pageview = inflater.inflate(R.layout.related_video_layout, null);
-            pageviews.add(r1);
-            pageviews.add(pageview);
-            pageviews.add(r2);
-            page = new Page(pageviews.get(1));
-            pagerAdapter = new CustomPagerAdapter(pageviews);
-            viewPager.setAdapter(pagerAdapter);
-            viewPager.addOnPageChangeListener(onPageChangeListener);
+            videoBufferProgress = (ProgressBar) videoFragmentView.findViewById(R.id.bufferProgressBar);
+            relatedBufferProgress = (ProgressBar) videoFragmentView.findViewById(R.id.loadingProgress);
+            nextPageImg = (ImageView) videoFragmentView.findViewById(R.id.nextPageImage);
+            prevPageImg = (ImageView) videoFragmentView.findViewById(R.id.prevPageImage);
+            nextPage = (ConstraintLayout) videoFragmentView.findViewById(R.id.nextPage);
+            prevPage = (ConstraintLayout) videoFragmentView.findViewById(R.id.prevPage);
+            nextPageTab = (ImageView) videoFragmentView.findViewById(R.id.nextPageTab);
+            prevPageTab = (ImageView) videoFragmentView.findViewById(R.id.prevPageTab);
+
+            nextPage.setX(displayMetrics.widthPixels);
+            prevPage.setX(-displayMetrics.widthPixels);
+            nextPageTab.setOnTouchListener(nextPageTouchListener);
+            prevPageTab.setOnTouchListener(prevPageTouchListsner);
+            nextPageImg.setImageDrawable(new TextDrawable("3"));
+
 
             videoPlayerLayout = (ConstraintLayout) videoFragmentView.findViewById(R.id.videoPlayerLayout);
             relatedVideoLayout = (ConstraintLayout) videoFragmentView.findViewById(R.id.RelatedVideoLayout);
@@ -331,94 +330,131 @@ public class VideoFragment extends Fragment {
         }
     };
 
-    private ViewPager.OnPageChangeListener onPageChangeListener = new ViewPager.OnPageChangeListener() {
-        int previndex = 0;
+    private View.OnTouchListener nextPageTouchListener = new View.OnTouchListener() {
+        float OrgX;
+        float half;
 
         @Override
-        public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+        public boolean onTouch(View v, MotionEvent event) {
 
-        }
+            switch (event.getAction()) {
+                case MotionEvent.ACTION_UP:
+                    float delta = displayMetrics.widthPixels / 5 * 2;
 
-        @Override
-        public void onPageSelected(int position) {
-            previndex = position;
-        }
-
-        @Override
-        public void onPageScrollStateChanged(int state) {
-
-            if (state == ViewPager.SCROLL_STATE_SETTLING) {
-
-                final int index = viewPager.getCurrentItem();
-                Log.d("viewpager", Integer.toString(index));
-                if (index > previndex) {
-                    youtubeClient.nextVideoPage();
-                    page.loading();
-                    youtubeClient.getVideoSearchResults(new YoutubeClient.YoutubeVideoSearchResult() {
-                        @Override
-                        public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
-                            pagerAdapter.changeSate(hasnext, hasprev);
-                            page.updateListView(data);
-
-                            if (hasnext) {
-                                getActivity().runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        viewPager.setCurrentItem(1, false);
-                                        bar1.setVisibility(View.GONE);
-                                        bar2.setVisibility(View.GONE);
-                                    }
-                                });
+                    if (nextPageTab.getX() <= delta) {
+                        index++;
+                        nextPageTab.setX(OrgX);
+                        nextPage.animate().x(0).setDuration(200).setListener(new AnimatorListenerAdapter() {
+                            @Override
+                            public void onAnimationEnd(Animator animation) {
+                                super.onAnimationEnd(animation);
+                                nextPage.animate().alpha(0).setDuration(200)
+                                        .setListener(new AnimatorListenerAdapter() {
+                                            @Override
+                                            public void onAnimationEnd(Animator animation) {
+                                                super.onAnimationEnd(animation);
+                                                nextPage.setX(displayMetrics.widthPixels);
+                                                nextPage.setAlpha(1);
+                                                nextPageImg.setImageDrawable(new TextDrawable(Integer.toString(index + 1)));
+                                                prevPageImg.setImageDrawable(new TextDrawable(Integer.toString(index - 1)));
+                                            }
+                                        });
                             }
-                        }
+                        });
 
-                        @Override
-                        public void onError(String error) {
+                        youtubeClient.nextVideoPage();
+                        loading();
+                        getSearchResult();
+                    } else {
+                        nextPageTab.animate().x(OrgX).setDuration(100);
+                        nextPage.animate().x(displayMetrics.widthPixels).setDuration(100);
+                    }
 
-                        }
+                    break;
 
-
-                    });
-                } else if (index < previndex) {
-                    youtubeClient.prevVideoPage();
-                    page.loading();
-                    youtubeClient.getVideoSearchResults(new YoutubeClient.YoutubeVideoSearchResult() {
-                        @Override
-                        public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
-                            pagerAdapter.changeSate(hasnext, hasprev);
-                            page.updateListView(data);
-                            if (hasprev) {
-                                getActivity().runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        viewPager.setCurrentItem(1, false);
-                                        bar1.setVisibility(View.GONE);
-                                        bar2.setVisibility(View.GONE);
-                                    }
-                                });
-                            }
-                        }
-
-                        @Override
-                        public void onError(String error) {
-
-                        }
-
-
-                    });
-                } else if (index == previndex) {
-                    bar1.setVisibility(View.GONE);
-                    bar2.setVisibility(View.GONE);
-                }
-
-
-            } else if (state == ViewPager.SCROLL_STATE_DRAGGING) {
-                bar1.setVisibility(View.VISIBLE);
-                bar2.setVisibility(View.VISIBLE);
+                case MotionEvent.ACTION_DOWN:
+                    half = nextPageTab.getWidth() / 2;
+                    OrgX = displayMetrics.widthPixels - half * 2;
+                    nextPageTab.clearAnimation();
+                    nextPage.clearAnimation();
+                case MotionEvent.ACTION_MOVE:
+                    float x = event.getRawX();
+                    if ((x + half) < displayMetrics.widthPixels) {
+                        nextPageTab.setX(x - half);
+                    }
+                    nextPage.setX(x + half);
+                    break;
 
             }
+
+            return true;
         }
     };
+
+    private View.OnTouchListener prevPageTouchListsner = new View.OnTouchListener() {
+        float OrgX;
+        float half;
+
+        @Override
+        public boolean onTouch(View v, MotionEvent event) {
+
+            switch (event.getAction()) {
+                case MotionEvent.ACTION_UP:
+                    float delta = displayMetrics.widthPixels / 5 * 3;
+                    if (prevPageTab.getX() >= delta) {
+                        index = index - 1 > 1 ? index - 1 : 1;
+                        prevPageTab.setX(OrgX);
+                        prevPage.animate().x(0).setDuration(200).setListener(new AnimatorListenerAdapter() {
+                            @Override
+                            public void onAnimationEnd(Animator animation) {
+                                super.onAnimationEnd(animation);
+                                prevPage.animate().alpha(0).setDuration(200)
+                                        .setListener(new AnimatorListenerAdapter() {
+                                            @Override
+                                            public void onAnimationEnd(Animator animation) {
+                                                super.onAnimationEnd(animation);
+                                                prevPage.setX(-displayMetrics.widthPixels);
+                                                prevPage.setAlpha(1);
+                                                nextPageImg.setImageDrawable(new TextDrawable(Integer.toString(index + 1)));
+                                                prevPageImg.setImageDrawable(new TextDrawable(Integer.toString(index - 1)));
+
+                                            }
+                                        });
+                            }
+                        });
+
+
+                        youtubeClient.prevVideoPage();
+                        loading();
+                        getSearchResult();
+                    } else {
+                        prevPageTab.animate().x(OrgX).setDuration(100);
+                        prevPage.animate().x(-displayMetrics.widthPixels).setDuration(100);
+                    }
+
+                    break;
+
+                case MotionEvent.ACTION_DOWN:
+
+                    OrgX = prevPageTab.getX();
+                    half = prevPageTab.getWidth() / 2;
+                    prevPageTab.clearAnimation();
+                    prevPage.clearAnimation();
+                case MotionEvent.ACTION_MOVE:
+                    float x = event.getRawX();
+                    if ((x - half) > 0) {
+                        prevPageTab.setX(x - half);
+                    }
+                    prevPage.setX(-displayMetrics.widthPixels + x - half);
+                    break;
+
+            }
+
+            return true;
+        }
+    };
+
+
 
     @Override
     public void onAttach(Context context) {
@@ -506,15 +542,17 @@ public class VideoFragment extends Fragment {
     }
 
     public void loadRelatedVideos(DataHolder dataHolder) {
-        page.setTitle(dataHolder.title);
+        setTitle(dataHolder.title);
         if (youtubeClient != null) {
+            index = 1;
+            nextPageImg.setImageDrawable(new TextDrawable(Integer.toString(index + 1)));
             youtubeClient.loadRelatedVideos(dataHolder.videoID);
-            page.loading();
+            loading();
             youtubeClient.getVideoSearchResults(new YoutubeClient.YoutubeVideoSearchResult() {
                 @Override
                 public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
-                    pagerAdapter.changeSate(hasnext, hasprev);
-                    page.updateListView(data);
+                    changeSate(hasnext, hasprev);
+                    updateListView(data);
                 }
 
                 @Override
@@ -528,6 +566,24 @@ public class VideoFragment extends Fragment {
         }
     }
 
+    public void getSearchResult() {
+
+        youtubeClient.getVideoSearchResults(new YoutubeClient.YoutubeVideoSearchResult() {
+            @Override
+            public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
+                changeSate(hasnext, hasprev);
+                updateListView(data);
+            }
+
+            @Override
+            public void onError(String error) {
+                Log.d("SearchFramgent", "error: " + error);
+
+            }
+
+        });
+    }
+
     public void resume() {
 
 
@@ -539,9 +595,9 @@ public class VideoFragment extends Fragment {
                 @Override
                 public void run() {
                     if (buff) {
-                        progressBar.setVisibility(View.VISIBLE);
+                        videoBufferProgress.setVisibility(View.VISIBLE);
                     } else {
-                        progressBar.setVisibility(View.GONE);
+                        videoBufferProgress.setVisibility(View.GONE);
                     }
 
                 }
@@ -657,6 +713,128 @@ public class VideoFragment extends Fragment {
                 header.setVisibility(View.GONE);
             }
 
+        }
+    }
+
+    public void loading() {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (!waiting) {
+                    waiting = true;
+                    recyclerView.setVisibility(View.GONE);
+                    relatedBufferProgress.setVisibility(View.VISIBLE);
+                }
+            }
+        });
+
+    }
+
+    public void updateListView(final List<DataHolder> data) {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (videoAdapter == null) {
+                    createListView(recyclerView, data);
+                } else {
+                    videoAdapter.dataHolders = data;
+                    videoAdapter.title = text;
+                    videoAdapter.notifyDataSetChanged();
+
+                }
+                recyclerView.scrollToPosition(0);
+                if (waiting) {
+                    waiting = false;
+                    recyclerView.setVisibility(View.VISIBLE);
+                    relatedBufferProgress.setVisibility(View.GONE);
+                }
+            }
+        });
+
+    }
+
+    private void createListView(final RecyclerView recyclerView, final List<DataHolder> data) {
+
+//        Log.d("createlist", "create");
+        videoAdapter = new VideoRecyclerAdapter(data);
+        videoAdapter.title = text;
+        DividerItemDecoration decoration = new DividerItemDecoration(context, DividerItemDecoration.VERTICAL);
+        recyclerView.addItemDecoration(decoration);
+        recyclerView.setLayoutManager(new LinearLayoutManager(context));
+        recyclerView.setItemAnimator(new DefaultItemAnimator());
+        recyclerView.setAdapter(videoAdapter);
+        RecyclerTouchListener listener = new RecyclerTouchListener(context, recyclerView, new OnItemClicked() {
+            @Override
+            public void onClick(View view, int position) {
+                if (position > 0) {
+                    System.out.println("clicked" + (position - 1));
+                    Toast toast = Toast.makeText(context, "Decrypting...", Toast.LENGTH_SHORT);
+                    toast.show();
+                    final DataHolder dataHolder = videoAdapter.dataHolders.get(position - 1);
+                    videoRetriever.getDataHolder(dataHolder, new VideoRetriever.YouTubeExtractorListener() {
+
+                        @Override
+                        public void onSuccess(DataHolder result) {
+                            start(result);
+                        }
+
+                        @Override
+                        public void onFailure(String error) {
+                            Log.d("search", "onError extracting");
+
+                        }
+                    });
+                }
+
+            }
+
+            @Override
+            public void onLongClick(View view, int position) {
+                Log.d("videoFragment", "Long click");
+
+            }
+        });
+        CustomSlideUpPanel slideUpPanel = ((MainActivity) context).slidePanel;
+        listener.setSlidePanel(slideUpPanel);
+        recyclerView.addOnItemTouchListener(listener);
+
+    }
+
+    public void setTitle(String t) {
+        text = t;
+    }
+
+    public void nextPageEnabled(final boolean enable) {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                nextPageTab.setImageResource(enable ? R.drawable.page_tab_enabled : R.drawable.page_tab_disabled);
+                nextPageTab.setEnabled(enable);
+            }
+        });
+
+    }
+
+    public void prevPageEnabled(final boolean enable) {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                prevPageTab.setImageResource(enable ? R.drawable.page_tab_enabled : R.drawable.page_tab_disabled);
+                prevPageTab.setEnabled(enable);
+            }
+        });
+
+    }
+
+
+    public void changeSate(boolean hasNext, boolean hasPrev) {
+        if (hasNext != m_hasNext) {
+            nextPageEnabled(hasNext);
+            m_hasNext = hasNext;
+        }
+        if (hasPrev != m_hasPrev) {
+            prevPageEnabled(hasPrev);
+            m_hasPrev = hasPrev;
         }
     }
 
@@ -776,7 +954,7 @@ public class VideoFragment extends Fragment {
             this.text = text;
             this.paint = new Paint();
             paint.setColor(Color.WHITE);
-            paint.setTextSize(22f);
+            paint.setTextSize(220f);
             paint.setAntiAlias(true);
             paint.setFakeBoldText(true);
             paint.setShadowLayer(6f, 0, 0, Color.BLACK);
@@ -786,7 +964,7 @@ public class VideoFragment extends Fragment {
 
         @Override
         public void draw(Canvas canvas) {
-            canvas.drawText(text, 0, 0, paint);
+            canvas.drawText(text, 170, 200, paint);
         }
 
         @Override
@@ -802,114 +980,6 @@ public class VideoFragment extends Fragment {
         @Override
         public int getOpacity() {
             return PixelFormat.TRANSLUCENT;
-        }
-    }
-
-    private class Page {
-
-        public VideoRecyclerAdapter adapter = null;
-        public RecyclerView recyclerView;
-        public ProgressBar progressBar;
-        public RelativeLayout relativeLayout;
-        boolean waiting = false;
-        String text = "onError";
-
-
-        public Page(View page) {
-            recyclerView = (RecyclerView) page.findViewById(R.id.searchrecyclerView);
-            progressBar = (ProgressBar) page.findViewById(R.id.pageprogressBar);
-            relativeLayout = (RelativeLayout) page.findViewById(R.id.pageRL);
-
-//            relativeLayout.setBackground(new TextDrawable());
-        }
-
-        public void loading() {
-            getActivity().runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    if (!waiting) {
-                        waiting = true;
-                        recyclerView.setVisibility(View.GONE);
-                        progressBar.setVisibility(View.VISIBLE);
-                    }
-                }
-            });
-
-        }
-
-        public void updateListView(final List<DataHolder> data) {
-            getActivity().runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    if (adapter == null) {
-                        createListView(recyclerView, data);
-                    } else {
-                        adapter.dataHolders = data;
-                        adapter.title = text;
-                        adapter.notifyDataSetChanged();
-
-                    }
-                    recyclerView.scrollToPosition(0);
-                    if (waiting) {
-                        waiting = false;
-                        recyclerView.setVisibility(View.VISIBLE);
-                        progressBar.setVisibility(View.GONE);
-                    }
-                }
-            });
-
-        }
-
-        private void createListView(final RecyclerView recyclerView, final List<DataHolder> data) {
-
-//        Log.d("createlist", "create");
-            adapter = new VideoRecyclerAdapter(data);
-            adapter.title = text;
-            DividerItemDecoration decoration = new DividerItemDecoration(context, DividerItemDecoration.VERTICAL);
-            recyclerView.addItemDecoration(decoration);
-            recyclerView.setLayoutManager(new LinearLayoutManager(context));
-            recyclerView.setItemAnimator(new DefaultItemAnimator());
-            recyclerView.setAdapter(adapter);
-            RecyclerTouchListener listener = new RecyclerTouchListener(context, recyclerView, new OnItemClicked() {
-                @Override
-                public void onClick(View view, int position) {
-                    if (position > 0) {
-                        System.out.println("clicked" + (position - 1));
-                        Toast toast = Toast.makeText(context, "Decrypting...", Toast.LENGTH_SHORT);
-                        toast.show();
-                        final DataHolder dataHolder = adapter.dataHolders.get(position - 1);
-                        videoRetriever.getDataHolder(dataHolder, new VideoRetriever.YouTubeExtractorListener() {
-
-                            @Override
-                            public void onSuccess(DataHolder result) {
-                                start(result);
-                            }
-
-                            @Override
-                            public void onFailure(String error) {
-                                Log.d("search", "onError extracting");
-
-                            }
-                        });
-                    }
-
-                }
-
-                @Override
-                public void onLongClick(View view, int position) {
-                    Log.d("videoFragment", "Long click");
-
-                }
-            });
-            CustomSlideUpPanel slideUpPanel = ((MainActivity) context).slidePanel;
-            viewPager.setSlidePanel(slideUpPanel);
-            listener.setSlidePanel(slideUpPanel);
-            recyclerView.addOnItemTouchListener(listener);
-
-        }
-
-        public void setTitle(String t) {
-            text = t;
         }
     }
 

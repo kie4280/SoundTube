@@ -94,7 +94,7 @@ public class SearchFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(false);
-        workHandler = MainActivity.workHandler;
+        workHandler = ((MainActivity) context).workHandler;
         youtubeClient = new YoutubeClient(context, workHandler);
         videoRetriever = new VideoRetriever(context, workHandler);
         downloadOptionDialog = new OptionDialog();
@@ -157,7 +157,12 @@ public class SearchFragment extends Fragment {
 
             @Override
             public void onPermissionsGranted(int requestCode, List<String> perms) {
-                downloadOptionDialog.show();
+                switch (requestCode) {
+                    case REQUEST_WRITE_PERMISSION:
+                        downloadOptionDialog.show();
+                        break;
+                }
+
             }
 
             @Override
