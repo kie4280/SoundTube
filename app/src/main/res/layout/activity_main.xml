@@ -16,8 +16,8 @@
         app:umanoPanelHeight="105dp"
         tools:context=".MainActivity">
 
-        <FrameLayout
-            android:id="@+id/bottomFragment"
+        <kie.com.soundtube.CustomViewPager
+            android:id="@+id/fragmentPager"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
 

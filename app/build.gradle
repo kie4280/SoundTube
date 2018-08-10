@@ -59,6 +59,7 @@ dependencies {
     implementation 'com.google.android.exoplayer:exoplayer:2.6.1'
     implementation 'com.sothree.slidinguppanel:library:3.4.0'
     implementation 'com.android.support:support-v4:27.1.1'
+    implementation 'com.android.support:preference-v7:27.1.1'
     implementation 'com.android.support:support-vector-drawable:27.1.1'
     implementation 'com.android.support.constraint:constraint-layout:1.1.2'
     implementation 'com.google.http-client:google-http-client:1.23.0'

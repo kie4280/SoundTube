@@ -3,14 +3,10 @@ package kie.com.soundtube;
 import android.content.Context;
 import android.net.Uri;
 import android.os.Bundle;
-import android.app.Fragment;
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.support.v4.view.GravityCompat;
-import android.support.v4.widget.DrawerLayout;
-import android.support.v7.app.ActionBarDrawerToggle;
+import android.support.v4.app.Fragment;
 import android.support.v7.widget.RecyclerView;
-import android.support.v7.widget.Toolbar;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,14 +14,13 @@ import android.view.ViewGroup;
 
 public class PlaylistFragment extends Fragment {
 
-
-
     RecyclerView recyclerView;
     private OnFragmentInteractionListener mListener;
     YoutubeClient youtubeClient;
     Handler netHandler;
     HandlerThread thread;
     PlayListManager playListManager;
+    Context context;
 
     public PlaylistFragment() {
         // Required empty public constructor
@@ -54,6 +49,7 @@ public class PlaylistFragment extends Fragment {
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
+        this.context = context;
         if (context instanceof OnFragmentInteractionListener) {
             mListener = (OnFragmentInteractionListener) context;
         } else {

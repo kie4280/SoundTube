@@ -8,6 +8,7 @@ import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -16,6 +17,7 @@ import android.os.Process;
 import android.support.annotation.NonNull;
 import android.support.design.widget.NavigationView;
 import android.support.design.widget.TabLayout;
+import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
@@ -26,8 +28,11 @@ import android.widget.Toast;
 
 import com.sothree.slidinguppanel.SlidingUpPanelLayout;
 
+import java.util.ArrayList;
+
 public class MainActivity extends AppCompatActivity implements SearchFragment.OnFragmentInteractionListener,
-        VideoFragment.OnFragmentInteractionListener {
+        VideoFragment.OnFragmentInteractionListener, SettingFragment.OnFragmentInteractionListener
+        , PlaylistFragment.OnFragmentInteractionListener {
 
     public Handler workHandler;
     public HandlerThread workThread;
@@ -45,6 +50,8 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
     Context context;
     ConnectivityManager connectmgr;
     int tabHeight;
+    ArrayList<Fragment> fragments = new ArrayList<>(3);
+    CustomViewPager viewPager;
 
 
     @Override
@@ -75,6 +82,7 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
         tabLayout = (TabLayout) findViewById(R.id.tabLayout);
         tabHeight = Tools.convertDpToPixel(50, context);
         slidePanel = (CustomSlideUpPanel) findViewById(R.id.slidePanel);
+        viewPager = (CustomViewPager) findViewById(R.id.fragmentPager);
         slidePanel.addPanelSlideListener(panelSlideListener);
 //        slidePanel.setPanelState(SlidingUpPanelLayout.PanelState.HIDDEN);           //should not be commented when building app
         serviceIntent = new Intent(this, MediaPlayerService.class);
@@ -87,14 +95,20 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
         workHandler = new Handler(workThread.getLooper());
         videoFragment = new VideoFragment();
         searchFragment = new SearchFragment();
+        settingFragment = new SettingFragment();
+        playlistFragment = new PlaylistFragment();
+        fragments.add(searchFragment);
+        fragments.add(playlistFragment);
+        fragments.add(settingFragment);
 
         fragmentManager = getSupportFragmentManager();
         FragmentTransaction transaction = fragmentManager.beginTransaction();
         transaction
                 .add(R.id.videoPanel, videoFragment, "videoFragment")
-                .add(R.id.bottomFragment, searchFragment, "searchFragment")
                 .commit();
 
+        tabLayout.addOnTabSelectedListener(tabSelectedListener);
+        viewPager.setAdapter(new CustomPagerAdapter(fragmentManager, fragments));
 
     }
 
@@ -166,6 +180,25 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
             } else if (newState == SlidingUpPanelLayout.PanelState.DRAGGING) {
                 Log.d("Panel", "dragging");
             }
+        }
+    };
+
+    private TabLayout.OnTabSelectedListener tabSelectedListener = new TabLayout.OnTabSelectedListener() {
+
+        @Override
+        public void onTabSelected(TabLayout.Tab tab) {
+
+            viewPager.setCurrentItem(tab.getPosition(), false);
+        }
+
+        @Override
+        public void onTabUnselected(TabLayout.Tab tab) {
+
+        }
+
+        @Override
+        public void onTabReselected(TabLayout.Tab tab) {
+
         }
     };
 
@@ -304,5 +337,10 @@ public class MainActivity extends AppCompatActivity implements SearchFragment.On
             default:
                 break;
         }
+    }
+
+    @Override
+    public void onFragmentInteraction(Uri uri) {
+
     }
 }

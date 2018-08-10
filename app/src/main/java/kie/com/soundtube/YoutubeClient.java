@@ -94,9 +94,13 @@ public class YoutubeClient {
     private String getAPIKey() {
 
         Properties properties = new Properties();
+        InputStream in;
         try {
-            InputStream in = context.getAssets().open("config.properties");
+            in = context.getAssets().open("config.properties");
             properties.load(in);
+            if (in != null) {
+                in.close();
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }

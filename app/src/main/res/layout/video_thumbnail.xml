@@ -52,6 +52,7 @@
         android:layout_alignParentTop="true"
         android:layout_marginTop="3dp"
         android:clickable="true"
+        android:focusable="true"
         android:paddingBottom="10dp"
         android:paddingStart="20dp"
         android:paddingTop="10dp"

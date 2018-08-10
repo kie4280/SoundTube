@@ -545,7 +545,13 @@ public class VideoFragment extends Fragment {
         setTitle(dataHolder.title);
         if (youtubeClient != null) {
             index = 1;
-            nextPageImg.setImageDrawable(new TextDrawable(Integer.toString(index + 1)));
+            getActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    nextPageImg.setImageDrawable(new TextDrawable(Integer.toString(index + 1)));
+                }
+            });
+
             youtubeClient.loadRelatedVideos(dataHolder.videoID);
             loading();
             youtubeClient.getVideoSearchResults(new YoutubeClient.YoutubeVideoSearchResult() {
@@ -573,6 +579,7 @@ public class VideoFragment extends Fragment {
             public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
                 changeSate(hasnext, hasprev);
                 updateListView(data);
+                recyclerView.scrollToPosition(0);
             }
 
             @Override

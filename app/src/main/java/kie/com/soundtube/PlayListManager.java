@@ -1,8 +1,6 @@
 package kie.com.soundtube;
 
 import android.content.Context;
-import android.content.res.AssetManager;
-import android.os.Environment;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -60,18 +58,17 @@ public class PlayListManager {
 
     private static PlayListManager read(Context context) {
         PlayListManager manager = null;
-        AssetManager assets = context.getAssets();
+
         try {
             InputStream in = new FileInputStream(new File(context.getFilesDir(), "PlayListManager.ser"));
             ObjectInputStream oi = new ObjectInputStream(in);
             manager = (PlayListManager) oi.readObject();
+            in.close();
 
         } catch (IOException e) {
             e.printStackTrace();
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
-        } finally {
-            assets.close();
         }
         return manager;
     }

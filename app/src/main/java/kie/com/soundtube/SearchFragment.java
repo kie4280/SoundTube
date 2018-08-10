@@ -324,6 +324,7 @@ public class SearchFragment extends Fragment {
             public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
                 changeSate(hasnext, hasprev);
                 updateListView(data);
+                recyclerView.scrollToPosition(0);
             }
 
             @Override

@@ -1,8 +1,8 @@
 package kie.com.soundtube;
 
+import android.app.FragmentManager;
 import android.net.Uri;
 import android.os.Bundle;
-import android.app.FragmentManager;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -27,9 +27,6 @@ public class SettingActivity extends AppCompatActivity implements SettingFragmen
         actionBar.setTitle(null);
         SettingFragment settingFragment = new SettingFragment();
 
-        fragmentManager.beginTransaction()
-                .add(R.id.linearSetting, settingFragment, "SettingFragment")
-                .commit();
 
     }
 
