@@ -3,10 +3,11 @@ package kie.com.soundtube;
 import android.app.FragmentManager;
 import android.net.Uri;
 import android.os.Bundle;
-import android.support.v7.app.ActionBar;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
 import android.widget.LinearLayout;
+
+import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 
 public class SettingActivity extends AppCompatActivity implements SettingFragment.OnFragmentInteractionListener {
 

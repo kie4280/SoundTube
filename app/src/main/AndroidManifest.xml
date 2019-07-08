@@ -41,6 +41,7 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
+
         <activity
             android:name=".SettingActivity"
             android:label="@string/title_activity_settings"
@@ -66,6 +67,7 @@
             android:launchMode="singleTop"
             android:parentActivityName=".SearchActivity"
             android:screenOrientation="portrait">
+
             <intent-filter>
                 <action android:name="android.intent.action.PICK_ACTIVITY" />
 

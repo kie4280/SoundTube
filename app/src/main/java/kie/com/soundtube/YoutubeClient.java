@@ -14,6 +14,8 @@ import com.google.api.client.util.ExponentialBackOff;
 import com.google.api.client.util.Joiner;
 import com.google.api.services.youtube.YouTube;
 import com.google.api.services.youtube.YouTubeScopes;
+import com.google.api.services.youtube.model.Playlist;
+import com.google.api.services.youtube.model.PlaylistListResponse;
 import com.google.api.services.youtube.model.SearchListResponse;
 import com.google.api.services.youtube.model.SearchResult;
 import com.google.api.services.youtube.model.Video;
@@ -36,10 +38,6 @@ import pub.devrel.easypermissions.EasyPermissions;
 
 public class YoutubeClient {
 
-    YouTube.Search.List search;
-    YouTube.Search.List tokensearch;
-    String nextPageToken = null;
-    String prevPageToken = null;
 
     private static String APIKey = null;
     private YouTube youtube = null;
@@ -52,6 +50,9 @@ public class YoutubeClient {
     private static final String YOUTUBE_CLIENT_PREFERENCES = BuildConfig.APPLICATION_ID + ".youtubePreferences";
     static final String NO_DATA = "no data";
     static final String NOT_SIGN_IN = "not signed in";
+    public static final String TYPE_CHANNEL = "channel";
+    public static final String TYPE_PLAYLIST = "playlist";
+    public static final String TYPE_VIDEO = "video";
     public boolean signedIn = false;
 
     public YoutubeClient(Context context, Handler handler) {
@@ -116,7 +117,7 @@ public class YoutubeClient {
 
 
     public void newVideoSearch(final String queryTerm) {
-        videoSearch.newSearch(queryTerm, YoutubeSearch.TYPE_VIDEO);
+        videoSearch.newSearch(queryTerm, TYPE_VIDEO);
         Log.d("youtubeClient", "newsearch");
 
     }
@@ -144,14 +145,14 @@ public class YoutubeClient {
     }
 
     public interface YoutubePlaylistSearchResult {
-        void onFound(final List<DataHolder> data, final boolean hasnext, final boolean hasprev);
+        void onFound(final List<Playlist> data, final boolean hasnext, final boolean hasprev);
 
         void onError(String error);
     }
 
     private class SearchContainer {
-        ArrayList<String> tokens = new ArrayList<>(500);
-        HashMap<String, List<DataHolder>> pages = new HashMap<>(500);
+        ArrayList<String> tokens = new ArrayList<>(YoutubeSearch.MAX_LOAD_PAGES);
+        HashMap<String, List<DataHolder>> pages = new HashMap<>(YoutubeSearch.MAX_LOAD_PAGES);
         YouTube.Search.List search;
         YouTube.Search.List tokensearch;
         String nextPageToken = null;
@@ -159,13 +160,42 @@ public class YoutubeClient {
     }
 
     class YoutubePlaylist {
+
         private static final long NUMBER_OF_VIDEOS_RETURNED = 25;
         private static final int MAX_LOAD_PAGES = 20;
         private static final String Order = "relevance";
         private String Type = "video";
-        public static final String TYPE_CHANNEL = "channel";
-        public static final String TYPE_PLAYLIST = "playlist";
-        public static final String TYPE_VIDEO = "video";
+        YouTube.Playlists.List search;
+        YouTube.Search.List tokensearch;
+        String nextPageToken = null;
+        String prevPageToken = null;
+
+        public void getUserPlayLists(YoutubePlaylistSearchResult result) {
+            newYoutubeService();
+            Type = TYPE_PLAYLIST;
+            if (signedIn) {
+                try {
+                    search = youtube.playlists().list("snippet");
+                    search.setKey(APIKey);
+                    search.setMine(true);
+                    search.setFields("items(id/kind,id/videoId)");
+                    search.setMaxResults(NUMBER_OF_VIDEOS_RETURNED);
+                    PlaylistListResponse response = search.execute();
+                    List<Playlist> playlists = response.getItems();
+                    result.onFound(playlists, false, false);
+
+
+                } catch (IOException e) {
+                    result.onError(e.getMessage());
+                    e.printStackTrace();
+                }
+            } else {
+                result.onError(NOT_SIGN_IN);
+
+            }
+
+
+        }
     }
 
     class YoutubeSearch {
@@ -174,19 +204,21 @@ public class YoutubeClient {
         private static final int MAX_LOAD_PAGES = 20;
         private static final String Order = "relevance";
         private String Type = "video";
-        public static final String TYPE_CHANNEL = "channel";
-        public static final String TYPE_PLAYLIST = "playlist";
-        public static final String TYPE_VIDEO = "video";
+        YouTube.Search.List search;
+        YouTube.Search.List tokensearch;
+        String nextPageToken = null;
+        String prevPageToken = null;
 
-        private ArrayList<String> tokens = new ArrayList<>(500);
-        private HashMap<String, List<DataHolder>> pages = new HashMap<>(500);
-        public HashMap<String, SearchContainer> searches = new HashMap<>(50);
+
+        private ArrayList<String> tokens = new ArrayList<>(MAX_LOAD_PAGES);
+        private HashMap<String, List<DataHolder>> pages = new HashMap<>(MAX_LOAD_PAGES);
+        public HashMap<String, SearchContainer> searches = new HashMap<>(10);
         private int index = 0;
         private SearchListResponse searchResponse;
         private SearchListResponse tokenseachResponse;
 
         private void addSearchResult(String id, SearchContainer container) {
-            if (searches.size() >= 49) {
+            if (searches.size() >= 10) {
                 Iterator<String> iterator = searches.keySet().iterator();
                 if (iterator.hasNext()) {
                     searches.remove(iterator.next());
@@ -214,8 +246,8 @@ public class YoutubeClient {
                     } else {
 
                         try {
-                            pages = new HashMap<>(500);
-                            tokens = new ArrayList<>(500);
+                            pages = new HashMap<>(20);
+                            tokens = new ArrayList<>(20);
                             search = youtube.search().list("snippet");
                             search.setKey(APIKey);
                             search.setType(Type);
@@ -340,7 +372,7 @@ public class YoutubeClient {
                                 prevPageToken = tokenseachResponse.getPrevPageToken();
                                 if (nextPageToken != null) {
                                     tokens.add(nextPageToken);
-                                    if (pages.size() > MAX_LOAD_PAGES) {
+                                    if (pages.size() >= MAX_LOAD_PAGES) {
                                         pages.remove(tokens.get(0));
                                     }
                                 }
@@ -376,7 +408,7 @@ public class YoutubeClient {
                                 index = 0;
                                 if (prevPageToken != null) {
                                     tokens.add(0, prevPageToken);
-                                    if (pages.size() > MAX_LOAD_PAGES) {
+                                    if (pages.size() >= MAX_LOAD_PAGES) {
                                         pages.remove(tokens.get(tokens.size() - 1));
                                     }
                                 }
@@ -423,36 +455,36 @@ public class YoutubeClient {
             });
         }
 
-        public void getPlayListSearchResult(final YoutubePlaylistSearchResult result) {
-            WorkHandler.post(new Runnable() {
-                @Override
-                public void run() {
-                    if (index >= 0 && index < tokens.size()) {
-                        String key = tokens.get(index);
-                        if (pages.containsKey(key)) {
-                            result.onFound(pages.get(key), nextPageToken != null, prevPageToken != null);
-                        } else {
-                            try {
-                                search.setPageToken(key);
-                                searchResponse = search.execute();
-                                List<SearchResult> searchResultList = searchResponse.getItems();
-                                if (searchResultList.isEmpty()) {
-                                    result.onError(NO_DATA);
-                                } else {
-                                    List<DataHolder> dataHolders = toDataHolders(searchResultList);
-                                    pages.put(key, dataHolders);
-                                    result.onFound(dataHolders, nextPageToken != null, prevPageToken != null);
-                                }
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
-                        }
-                    } else {
-                        result.onError("Array index out of bounds");
-                    }
-                }
-            });
-        }
+//        public void getPlayListSearchResult(final YoutubePlaylistSearchResult result) {
+//            WorkHandler.post(new Runnable() {
+//                @Override
+//                public void run() {
+//                    if (index >= 0 && index < tokens.size()) {
+//                        String key = tokens.get(index);
+//                        if (pages.containsKey(key)) {
+//                            result.onFound(pages.get(key), nextPageToken != null, prevPageToken != null);
+//                        } else {
+//                            try {
+//                                search.setPageToken(key);
+//                                searchResponse = search.execute();
+//                                List<SearchResult> searchResultList = searchResponse.getItems();
+//                                if (searchResultList.isEmpty()) {
+//                                    result.onError(NO_DATA);
+//                                } else {
+//                                    List<DataHolder> dataHolders = toDataHolders(searchResultList);
+//                                    pages.put(key, dataHolders);
+//                                    result.onFound(dataHolders, nextPageToken != null, prevPageToken != null);
+//                                }
+//                            } catch (IOException e) {
+//                                e.printStackTrace();
+//                            }
+//                        }
+//                    } else {
+//                        result.onError("Array index out of bounds");
+//                    }
+//                }
+//            });
+//        }
 
         public void cancel() {
             WorkHandler.removeCallbacks(null);

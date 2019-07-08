@@ -2,12 +2,11 @@ package kie.com.soundtube;
 
 import android.content.Context;
 import android.graphics.Rect;
-import android.support.v7.widget.RecyclerView;
 import android.view.GestureDetector;
-import android.view.GestureDetector.SimpleOnGestureListener;
 import android.view.MotionEvent;
 import android.view.View;
-import android.widget.AdapterView;
+
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.sothree.slidinguppanel.SlidingUpPanelLayout;
 

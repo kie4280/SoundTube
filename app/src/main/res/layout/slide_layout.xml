@@ -9,13 +9,13 @@
     android:gravity="bottom"
     app:elevation="0dp">
 
-    <android.support.constraint.ConstraintLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/slidePanelBase"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
 
-    <android.support.constraint.ConstraintLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/videoPanel"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
