@@ -38,6 +38,7 @@ public class Github {
         try {
             InputStream in = context.getAssets().open("config.properties");
             properties.load(in);
+            in.close();
         } catch (IOException e) {
             e.printStackTrace();
         }

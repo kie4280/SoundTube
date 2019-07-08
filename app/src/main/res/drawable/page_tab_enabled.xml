@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#c7c7c7" />
+            <size
+                android:width="28dp"
+                android:height="60dp" />
+            <corners
+                android:bottomLeftRadius="10dp"
+                android:topLeftRadius="10dp" />
+        </shape>
+    </item>
+    <item>
+        <inset
+            android:drawable="@drawable/triangle_black"
+            android:insetLeft="10dp"
+            android:insetTop="25dp"
+            android:insetBottom="25dp"
+            android:insetRight="8dp" />
+    </item>
+
+</layer-list>
+
+

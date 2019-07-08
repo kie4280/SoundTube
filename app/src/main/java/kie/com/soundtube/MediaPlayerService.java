@@ -19,13 +19,14 @@ import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.PowerManager;
 import android.os.Process;
-import android.support.v4.app.NotificationCompat;
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.widget.RemoteViews;
 import android.widget.Toast;
+
+import androidx.core.app.NotificationCompat;
 
 import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.ExoPlayerFactory;
@@ -245,7 +246,7 @@ public class MediaPlayerService extends Service {
     public boolean onUnbind(Intent intent) {
 
         updateSeekBar = false;
-        PlayerActivity.servicebound = false;
+        MainActivity.servicebound = false;
         videoFragment.serviceDisconnected();
         videoFragment = null;
         Log.d("service", "onUnbind");
@@ -278,7 +279,7 @@ public class MediaPlayerService extends Service {
         newPlayer();
 
         notificationManager = (NotificationManager) getSystemService(Service.NOTIFICATION_SERVICE);
-        Intent app = new Intent(getApplicationContext(), PlayerActivity.class);
+        Intent app = new Intent(getApplicationContext(), MainActivity.class);
         app.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         Intent destroy = new Intent(NOTIFICATION_REMOVED);
         Intent play = new Intent(NOTIFICATION_PLAY);
@@ -622,7 +623,7 @@ public class MediaPlayerService extends Service {
         } else if (PLAYING_MODE == PLAY_FROM_RELATED_VIDEO && currentData != null) {
 
             youtubeClient.loadRelatedVideos(currentData.videoID);
-            youtubeClient.getSearchResults(new YoutubeClient.YoutubeSearchResult() {
+            youtubeClient.getVideoSearchResults(new YoutubeClient.YoutubeVideoSearchResult() {
                 @Override
                 public void onFound(List<DataHolder> data, boolean hasnext, boolean hasprev) {
                     final DataHolder target = data.get(0);

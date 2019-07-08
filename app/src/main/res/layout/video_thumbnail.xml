@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                xmlns:app="http://schemas.android.com/apk/res-auto" android:layout_width="wrap_content"
+                android:layout_height="wrap_content">
+
+    <ImageView
+        android:id="@+id/imageView"
+        android:layout_width="160dp"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_centerVertical="true"
+        android:adjustViewBounds="true"
+        android:cropToPadding="true"
+        android:paddingBottom="10dp"
+        android:paddingEnd="10dp"
+        android:paddingStart="10dp"
+        android:paddingTop="10dp"
+        app:srcCompat="@android:drawable/btn_dialog" />
+
+    <TextView
+        android:id="@+id/titleview"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/durationview"
+        android:layout_alignParentEnd="true"
+        android:layout_alignTop="@+id/imageView"
+        android:layout_marginEnd="30dp"
+        android:layout_marginStart="10dp"
+        android:layout_marginTop="30dp"
+        android:layout_toEndOf="@+id/imageView"
+        android:text="title" />
+
+    <TextView
+        android:id="@+id/durationview"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/imageView"
+        android:layout_marginBottom="10dp"
+        android:layout_marginEnd="10dp"
+        android:layout_toStartOf="@+id/titleview"
+        android:background="@android:color/black"
+        android:text="duration"
+        android:textAlignment="center"
+        android:textColor="@android:color/background_light"
+        android:textSize="10sp" />
+
+    <ImageView
+        android:id="@+id/video_option"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="3dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:paddingBottom="10dp"
+        android:paddingStart="20dp"
+        android:paddingTop="10dp"
+        app:srcCompat="@drawable/ic_more_vert_black_24dp" />
+
+</RelativeLayout>

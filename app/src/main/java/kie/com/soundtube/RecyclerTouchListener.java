@@ -2,12 +2,11 @@ package kie.com.soundtube;
 
 import android.content.Context;
 import android.graphics.Rect;
-import android.support.v7.widget.RecyclerView;
 import android.view.GestureDetector;
-import android.view.GestureDetector.SimpleOnGestureListener;
 import android.view.MotionEvent;
 import android.view.View;
-import android.widget.AdapterView;
+
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.sothree.slidinguppanel.SlidingUpPanelLayout;
 
@@ -67,7 +66,10 @@ public class RecyclerTouchListener implements RecyclerView.OnItemTouchListener {
                     View child = rv.findChildViewUnder(motionEvent.getX(), motionEvent.getY());
                     if (child != null) {
                         Rect rect = new Rect();
-                        child.findViewById(R.id.video_option).getGlobalVisibleRect(rect);
+                        View c = child.findViewById(R.id.video_option);
+                        if (c != null) {
+                            c.getGlobalVisibleRect(rect);
+                        }
                         boolean handled = rect.contains((int) motionEvent.getRawX(), (int) motionEvent.getRawY());
                         if (listener != null && !handled)
                             clickListener.onLongClick(child, rv.getChildAdapterPosition(child));

@@ -3,7 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <group>
+    <group android:id="@+id/windows">
         <item
             android:id="@+id/playlists"
             android:title="@string/playlists" />
@@ -11,9 +11,11 @@
             android:id="@+id/settings"
             android:title="@string/settings" />
     </group>
-    <item
-        android:id="@+id/account_action"
-        android:title="sign in" />
+    <group android:id="@+id/account">
+        <item
+            android:id="@+id/sign_in_action"
+            android:title="@string/signin" />
+    </group>
 
 
 </menu>

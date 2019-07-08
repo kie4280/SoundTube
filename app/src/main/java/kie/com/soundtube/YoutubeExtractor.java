@@ -7,8 +7,6 @@ import android.os.Looper;
 import android.util.SparseArray;
 import android.webkit.MimeTypeMap;
 
-import javax.net.ssl.HttpsURLConnection;
-
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
@@ -18,6 +16,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+
+import javax.net.ssl.HttpsURLConnection;
 
 import static android.os.Process.THREAD_PRIORITY_BACKGROUND;
 import static java.util.Arrays.asList;
@@ -254,6 +254,8 @@ public final class YoutubeExtractor {
     }
 
     public final class YouTubeExtractorException extends Exception {
+        private static final long serialVersionUID = 1L;
+
         public YouTubeExtractorException(String detailMessage) {
             super(detailMessage);
         }

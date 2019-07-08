@@ -11,15 +11,16 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.preference.Preference;
-import android.preference.PreferenceFragment;
-import android.support.annotation.Nullable;
 import android.util.Log;
 import android.widget.Toast;
 
+import androidx.annotation.Nullable;
+import androidx.preference.Preference;
+import androidx.preference.PreferenceFragmentCompat;
+
 import pub.devrel.easypermissions.EasyPermissions;
 
-public class SettingFragment extends PreferenceFragment {
+public class SettingFragment extends PreferenceFragmentCompat {
 
     Context context;
     HandlerThread thread;
@@ -39,13 +40,13 @@ public class SettingFragment extends PreferenceFragment {
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        context = getActivity().getApplicationContext();
+
         github = new Github(context);
         thread = new HandlerThread("worker");
         thread.start();
         worker = new Handler(thread.getLooper());
         addPreferencesFromResource(R.xml.settingpreference);
-        Preference checkupdate = (Preference) findPreference("checkupdate");
+        Preference checkupdate = findPreference("checkupdate");
         checkupdate.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
             public boolean onPreferenceClick(Preference preference) {
                 updateSoftware();
@@ -54,8 +55,8 @@ public class SettingFragment extends PreferenceFragment {
         });
     }
 
-    private void SignIn() {
-
+    @Override
+    public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
 
     }
 
@@ -145,6 +146,7 @@ public class SettingFragment extends PreferenceFragment {
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
+        this.context = context;
         if (context instanceof OnFragmentInteractionListener) {
             mListener = (OnFragmentInteractionListener) context;
         } else {
@@ -168,7 +170,7 @@ public class SettingFragment extends PreferenceFragment {
                     showText(R.string.deny_write_permission);
                     Log.d("Setting", getString(R.string.deny_write_permission));
 
-                } else if (!PlayerActivity.netConncted) {
+                } else if (!MainActivity.netConncted) {
                     showText(R.string.no_network);
                     Log.d("Setting", getString(R.string.no_network));
                 } else {

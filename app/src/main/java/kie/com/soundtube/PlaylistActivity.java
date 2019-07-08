@@ -2,22 +2,14 @@ package kie.com.soundtube;
 
 import android.app.FragmentManager;
 import android.content.Context;
-import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.NavigationView;
-import android.support.design.widget.Snackbar;
-import android.support.v4.view.GravityCompat;
-import android.support.v4.widget.DrawerLayout;
-import android.support.v7.app.ActionBar;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
-import android.telephony.PhoneStateListener;
-import android.view.MenuItem;
-import android.view.View;
 import android.widget.RelativeLayout;
+
+import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
+import androidx.drawerlayout.widget.DrawerLayout;
 
 
 public class PlaylistActivity extends AppCompatActivity implements PlaylistFragment.OnFragmentInteractionListener {
@@ -34,7 +26,7 @@ public class PlaylistActivity extends AppCompatActivity implements PlaylistFragm
         super.onCreate(savedInstanceState);
         setContentView(R.layout.playlist_layout);
         context = getApplicationContext();
-        playlistToolbar = (Toolbar) findViewById(R.id.playlistToolbar);
+        playlistToolbar = (Toolbar) findViewById(R.id.playListToolBar);
         playlistToolbar.setTitle("Playlists");
 
         setSupportActionBar(playlistToolbar);
@@ -43,7 +35,6 @@ public class PlaylistActivity extends AppCompatActivity implements PlaylistFragm
         actionBar.setDisplayHomeAsUpEnabled(true);
 
         playlistFragment = new PlaylistFragment();
-        playlistFragment.setActivity(this);
         fragmentManager = getFragmentManager();
 //        fragmentManager.beginTransaction()
 //                .add(R.id.mainRelativeLayout, playlistFragment, "playlistFragment")

@@ -1,120 +1,227 @@
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    xmlns:app="http://schemas.android.com/apk/res-auto">
+    android:layout_height="match_parent">
 
-    <!-- TODO: Update blank fragment layout -->
 
-    <RelativeLayout
-            android:layout_width="match_parent"
-            android:id="@+id/headerView"
-            android:animateLayoutChanges="false" android:layout_height="70dp" android:translationY="0dp"
-            android:layout_alignParentTop="false">
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/headerView"
+        android:layout_width="match_parent"
+        android:layout_height="55dp"
+        android:animateLayoutChanges="false"
+        app:layout_constraintTop_toTopOf="parent">
 
         <TextView
             android:id="@+id/playingTextView"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_alignParentTop="true"
-            android:layout_marginEnd="10dp"
-            android:layout_toStartOf="@+id/headerPlayButton"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_alignParentTop="false"
+            android:layout_marginEnd="8dp"
             android:ellipsize="end"
             android:gravity="start"
             android:singleLine="true"
             android:textAlignment="viewStart"
-            android:textSize="20sp" />
+            android:textSize="20sp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/headerPlayButton"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
         <ImageView
             android:id="@+id/headerPlayButton"
-            android:layout_width="50dp"
-            android:layout_height="50dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
             android:layout_alignParentEnd="true"
             android:layout_centerVertical="true"
-            android:layout_marginEnd="10dp"
-            android:layout_marginTop="18dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginTop="8dp"
             android:scaleType="centerCrop"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
             app:srcCompat="@drawable/pause" />
 
-    </RelativeLayout>
-    <RelativeLayout
-            android:layout_width="match_parent"
-            android:id="@+id/videoRelativeLayout" android:layout_height="200dp"
-            android:animateLayoutChanges="false"
-            android:translationY="70dp">
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/videoPlayerLayout"
+        android:layout_width="match_parent"
+        android:layout_height="200dp"
+        android:animateLayoutChanges="false"
+        android:translationY="55dp"
+        app:layout_constraintTop_toTopOf="parent">
 
         <SurfaceView
             android:id="@+id/surfaceView"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_alignParentStart="true"
-            android:layout_alignParentTop="true" />
+            android:layout_height="match_parent" />
 
         <SeekBar
             android:id="@+id/seekBar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_alignParentBottom="true"
-            android:layout_alignParentStart="true"
             android:layout_marginBottom="5dp"
             android:thumb="@drawable/seekthumb"
-            android:visibility="gone" />
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="parent" />
 
         <ImageView
             android:id="@+id/videoSettingButton"
             android:layout_width="30dp"
             android:layout_height="30dp"
             android:layout_alignParentEnd="true"
-            android:layout_marginEnd="5dp"
-            android:layout_marginTop="5dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginTop="8dp"
             android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="@+id/surfaceView"
+            app:layout_constraintTop_toTopOf="parent"
             app:srcCompat="@drawable/ic_settings_white_24dp" />
 
         <ProgressBar
-                style="@android:style/Widget.ProgressBar.Large"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
             android:id="@+id/bufferProgressBar"
-            android:alpha="0.8"
+            style="@android:style/Widget.ProgressBar.Large"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
             android:layout_centerVertical="true"
-                android:layout_centerHorizontal="true" android:visibility="gone"/>
+            android:layout_marginBottom="8dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:alpha="0.8"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="@+id/seekBar"
+            app:layout_constraintEnd_toEndOf="@+id/surfaceView"
+            app:layout_constraintStart_toStartOf="@+id/surfaceView"
+            app:layout_constraintTop_toTopOf="parent" />
+
         <Button
-                android:layout_width="50dp"
-                android:layout_height="50dp"
-                android:id="@+id/playbutton" android:alpha="0.8"
-                android:background="@drawable/pause"
-                android:layout_centerVertical="true" android:layout_centerHorizontal="true" android:visibility="gone"/>
+            android:id="@+id/playbutton"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_centerHorizontal="true"
+            android:layout_centerVertical="true"
+            android:layout_marginBottom="8dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:alpha="0.8"
+            android:background="@drawable/pause"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="@+id/seekBar"
+            app:layout_constraintEnd_toEndOf="@+id/surfaceView"
+            app:layout_constraintStart_toStartOf="@+id/surfaceView"
+            app:layout_constraintTop_toTopOf="parent" />
+
         <TextView
-                android:text="TextView"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:id="@+id/totalTime"
-                android:layout_above="@+id/seekBar" android:layout_alignParentEnd="true" android:visibility="gone"/>
+            android:id="@+id/totalTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_above="@+id/seekBar"
+            android:layout_alignParentEnd="true"
+            android:layout_marginEnd="8dp"
+            android:text="TextView"
+            android:visibility="gone"
+            app:layout_constraintBottom_toTopOf="@+id/seekBar"
+            app:layout_constraintEnd_toEndOf="@+id/surfaceView" />
+
         <TextView
-                android:text="TextView"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:id="@+id/currentTime" android:layout_above="@+id/seekBar"
+            android:id="@+id/currentTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_above="@+id/seekBar"
+            android:layout_marginBottom="8dp"
+            android:layout_marginStart="8dp"
             android:layout_toEndOf="@+id/bufferProgressBar"
-            android:visibility="gone" />
+            android:text="TextView"
+            android:visibility="gone"
+            app:layout_constraintBottom_toTopOf="@+id/seekBar"
+            app:layout_constraintStart_toStartOf="parent" />
 
-    </RelativeLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <RelativeLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/RelatedVideoLayout"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_alignParentBottom="true"
-        android:layout_below="@+id/videoRelativeLayout"
-        android:animateLayoutChanges="false">
+        android:layout_height="0dp"
+        android:animateLayoutChanges="false"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/videoPlayerLayout">
 
-        <android.support.v4.view.ViewPager
-            android:id="@+id/videoViewPager"
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/videoRecyclerView"
             android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <ProgressBar
+            android:id="@+id/loadingProgress"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
-            >
 
-        </android.support.v4.view.ViewPager>
+        <ImageView
+            android:id="@+id/nextPageTab"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintVertical_bias="0.498"
+            app:srcCompat="@drawable/page_tab_enabled" />
 
-    </RelativeLayout>
-</RelativeLayout>
+        <ImageView
+            android:id="@+id/prevPageTab"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:rotation="180"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintVertical_bias="0.498"
+            app:srcCompat="@drawable/page_tab_enabled" />
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/nextPage"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@android:color/darker_gray">
+
+            <ImageView
+                android:id="@+id/nextPageImage"
+                android:layout_width="140dp"
+                android:layout_height="80dp"
+
+                android:scaleType="centerCrop"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/prevPage"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@android:color/darker_gray">
+
+            <ImageView
+                android:id="@+id/prevPageImage"
+                android:layout_width="140dp"
+                android:layout_height="80dp"
+
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

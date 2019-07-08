@@ -1,6 +1,5 @@
 package kie.com.soundtube;
 
-import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -9,6 +8,8 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.PopupMenu;
 import android.widget.TextView;
+
+import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.List;
 
@@ -31,9 +32,9 @@ public class SearchRecyclerAdapter extends RecyclerView.Adapter<SearchRecyclerAd
 //                    ViewGroup.LayoutParams.MATCH_PARENT, Tools.convertDpToPixel(56, parent.getContext())));
 //            view = relativeLayout;
 //        } else {
-//            view = LayoutInflater.from(parent.getContext()).inflate(R.layout.video_thumnail, parent, false);
+//            view = LayoutInflater.from(parent.getContext()).inflate(R.layout.video_thumbnail, parent, false);
 //        }
-        view = LayoutInflater.from(parent.getContext()).inflate(R.layout.video_thumnail, parent, false);
+        view = LayoutInflater.from(parent.getContext()).inflate(R.layout.video_thumbnail, parent, false);
         return new ViewHolder(view);
     }
 

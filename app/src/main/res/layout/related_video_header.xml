@@ -10,7 +10,6 @@
         android:layout_centerHorizontal="true"
         android:ellipsize="end"
         android:maxLines="2"
-        android:text="tjy4356446466tdjddtjr45y75yu4y5456566456456456436456tjhshwiuyhj34jhwhjershsgt48gjgh"
         android:textColor="@color/Black"
         android:textSize="21sp" />
 

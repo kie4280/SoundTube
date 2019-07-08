@@ -15,20 +15,20 @@
         android:label="SoundTube"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
+
+        <service android:name=".MediaPlayerService" />
+
         <activity
-            android:name=".PlayerActivity"
+            android:name=".MainActivity"
+            android:screenOrientation="portrait"
             android:configChanges="orientation|screenSize"
             android:launchMode="singleTop"
-            android:screenOrientation="portrait"
             android:windowSoftInputMode="stateHidden|adjustPan">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-        <service android:name=".MediaPlayerService" />
 
         <activity
             android:name=".LogActivity"
@@ -41,29 +41,19 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
+
         <activity
             android:name=".SettingActivity"
             android:label="@string/title_activity_settings"
             android:launchMode="singleTop"
-            android:parentActivityName=".PlayerActivity"
+            android:parentActivityName=".SearchActivity"
             android:screenOrientation="portrait" />
         <activity
             android:name=".PlaylistActivity"
             android:label="@string/title_activity_playlist"
             android:launchMode="singleTop"
-            android:parentActivityName=".PlayerActivity"
+            android:parentActivityName=".SearchActivity"
             android:screenOrientation="portrait" />
-        <!--<activity-->
-        <!--android:name=".SignInActivity"-->
-        <!--android:label="SignInActivity"-->
-        <!--android:launchMode="singleTop"-->
-        <!--android:screenOrientation="portrait">-->
-        <!--<intent-filter>-->
-        <!--<action android:name="kie.com.soundtube.getAccount" />-->
-
-        <!--<category android:name="android.intent.category.DEFAULT" />-->
-        <!--</intent-filter>-->
-        <!--</activity>-->
         <activity android:name=".FolderChooserActivity">
             <intent-filter>
                 <action android:name="kie.com.soundtube.getFolder" />
@@ -75,9 +65,12 @@
             android:name=".SignInActivity"
             android:label="SignInActivity"
             android:launchMode="singleTop"
+            android:parentActivityName=".SearchActivity"
             android:screenOrientation="portrait">
+
             <intent-filter>
                 <action android:name="android.intent.action.PICK_ACTIVITY" />
+
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>

@@ -103,7 +103,6 @@ public class VideoRetriever {
         downloadCacheFileDir = new File(context.getExternalCacheDir(), "downloaded");
         defaultMusicDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC), "SoundTube");
         downloadReceiver = new BroadcastReceiver() {
-
             DownloadManager downloadManager = (DownloadManager) context.getSystemService(Service.DOWNLOAD_SERVICE);
 
             @Override
@@ -365,7 +364,8 @@ public class VideoRetriever {
         try {
             HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
-            connection.setRequestProperty("User-agent", "Mozilla/5.0 (Windows NT 6.1; WOW64");
+//            connection.setRequestProperty("User-agent", "Mozilla/5.0 (Windows NT 6.1; WOW64");  // old
+            connection.setRequestProperty("User-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)");  // new
             int responseCode = connection.getResponseCode();
             System.out.println("\nSending 'GET' request to URL : " + url);
             System.out.println("Response Code : " + responseCode);
@@ -608,7 +608,7 @@ public class VideoRetriever {
                     }
                     dataHolder.localUris = local;
                 }
-                if (PlayerActivity.netConncted) {
+                if (MainActivity.netConncted) {
                     dataHolder.onlineUris = getVideoUris(dataHolder.videoID);
                 }
 

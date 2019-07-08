@@ -1,24 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <android.support.v7.widget.Toolbar
-        android:id="@+id/playlistToolbar"
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/playListToolBar"
         android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:layout_alignParentStart="false"
-        android:layout_alignParentTop="false"
-        android:background="@android:color/holo_blue_light"
-        android:elevation="1dp"
-        android:minHeight="?android:attr/actionBarSize" />
+        android:layout_height="wrap_content" />
 
-    <android.support.v7.widget.RecyclerView
+    <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/playListRecycler"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_below="@+id/playlistToolbar"
+        android:layout_height="0dp"
         android:layout_centerHorizontal="true"
-        android:layout_centerVertical="true" />
-</RelativeLayout>
+        android:layout_centerVertical="true"
+        app:layout_constraintTop_toBottomOf="@+id/playListToolBar"
+        app:layout_constraintBottom_toBottomOf="parent" />
+</androidx.constraintlayout.widget.ConstraintLayout>
